@@ -1,0 +1,226 @@
+---
+---
+
+<nav class="navbar" id="navbar">
+    <div class="container nav-inner">
+        <a href="#" class="nav-logo">
+            <span class="logo-bracket">[</span>itzmail<span class="logo-dot"
+                >.</span
+            >dev<span class="logo-bracket">]</span>
+        </a>
+        <button
+            class="nav-toggle"
+            id="navToggle"
+            aria-label="Toggle navigation"
+        >
+            <span></span><span></span><span></span>
+        </button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#projects" class="nav-link">Projects</a></li>
+            <li><a href="#stack" class="nav-link">Stack</a></li>
+            <li><a href="#experience" class="nav-link">Experience</a></li>
+            <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+        <a href="mailto:mail@itzmail.dev" class="btn btn-ghost nav-cta">
+            <span class="text-green">$</span> hire me
+        </a>
+    </div>
+</nav>
+
+<style>
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        height: var(--nav-h);
+        transition: all 0.3s var(--ease);
+        border-bottom: 1px solid transparent;
+    }
+
+    .navbar.scrolled {
+        background: rgba(10, 10, 15, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom-color: var(--border);
+    }
+
+    .nav-inner {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        gap: 2rem;
+    }
+
+    .nav-logo {
+        font-family: var(--font-mono);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        text-decoration: none;
+        letter-spacing: -0.02em;
+        flex-shrink: 0;
+    }
+
+    .logo-bracket {
+        color: var(--green);
+    }
+    .logo-dot {
+        color: var(--cyan);
+    }
+
+    .nav-links {
+        list-style: none;
+        display: flex;
+        gap: 0rem;
+        margin-left: auto;
+    }
+
+    .nav-link {
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: all var(--duration) var(--ease);
+        position: relative;
+    }
+
+    .nav-link::before {
+        content: "";
+        position: absolute;
+        bottom: 2px;
+        left: 1rem;
+        right: 1rem;
+        height: 1px;
+        background: var(--green);
+        transform: scaleX(0);
+        transition: transform var(--duration) var(--ease);
+    }
+
+    .nav-link:hover {
+        color: var(--green);
+    }
+
+    .nav-link:hover::before {
+        transform: scaleX(1);
+    }
+
+    .nav-cta {
+        flex-shrink: 0;
+        padding: 0.5rem 1.125rem;
+        font-size: 0.8125rem;
+    }
+
+    /* Mobile toggle */
+    .nav-toggle {
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        margin-left: auto;
+    }
+
+    .nav-toggle span {
+        display: block;
+        width: 22px;
+        height: 2px;
+        background: var(--text);
+        border-radius: 2px;
+        transition: all var(--duration) var(--ease);
+    }
+
+    .nav-toggle.active span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+    .nav-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .nav-toggle.active span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+
+    @media (max-width: 768px) {
+        .nav-toggle {
+            display: flex;
+        }
+        .nav-cta {
+            display: none;
+        }
+
+        .nav-links {
+            position: fixed;
+            top: var(--nav-h);
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.97);
+            backdrop-filter: blur(20px);
+            flex-direction: column;
+            padding: 1.5rem;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            transform: translateY(-110%);
+            transition: transform 0.3s var(--ease);
+            margin-left: 0;
+        }
+
+        .nav-links.open {
+            transform: translateY(0);
+        }
+
+        .nav-link {
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<script>
+    const navbar = document.getElementById("navbar");
+    const toggle = document.getElementById("navToggle");
+    const links = document.getElementById("navLinks");
+
+    // Scroll effect
+    window.addEventListener("scroll", () => {
+        navbar?.classList.toggle("scrolled", window.scrollY > 20);
+    });
+
+    // Mobile toggle
+    toggle?.addEventListener("click", () => {
+        toggle.classList.toggle("active");
+        links?.classList.toggle("open");
+    });
+
+    // Close on link click
+    links?.querySelectorAll("a").forEach((a) => {
+        a.addEventListener("click", () => {
+            toggle?.classList.remove("active");
+            links.classList.remove("open");
+        });
+    });
+
+    // Active link on scroll
+    const sections = document.querySelectorAll("section[id]");
+    const navLinksEls = document.querySelectorAll(".nav-link");
+    const io = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    navLinksEls.forEach((link) => {
+                        link.classList.toggle(
+                            "active",
+                            link.getAttribute("href") === `#${entry.target.id}`
+                        );
+                    });
+                }
+            });
+        },
+        { rootMargin: "-40% 0px -50% 0px" }
+    );
+    sections.forEach((s) => io.observe(s));
+</script>

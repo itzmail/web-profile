@@ -1,0 +1,549 @@
+---
+---
+
+<div class="terminal-window" id="terminal">
+    <!-- Title Bar -->
+    <div class="terminal-titlebar">
+        <div class="terminal-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+        </div>
+        <span class="terminal-title">ismail@portfolio — bash</span>
+        <div class="terminal-actions"></div>
+    </div>
+
+    <!-- Output -->
+    <div class="terminal-body">
+        <div class="terminal-output" id="termOutput"></div>
+
+        <!-- Input Row -->
+        <div class="terminal-input-row">
+            <span class="prompt"
+                >ismail<span class="at">@</span>portfolio<span class="colon"
+                    >:</span
+                ><span class="tilde">~</span><span class="dollar">$</span>
+            </span>
+            <input
+                type="text"
+                id="termInput"
+                class="terminal-input"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="type 'help' to discover me..."
+                aria-label="Terminal input"
+            />
+        </div>
+    </div>
+</div>
+
+<style>
+    .terminal-window {
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.04),
+            0 0 60px rgba(0, 255, 136, 0.06);
+        font-family: var(--font-mono);
+        animation: glow-pulse 4s ease-in-out infinite;
+    }
+
+    .terminal-titlebar {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: #111118;
+        border-bottom: 1px solid var(--border);
+        gap: 0.75rem;
+    }
+
+    .terminal-dots {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .dot-red {
+        background: #ff5f57;
+    }
+    .dot-yellow {
+        background: #febc2e;
+    }
+    .dot-green {
+        background: #28c840;
+    }
+
+    .terminal-title {
+        flex: 1;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+    }
+
+    .terminal-actions {
+        width: 44px;
+    }
+
+    .terminal-body {
+        padding: 1.5rem;
+        min-height: 340px;
+        max-height: 420px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .terminal-output {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        color: var(--text);
+    }
+
+    .terminal-input-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .prompt {
+        font-size: 0.8125rem;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .prompt .at {
+        color: var(--text-muted);
+    }
+    .prompt .colon {
+        color: var(--text-muted);
+    }
+    .prompt .tilde {
+        color: var(--cyan);
+    }
+    .prompt .dollar {
+        color: var(--green);
+        margin-left: 2px;
+    }
+
+    .terminal-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--green);
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        caret-color: var(--green);
+    }
+
+    .terminal-input::placeholder {
+        color: var(--text-dim);
+    }
+
+    /* Output lines */
+    .t-line {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.375rem;
+    }
+    .t-cmd {
+        color: var(--green);
+    }
+    .t-prompt-echo {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+    }
+    .t-output {
+        color: var(--text);
+        padding-left: 0.5rem;
+    }
+    .t-success {
+        color: var(--green);
+    }
+    .t-error {
+        color: var(--red);
+    }
+    .t-info {
+        color: var(--cyan);
+    }
+    .t-purple {
+        color: var(--purple);
+    }
+    .t-dim {
+        color: var(--text-muted);
+    }
+    .t-bold {
+        font-weight: 700;
+    }
+    .t-block {
+        display: block;
+        padding-left: 0.5rem;
+    }
+    .t-separator {
+        border-top: 1px solid var(--border);
+        margin: 0.5rem 0;
+    }
+    .t-blink::after {
+        content: "█";
+        animation: blink 1s step-end infinite;
+    }
+
+    /* Scrollbar inside terminal */
+    .terminal-body::-webkit-scrollbar {
+        width: 4px;
+    }
+    .terminal-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .terminal-body::-webkit-scrollbar-thumb {
+        background: var(--surface-border);
+        border-radius: 2px;
+    }
+
+    @media (max-width: 576px) {
+        .terminal-body {
+            min-height: 260px;
+            max-height: 320px;
+            padding: 1rem;
+        }
+    }
+</style>
+
+<script>
+    const output = document.getElementById("termOutput");
+    const input = document.getElementById("termInput") as HTMLInputElement;
+    const body = document.querySelector(".terminal-body") as HTMLElement;
+
+    let history: string[] = [];
+    let histIdx = -1;
+
+    // ── Data ──────────────────────────────────────────────────────
+    const DATA = {
+        name: "Ismail Alam",
+        role: "Fullstack Architect & Software Engineer",
+        location: "Indonesia 🇮🇩",
+        email: "mail@itzmail.dev",
+        bio: "I design and build scalable backend systems, beautiful UIs, and everything in between. Passionate about clean architecture, DX, and craftsmanship.",
+        github: "github.com/ismailalam",
+        linkedin: "linkedin.com/in/ismailalam",
+        twitter: "@itzmail_dev",
+    };
+
+    const SKILLS = {
+        Backend: ["Go", "Node.js", "Laravel (PHP)", "REST & GraphQL"],
+        Frontend: ["React", "Next.js", "Astro", "TypeScript", "CSS/Animation"],
+        Mobile: ["Flutter", "Dart"],
+        Database: ["PostgreSQL", "MySQL", "Redis", "MongoDB"],
+        DevOps: ["Docker", "Linux", "CI/CD", "Nginx"],
+    };
+
+    const PROJECTS = [
+        {
+            name: "fintech-platform",
+            stack: "Go · PostgreSQL · Flutter",
+            desc: "Mobile banking app with real-time transactions & fraud detection",
+        },
+        {
+            name: "neural-engine-core",
+            stack: "TypeScript · Node.js · Redis",
+            desc: "Distributed task engine with priority queue & retry logic",
+        },
+        {
+            name: "distributed-ledger",
+            stack: "Go · gRPC · Docker",
+            desc: "Microservice ledger for multi-currency accounting",
+        },
+    ];
+
+    const EXPERIENCE = [
+        {
+            role: "React Contributor",
+            desc: "Bug fixes in core components & maintaining library standards",
+        },
+        {
+            role: "CLI Tools Developer",
+            desc: "Building productivity scripts and custom shell utilities for engineers",
+        },
+        {
+            role: "Tech Blogger",
+            desc: "Writing about system design patterns & modern architecture",
+        },
+    ];
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function appendLine(html: string) {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        output?.appendChild(div);
+        body?.scrollTo({ top: body.scrollHeight, behavior: "smooth" });
+    }
+
+    function spacer() {
+        appendLine('<div style="height:6px"></div>');
+    }
+
+    function printCmd(cmd: string) {
+        appendLine(
+            `<div class="t-line">
+      <span class="prompt" style="opacity:.5">ismail<span class="at">@</span>portfolio:</span>
+      <span class="t-cmd">$ ${escHTML(cmd)}</span>
+    </div>`
+        );
+    }
+
+    function escHTML(s: string) {
+        return s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
+    // ── Commands ──────────────────────────────────────────────────
+    const commands: Record<string, () => void> = {
+        help() {
+            spacer();
+            appendLine(
+                `<span class="t-info t-bold">Available commands:</span>`
+            );
+            const cmds = [
+                ["whoami", "About me"],
+                ["skills", "Tech stack & proficiency"],
+                ["projects", "Selected projects"],
+                ["experience", "Open source & contributions"],
+                ["contact", "Get in touch"],
+                ["clear", "Clear terminal"],
+                ["motto", "My engineering philosophy"],
+                ["secret", "?"],
+            ];
+            cmds.forEach(([c, d]) => {
+                appendLine(
+                    `<div class="t-line t-block"><span class="t-success" style="min-width:110px;display:inline-block">${c}</span><span class="t-dim">— ${d}</span></div>`
+                );
+            });
+            spacer();
+        },
+
+        whoami() {
+            spacer();
+            appendLine(
+                `<span class="t-purple t-bold">// ${escHTML(DATA.name)}</span>`
+            );
+            appendLine(`<span class="t-dim">${escHTML(DATA.role)}</span>`);
+            appendLine(
+                `<span class="t-dim">📍 ${escHTML(DATA.location)}</span>`
+            );
+            spacer();
+            appendLine(`<span class="t-output">${escHTML(DATA.bio)}</span>`);
+            spacer();
+        },
+
+        skills() {
+            spacer();
+            appendLine(`<span class="t-info t-bold">// Tech Stack</span>`);
+            spacer();
+            Object.entries(SKILLS).forEach(([cat, items]) => {
+                appendLine(`<div><span class="t-purple">[${cat}]</span></div>`);
+                appendLine(
+                    `<div class="t-block t-dim">→ ${items.join("  ·  ")}</div>`
+                );
+                appendLine('<div style="height:4px"></div>');
+            });
+            spacer();
+        },
+
+        projects() {
+            spacer();
+            appendLine(
+                `<span class="t-info t-bold">// Selected Projects</span>`
+            );
+            spacer();
+            PROJECTS.forEach((p, i) => {
+                appendLine(
+                    `<div><span class="t-success">[${
+                        i + 1
+                    }]</span> <span class="t-bold">${escHTML(
+                        p.name
+                    )}</span></div>`
+                );
+                appendLine(
+                    `<div class="t-block t-dim">${escHTML(p.stack)}</div>`
+                );
+                appendLine(
+                    `<div class="t-block t-output">${escHTML(p.desc)}</div>`
+                );
+                appendLine('<div style="height:6px"></div>');
+            });
+            spacer();
+        },
+
+        experience() {
+            spacer();
+            appendLine(
+                `<span class="t-info t-bold">// Open Source & Contributions</span>`
+            );
+            spacer();
+            EXPERIENCE.forEach((e) => {
+                appendLine(
+                    `<div><span class="t-purple">▸</span> <span class="t-bold">${escHTML(
+                        e.role
+                    )}</span></div>`
+                );
+                appendLine(
+                    `<div class="t-block t-dim">${escHTML(e.desc)}</div>`
+                );
+                appendLine('<div style="height:4px"></div>');
+            });
+            spacer();
+        },
+
+        contact() {
+            spacer();
+            appendLine(
+                `<span class="t-info t-bold">// Let's build something</span>`
+            );
+            spacer();
+            appendLine(
+                `<div><span class="t-dim">email   </span><span class="t-success">${escHTML(
+                    DATA.email
+                )}</span></div>`
+            );
+            appendLine(
+                `<div><span class="t-dim">github  </span><span class="t-success">${escHTML(
+                    DATA.github
+                )}</span></div>`
+            );
+            appendLine(
+                `<div><span class="t-dim">linkedin</span><span class="t-success">${escHTML(
+                    DATA.linkedin
+                )}</span></div>`
+            );
+            appendLine(
+                `<div><span class="t-dim">twitter </span><span class="t-success">${escHTML(
+                    DATA.twitter
+                )}</span></div>`
+            );
+            spacer();
+        },
+
+        motto() {
+            spacer();
+            appendLine(
+                `<span class="t-purple t-bold">// Engineering Philosophy</span>`
+            );
+            spacer();
+            const quotes = [
+                '"Make it work, make it right, make it fast."',
+                '"Code is read more often than written."',
+                '"Simplicity is the ultimate sophistication."',
+            ];
+            quotes.forEach((q) =>
+                appendLine(
+                    `<div class="t-dim" style="padding-left:.5rem">${escHTML(
+                        q
+                    )}</div>`
+                )
+            );
+            spacer();
+        },
+
+        secret() {
+            spacer();
+            appendLine(
+                `<span class="t-success">🎉 You found the easter egg!</span>`
+            );
+            appendLine(
+                `<span class="t-dim">Fun fact: This terminal was built with vanilla JS + Astro.</span>`
+            );
+            appendLine(
+                `<span class="t-dim">No heavy libraries. Just raw craftsmanship. ✨</span>`
+            );
+            spacer();
+        },
+
+        clear() {
+            if (output) output.innerHTML = "";
+        },
+    };
+
+    // ── Boot message ──────────────────────────────────────────────
+    function boot() {
+        appendLine(
+            `<span class="t-success t-bold">Welcome to ismail.portfolio v1.0.0</span>`
+        );
+        appendLine(
+            `<span class="t-dim">Type <span class="t-success">help</span> to see available commands.</span>`
+        );
+        spacer();
+    }
+
+    // ── Execute command ───────────────────────────────────────────
+    function execute(raw: string) {
+        const cmd = raw.trim().toLowerCase();
+        if (!cmd) return;
+
+        printCmd(raw.trim());
+
+        if (commands[cmd]) {
+            commands[cmd]();
+        } else {
+            appendLine(
+                `<span class="t-error">bash: ${escHTML(
+                    cmd
+                )}: command not found. Try 'help'.</span>`
+            );
+            spacer();
+        }
+    }
+
+    // ── Event Listeners ───────────────────────────────────────────
+    input?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            const val = input.value;
+            if (val.trim()) {
+                history.unshift(val);
+                histIdx = -1;
+            }
+            execute(val);
+            input.value = "";
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            histIdx = Math.min(histIdx + 1, history.length - 1);
+            input.value = history[histIdx] ?? "";
+        } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            histIdx = Math.max(histIdx - 1, -1);
+            input.value = histIdx >= 0 ? history[histIdx] : "";
+        } else if (e.key === "Tab") {
+            e.preventDefault();
+            const partial = input.value.toLowerCase();
+            const match = Object.keys(commands).find((c) =>
+                c.startsWith(partial)
+            );
+            if (match) input.value = match;
+        }
+    });
+
+    // Click anywhere in terminal → focus input
+    document
+        .getElementById("terminal")
+        ?.addEventListener("click", () => input?.focus());
+
+    boot();
+</script>

@@ -1,0 +1,151 @@
+---
+const categories = [
+    {
+        label: "Backend",
+        icon: "⚙️",
+        color: "--green",
+        skills: ["Go", "Node.js", "Laravel", "Express", "GraphQL", "REST APIs"],
+    },
+    {
+        label: "Frontend",
+        icon: "🎨",
+        color: "--cyan",
+        skills: [
+            "React",
+            "Next.js",
+            "Astro",
+            "TypeScript",
+            "CSS / Animation",
+            "Vite",
+        ],
+    },
+    {
+        label: "Mobile",
+        icon: "📱",
+        color: "--purple",
+        skills: ["Flutter", "Dart", "Android", "iOS", "BLoC", "Riverpod"],
+    },
+    {
+        label: "Database",
+        icon: "🗄️",
+        color: "--yellow",
+        skills: ["PostgreSQL", "MySQL", "MongoDB", "Redis", "Prisma", "GORM"],
+    },
+    {
+        label: "DevOps",
+        icon: "🔧",
+        color: "--green",
+        skills: ["Docker", "Linux", "CI/CD", "Nginx", "Git", "GitHub Actions"],
+    },
+];
+---
+
+<section class="section" id="stack">
+    <div class="container">
+        <div class="section-header reveal">
+            <p class="section-label">technical skills</p>
+            <h2 class="section-title">Tech <span>Stack</span></h2>
+        </div>
+
+        <div class="stack-grid reveal-stagger">
+            {
+                categories.map((cat) => (
+                    <div class="stack-card">
+                        <div class="stack-card-header">
+                            <span class="stack-icon">{cat.icon}</span>
+                            <span
+                                class="stack-cat"
+                                style={`color: var(${cat.color})`}
+                            >
+                                {cat.label}
+                            </span>
+                        </div>
+                        <ul class="skill-list">
+                            {cat.skills.map((skill) => (
+                                <li class="skill-tag">{skill}</li>
+                            ))}
+                        </ul>
+                    </div>
+                ))
+            }
+        </div>
+    </div>
+</section>
+
+<style>
+    .stack-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .stack-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s var(--ease);
+        cursor: default;
+    }
+
+    .stack-card:hover {
+        border-color: var(--border-glow);
+        background: var(--surface-hover);
+        transform: translateY(-6px);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 30px var(--green-glow);
+    }
+
+    .stack-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.875rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stack-icon {
+        font-size: 1.125rem;
+        line-height: 1;
+    }
+
+    .stack-cat {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .skill-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .skill-tag {
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: color var(--duration) var(--ease);
+    }
+
+    .skill-tag::before {
+        content: "▸";
+        color: var(--green);
+        opacity: 0.5;
+        font-size: 0.625rem;
+    }
+
+    .stack-card:hover .skill-tag {
+        color: var(--text);
+    }
+
+    .stack-card:hover .skill-tag::before {
+        opacity: 1;
+    }
+</style>

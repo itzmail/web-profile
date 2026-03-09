@@ -1,0 +1,362 @@
+---
+import Terminal from "./Terminal.astro";
+---
+
+<section class="hero" id="home">
+    <div class="container hero-inner">
+        <!-- LEFT -->
+        <div class="hero-left reveal">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>Available for opportunities</span>
+            </div>
+
+            <h1 class="hero-name">
+                <span class="hero-greeting">Hello, I'm</span>
+                <span class="glitch-wrap">
+                    <span class="glitch" data-text="Ismail Alam"
+                        >Ismail Alam</span
+                    >
+                    <span class="glitch-layer glitch-layer-1" aria-hidden="true"
+                        >Ismail Alam</span
+                    >
+                    <span class="glitch-layer glitch-layer-2" aria-hidden="true"
+                        >Ismail Alam</span
+                    >
+                </span>
+            </h1>
+
+            <div class="hero-role">
+                <span class="role-prefix">~/$ whoami</span>
+                <span class="role-text" id="typingText"></span>
+                <span class="cursor">█</span>
+            </div>
+
+            <p class="hero-desc">
+                I design and build <span class="text-green"
+                    >scalable backend systems</span
+                >, beautiful interfaces, and everything in between. Passionate
+                about clean architecture, great DX, and
+                <span class="text-cyan">software craftsmanship</span>.
+            </p>
+
+            <div class="hero-cta">
+                <a href="#projects" class="btn btn-primary">
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                    >
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                        ></path>
+                    </svg>
+                    View Projects
+                </a>
+                <a href="#contact" class="btn btn-ghost">
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                    >
+                        <path
+                            d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"
+                        ></path>
+                    </svg>
+                    Get in touch
+                </a>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-num">3+</span>
+                    <span class="stat-label">Years exp.</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-num">20+</span>
+                    <span class="stat-label">Projects shipped</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-num">5</span>
+                    <span class="stat-label">OSS contributions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Terminal -->
+        <div class="hero-right reveal" style="animation-delay: 0.15s">
+            <Terminal />
+        </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <div class="scroll-hint">
+        <span class="scroll-hint-text">scroll</span>
+        <div class="scroll-arrow"></div>
+    </div>
+</section>
+
+<style>
+    .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-top: var(--nav-h);
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-inner {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: center;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+
+    /* Left column */
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--green);
+        background: var(--green-glow);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+        border-radius: 99px;
+        padding: 0.375rem 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .badge-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--green);
+        border-radius: 50%;
+        animation: glow-pulse 2s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+
+    .hero-greeting {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 400;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Glitch effect */
+    .glitch-wrap {
+        position: relative;
+        display: block;
+    }
+
+    .glitch {
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.03em;
+        line-height: 1;
+        position: relative;
+        display: inline-block;
+    }
+
+    .glitch-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .glitch-layer-1 {
+        color: var(--cyan);
+        opacity: 0;
+        animation: glitch 4s 2s step-start infinite;
+        clip-path: inset(0);
+        left: 2px;
+    }
+
+    .glitch-layer-2 {
+        color: var(--purple);
+        opacity: 0;
+        animation: glitch2 4s 2.5s step-start infinite;
+        clip-path: inset(0);
+        left: -2px;
+    }
+
+    .glitch-wrap:hover .glitch-layer-1,
+    .glitch-wrap:hover .glitch-layer-2 {
+        opacity: 0.7;
+    }
+
+    /* Role typing */
+    .hero-role {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--font-mono);
+        font-size: clamp(0.85rem, 1.5vw, 1rem);
+        color: var(--text-muted);
+        margin: 1.25rem 0;
+    }
+
+    .role-prefix {
+        color: var(--green);
+        opacity: 0.7;
+    }
+    .role-text {
+        color: var(--cyan);
+    }
+    .cursor {
+        color: var(--green);
+        animation: blink 1s step-end infinite;
+    }
+
+    .hero-desc {
+        font-size: 1rem;
+        color: var(--text-muted);
+        line-height: 1.7;
+        max-width: 460px;
+        margin-bottom: 2rem;
+    }
+
+    .hero-cta {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+    }
+
+    .hero-stats {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .stat {
+        text-align: left;
+    }
+    .stat-num {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--green);
+        line-height: 1;
+    }
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+    }
+    .stat-divider {
+        width: 1px;
+        height: 36px;
+        background: var(--border);
+    }
+
+    /* Scroll hint */
+    .scroll-hint {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        opacity: 0.4;
+        animation: fadeIn 1s 1.5s both;
+    }
+    .scroll-hint-text {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+    }
+    .scroll-arrow {
+        width: 1px;
+        height: 40px;
+        background: linear-gradient(to bottom, var(--green), transparent);
+        animation: fadeIn 1s ease infinite alternate;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .hero-inner {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+            padding-top: 2rem;
+        }
+        .hero-right {
+            order: -1;
+        }
+        .scroll-hint {
+            display: none;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .hero-cta {
+            flex-direction: column;
+        }
+        .hero-stats {
+            gap: 1rem;
+        }
+    }
+</style>
+
+<script>
+    // Typing animation for role
+    const roles = [
+        "Fullstack Architect",
+        "Backend Engineer",
+        "Flutter Developer",
+        "System Designer",
+        "Open Source Enthusiast",
+    ];
+
+    const el = document.getElementById("typingText") as HTMLElement | null;
+    if (el) {
+        const typingEl = el;
+        let ri = 0,
+            ci = 0,
+            deleting = false;
+
+        function type() {
+            const word = roles[ri];
+            if (!deleting) {
+                typingEl.textContent = word.slice(0, ++ci);
+                if (ci === word.length) {
+                    deleting = true;
+                    setTimeout(type, 1800);
+                    return;
+                }
+            } else {
+                typingEl.textContent = word.slice(0, --ci);
+                if (ci === 0) {
+                    deleting = false;
+                    ri = (ri + 1) % roles.length;
+                }
+            }
+            setTimeout(type, deleting ? 55 : 90);
+        }
+        setTimeout(type, 800);
+    }
+</script>
