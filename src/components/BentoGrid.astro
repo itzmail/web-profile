@@ -1,5 +1,7 @@
 ---
 import userPhoto from "../assets/images/user-photo.JPG";
+import { projectsList } from "../data/projects";
+import { experienceList } from "../data/experience";
 ---
 
 <!--
@@ -59,13 +61,13 @@ import userPhoto from "../assets/images/user-photo.JPG";
                     </div>
                     <div class="stat-sep"></div>
                     <div class="stat-item">
-                        <span class="stat-big text-cyan font-mono">20+</span>
-                        <span class="stat-lbl">Projects Shipped</span>
+                        <span class="stat-big text-cyan font-mono">10+</span>
+                        <span class="stat-lbl">Mobile Apps</span>
                     </div>
                     <div class="stat-sep"></div>
                     <div class="stat-item">
-                        <span class="stat-big text-purple font-mono">5</span>
-                        <span class="stat-lbl">OSS Contributions</span>
+                        <span class="stat-big text-purple font-mono">3</span>
+                        <span class="stat-lbl">Key Achievements</span>
                     </div>
                 </div>
             </div>
@@ -76,62 +78,88 @@ import userPhoto from "../assets/images/user-photo.JPG";
                 <div class="stack-pills">
                     <div class="pill-group">
                         <span class="pill-cat text-green">Backend</span>
-                        <span class="pill">Go</span>
+                        <span class="pill">Express.js</span>
+                        <span class="pill">Spring Boot</span>
+                        <span class="pill">Java</span>
                         <span class="pill">Node.js</span>
-                        <span class="pill">Laravel</span>
-                        <span class="pill">GraphQL</span>
                     </div>
                     <div class="pill-group">
                         <span class="pill-cat text-cyan">Frontend</span>
-                        <span class="pill">React</span>
+                        <span class="pill">React.js</span>
                         <span class="pill">Next.js</span>
-                        <span class="pill">Astro</span>
+                        <span class="pill">JavaScript</span>
                         <span class="pill">TypeScript</span>
                     </div>
                     <div class="pill-group">
                         <span class="pill-cat text-purple">Mobile</span>
                         <span class="pill">Flutter</span>
+                        <span class="pill">React Native</span>
                         <span class="pill">Dart</span>
                     </div>
                     <div class="pill-group">
                         <span class="pill-cat" style="color:var(--yellow)"
-                            >DevOps</span
+                            >Tools</span
                         >
-                        <span class="pill">Docker</span>
-                        <span class="pill">Linux</span>
-                        <span class="pill">CI/CD</span>
+                        <span class="pill">Git</span>
+                        <span class="pill">Bitbucket</span>
+                        <span class="pill">REST API</span>
                     </div>
                 </div>
             </div>
 
-            <!-- ── CARD 4a: Project 02 (row 2) ── -->
-            <div class="bento-card bento-card--project-sm bento-card--proj2">
-                <span class="proj-num font-mono text-cyan">02</span>
-                <h4 class="proj-name">Neural Engine Core</h4>
-                <p class="proj-desc">
-                    Distributed task engine with priority queues & real-time
-                    observability.
-                </p>
-                <div class="proj-tags">
-                    <span class="tag tag--cyan">TypeScript</span>
-                    <span class="tag tag--cyan">Redis</span>
-                    <span class="tag tag--cyan">Docker</span>
+            <!-- ── CARD 4: Selected Projects (row 2) ── -->
+            <button
+                class="bento-card bento-card--projects-list global-modal-trigger"
+                data-template-id="tpl-projects"
+                data-modal-title="Selected Projects"
+                data-modal-subtitle="Portfolio & Open Source"
+            >
+                <div class="bento-label">// selected projects</div>
+                <div class="quote-content-large" style="text-align: left;">
+                    <span
+                        class="font-mono text-cyan"
+                        style="font-size:3rem; line-height:1; margin-bottom:0.5rem"
+                        >5</span
+                    >
+                    <span class="text-muted" style="font-size:0.9rem"
+                        >Portfolio Applications</span
+                    >
                 </div>
-            </div>
+                <div class="bento-card-action">
+                    <span
+                        class="font-mono text-cyan"
+                        style="font-size: 0.75rem; letter-spacing: 0.05em;"
+                        >View Projects &rarr;</span
+                    >
+                </div>
+            </button>
 
-            <div class="bento-card bento-card--project-sm bento-card--proj3">
-                <span class="proj-num font-mono text-purple">03</span>
-                <h4 class="proj-name">Distributed Ledger</h4>
-                <p class="proj-desc">
-                    Microservice accounting ledger with multi-currency & CQRS
-                    architecture.
-                </p>
-                <div class="proj-tags">
-                    <span class="tag tag--purple">Go</span>
-                    <span class="tag tag--purple">gRPC</span>
-                    <span class="tag tag--purple">PostgreSQL</span>
+            <!-- ── CARD 4b: Work Experience (row 3) ── -->
+            <button
+                class="bento-card bento-card--experience-list global-modal-trigger"
+                data-template-id="tpl-experience"
+                data-modal-title="Work Experience"
+                data-modal-subtitle="Career Timeline"
+            >
+                <div class="bento-label">// work experience</div>
+                <div class="quote-content-large" style="text-align: left;">
+                    <span
+                        class="font-mono text-green"
+                        style="font-size:3rem; line-height:1; margin-bottom:0.5rem"
+                        >3</span
+                    >
+                    <span class="text-muted" style="font-size:0.9rem"
+                        >Companies</span
+                    >
                 </div>
-            </div>
+                <div class="bento-card-action">
+                    <span
+                        class="font-mono text-green"
+                        style="font-size: 0.75rem; letter-spacing: 0.05em;"
+                        >View Timeline &rarr;</span
+                    >
+                </div>
+            </button>
 
             <!-- ── CARD 5: Quote / Philosophy ── -->
             <div class="bento-card bento-card--quote">
@@ -146,34 +174,34 @@ import userPhoto from "../assets/images/user-photo.JPG";
                 >
             </div>
 
-            <!-- ── CARD 6: Contributions ── -->
+            <!-- ── CARD 6: Achievements ── -->
             <div class="bento-card bento-card--contrib" id="experience">
-                <div class="bento-label">// open source</div>
+                <div class="bento-label">// key achievements</div>
                 <div class="contrib-list">
                     <div class="contrib-item">
-                        <span class="contrib-icon">⚛️</span>
+                        <span class="contrib-icon">🚀</span>
                         <div>
-                            <p class="contrib-role">React Contributor</p>
+                            <p class="contrib-role">API Efficiency Boost</p>
                             <p class="contrib-desc">
-                                Bug fixes in core components
+                                Improved API efficiency by 35%
                             </p>
                         </div>
                     </div>
                     <div class="contrib-item">
-                        <span class="contrib-icon">🛠️</span>
+                        <span class="contrib-icon">📦</span>
                         <div>
-                            <p class="contrib-role">CLI Tools Developer</p>
+                            <p class="contrib-role">Warehouse System</p>
                             <p class="contrib-desc">
-                                Custom shell utilities for engineers
+                                Boosted inventory tracking by 50%
                             </p>
                         </div>
                     </div>
                     <div class="contrib-item">
-                        <span class="contrib-icon">✍️</span>
+                        <span class="contrib-icon">👥</span>
                         <div>
-                            <p class="contrib-role">Tech Blogger</p>
+                            <p class="contrib-role">HRIS Enhancement</p>
                             <p class="contrib-desc">
-                                System design & architecture writing
+                                Improved user satisfaction by 40%
                             </p>
                         </div>
                     </div>
@@ -335,6 +363,68 @@ import userPhoto from "../assets/images/user-photo.JPG";
             </p>
         </footer>
     </div>
+
+    <!-- ── MODAL TEMPLATES ── -->
+    <template id="tpl-experience">
+        <div class="timeline-container">
+            {
+                experienceList.map((e) => (
+                    <div class="timeline-item">
+                        <div class="timeline-dot" />
+                        <div class="timeline-content">
+                            <h4 class="timeline-role">{e.role}</h4>
+                            <span class="timeline-company text-cyan font-mono">
+                                {e.company}
+                            </span>
+                            <span class="timeline-date text-muted">
+                                {e.date}
+                            </span>
+                            <p class="timeline-desc text-muted">{e.desc}</p>
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+    </template>
+
+    <template id="tpl-projects">
+        <div class="plist-container">
+            {
+                projectsList.map((p, i) => (
+                    <a
+                        href={
+                            p.links.live !== "#" ? p.links.live : p.links.github
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="plist-item"
+                        style="text-decoration: none;"
+                    >
+                        <span
+                            class="plist-num font-mono"
+                            style={`color: ${p.accent}`}
+                        >
+                            0{i + 1}
+                        </span>
+                        <div class="plist-text-single">
+                            <span class="plist-name">{p.name}</span>
+                        </div>
+                        <svg
+                            class="plist-arrow"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                ))
+            }
+        </div>
+    </template>
 </section>
 
 <style>
@@ -492,7 +582,7 @@ import userPhoto from "../assets/images/user-photo.JPG";
         gap: 0.625rem;
     }
 
-    .bento-card--proj2 {
+    .bento-card--projects-list {
         grid-column: 6 / 10;
         grid-row: 2;
     }
@@ -509,7 +599,7 @@ import userPhoto from "../assets/images/user-photo.JPG";
     }
 
     /* Row 3 */
-    .bento-card--proj3 {
+    .bento-card--experience-list {
         grid-column: 1 / 5;
         grid-row: 3;
     }
@@ -846,10 +936,10 @@ import userPhoto from "../assets/images/user-photo.JPG";
         .bento-card--stack {
             grid-column: 1 / 8;
         }
-        .bento-card--proj2 {
+        .bento-card--projects-list {
             grid-column: 8 / 13;
         }
-        .bento-card--proj3 {
+        .bento-card--experience-list {
             grid-column: 1 / 7;
         }
         .bento-card--quote {
@@ -883,10 +973,10 @@ import userPhoto from "../assets/images/user-photo.JPG";
         .bento-card--stack {
             grid-column: 1 / -1;
         }
-        .bento-card--proj2 {
+        .bento-card--projects-list {
             grid-column: 1 / -1;
         }
-        .bento-card--proj3 {
+        .bento-card--experience-list {
             grid-column: 1 / -1;
         }
         .bento-card--quote {
@@ -921,6 +1011,149 @@ import userPhoto from "../assets/images/user-photo.JPG";
         align-items: center;
         gap: 0.375rem;
         font-family: var(--font-mono);
+    }
+
+    /* ── Project & Experience Lists ─────────────────── */
+    .plist-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .plist-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        color: var(--text);
+    }
+
+    .plist-item:hover {
+        border-color: var(--border-glow);
+        background: var(--green-glow);
+        transform: translateX(4px);
+    }
+
+    .plist-num {
+        font-size: 0.8rem;
+        min-width: 20px;
+    }
+
+    .plist-icon {
+        font-size: 1.25rem;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .plist-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        flex: 1;
+    }
+
+    .plist-text-single {
+        display: flex;
+        flex: 1;
+        align-items: center;
+    }
+
+    .plist-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .plist-sub {
+        font-size: 0.65rem;
+    }
+
+    .plist-arrow {
+        color: var(--text-dim);
+        transition: transform 0.2s var(--ease), color 0.2s var(--ease);
+    }
+
+    .plist-item:hover .plist-arrow {
+        color: var(--green);
+        transform: translateX(3px);
+    }
+
+    /* ── Timeline Styles (Injected into Modal) ── */
+    .timeline-container {
+        position: relative;
+        padding-left: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .timeline-container::before {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: rgba(0, 255, 136, 0.2);
+    }
+
+    .timeline-item {
+        position: relative;
+    }
+
+    .timeline-dot {
+        position: absolute;
+        left: -1.5rem;
+        top: 0.25rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid var(--green);
+        transform: translateX(-1px);
+    }
+
+    .timeline-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .timeline-role {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0;
+    }
+
+    .timeline-company {
+        font-size: 0.85rem;
+    }
+
+    .timeline-date {
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-desc {
+        white-space: pre-wrap;
+    }
+
+    .modal-tag {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        background: rgba(0, 255, 136, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+        border-radius: 4px;
+        padding: 0.2rem 0.5rem;
     }
 </style>
 
@@ -981,5 +1214,7 @@ import userPhoto from "../assets/images/user-photo.JPG";
 
         // Start typing
         setTimeout(type, 1000);
+
+        // JS DOM Modal listener has been extracted to Global component.
     });
 </script>

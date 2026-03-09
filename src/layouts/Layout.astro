@@ -1,4 +1,5 @@
 ---
+import Modal from "../components/Modal.astro";
 interface Props {
 	title?: string;
 	description?: string;
@@ -31,6 +32,7 @@ const {
 	</head>
 	<body>
 		<slot />
+		<Modal />
 		<!-- Scroll Reveal Script -->
 		<script>
 			const observer = new IntersectionObserver(
