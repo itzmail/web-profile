@@ -1,4 +1,5 @@
 ---
+import "../styles/global.css";
 import Modal from "../components/Modal.astro";
 interface Props {
 	title?: string;
@@ -28,7 +29,6 @@ const {
 		<!-- Preload fonts -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link rel="stylesheet" href="/src/styles/global.css" />
 	</head>
 	<body>
 		<slot />
