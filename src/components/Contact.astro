@@ -1,28 +1,28 @@
 ---
+import GithubIcon from "../assets/icons/GithubIcon.astro";
+import LinkedinIcon from "../assets/icons/LinkedinIcon.astro";
+import TwitterIcon from "../assets/icons/TwitterIcon.astro";
+import MailIcon from "../assets/icons/MailIcon.astro";
+import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
+
 const socials = [
     {
         name: "GitHub",
-        user: "@ismailalam",
-        href: "https://github.com/ismailalam",
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>`,
+        user: "@itzmail",
+        href: "https://github.com/itzmail",
+        icon: GithubIcon,
     },
     {
         name: "LinkedIn",
         user: "Ismail Alam",
-        href: "https://linkedin.com/in/ismailalam",
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`,
+        href: "https://www.linkedin.com/in/ismail-alam-3a6490230/",
+        icon: LinkedinIcon,
     },
     {
         name: "Twitter",
         user: "@itzmail_dev",
-        href: "https://twitter.com/itzmail_dev",
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
-    },
-    {
-        name: "Dribbble",
-        user: "itzmail",
-        href: "https://dribbble.com/itzmail",
-        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 6.628 5.374 12 12 12 6.627 0 12-5.372 12-12 0-6.627-5.373-12-12-12zm7.369 5.424a10.167 10.167 0 012.207 5.686 29.81 29.81 0 00-5.97-.8c-.264-.622-.529-1.24-.816-1.853a29.736 29.736 0 004.579-3.033zm-1.433-1.474a27.886 27.886 0 01-4.255 2.802A28.038 28.038 0 0010 1.929a10.165 10.165 0 017.936 2.021zM8.261 2.539a26.252 26.252 0 013.716 4.664 27.93 27.93 0 01-6.824 1.056H1.832A10.182 10.182 0 018.261 2.54zM1.773 10.022h.119c2.603 0 5.117-.38 7.494-1.11.224.448.442.9.648 1.357C6.65 11.492 3.866 13.826 1.948 16.74A10.138 10.138 0 011.773 10.02zm1.79 8.045C5.37 15.6 8.006 13.4 11.37 12.26c.862 2.248 1.52 4.557 1.97 6.932A10.155 10.155 0 012.12 17.67a10.22 10.22 0 01-.557-.604zm9.898 4.25c-.388-2.2-1-4.339-1.807-6.42 1.926-.302 4.012-.09 6.137.706a10.2 10.2 0 01-4.33 5.714zm5.828-7.186c-2.4-.927-4.752-1.175-6.934-.76a27.61 27.61 0 00-.624-1.47 29.614 29.614 0 006.545.69c0 .18 0 .36-.01.54h.023z"/></svg>`,
+        href: "https://x.com/itsmail_ok",
+        icon: TwitterIcon,
     },
 ];
 ---
@@ -50,19 +50,7 @@ const socials = [
                         href="mailto:mail@itzmail.dev"
                         class="btn btn-primary contact-cta"
                     >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <rect width="20" height="16" x="2" y="4" rx="2"
-                            ></rect>
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"
-                            ></path>
-                        </svg>
+                        <MailIcon width="16" height="16" />
                         mail@itzmail.dev
                     </a>
                 </div>
@@ -73,38 +61,36 @@ const socials = [
                     </p>
                     <div class="socials-list">
                         {
-                            socials.map((s) => (
-                                <a
-                                    href={s.href}
-                                    class="social-item"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <span
-                                        class="social-icon"
-                                        set:html={s.icon}
-                                    />
-                                    <div>
-                                        <span class="social-name">
-                                            {s.name}
-                                        </span>
-                                        <span class="social-user font-mono text-muted">
-                                            {s.user}
-                                        </span>
-                                    </div>
-                                    <svg
-                                        class="social-arrow"
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
+                            socials.map((s) => {
+                                const Icon = s.icon;
+                                return (
+                                    <a
+                                        href={s.href}
+                                        class="social-item"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                     >
-                                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                                    </svg>
-                                </a>
-                            ))
+                                        <Icon
+                                            class="social-icon"
+                                            width="20"
+                                            height="20"
+                                        />
+                                        <div>
+                                            <span class="social-name">
+                                                {s.name}
+                                            </span>
+                                            <span class="social-user font-mono text-muted">
+                                                {s.user}
+                                            </span>
+                                        </div>
+                                        <ExternalLinkIcon
+                                            class="social-arrow"
+                                            width="14"
+                                            height="14"
+                                        />
+                                    </a>
+                                );
+                            })
                         }
                     </div>
                 </div>
@@ -121,23 +107,10 @@ const socials = [
             >dev<span class="text-green">]</span>
         </span>
         <p class="footer-copy font-mono text-muted">
-            © 2024 Ismail Alam. Built with <span class="text-green">Astro</span
+            © {new Date().getFullYear()} Ismail Alam. Built with <span
+                class="text-green">Astro</span
             >, vanilla CSS &amp; ☕
         </p>
-        <div class="footer-links">
-            <a
-                href="https://github.com/ismailalam"
-                target="_blank"
-                rel="noopener"
-                class="footer-link">GitHub</a
-            >
-            <a
-                href="https://linkedin.com/in/ismailalam"
-                target="_blank"
-                rel="noopener"
-                class="footer-link">LinkedIn</a
-            >
-        </div>
     </div>
 </footer>
 
