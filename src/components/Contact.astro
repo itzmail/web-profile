@@ -4,27 +4,13 @@ import LinkedinIcon from "../assets/icons/LinkedinIcon.astro";
 import TwitterIcon from "../assets/icons/TwitterIcon.astro";
 import MailIcon from "../assets/icons/MailIcon.astro";
 import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
+import { siteInfo, contactData, socialsData, footerData } from "../data/site";
 
-const socials = [
-    {
-        name: "GitHub",
-        user: "@itzmail",
-        href: "https://github.com/itzmail",
-        icon: GithubIcon,
-    },
-    {
-        name: "LinkedIn",
-        user: "Ismail Alam",
-        href: "https://www.linkedin.com/in/ismail-alam-3a6490230/",
-        icon: LinkedinIcon,
-    },
-    {
-        name: "Twitter",
-        user: "@itzmail_dev",
-        href: "https://x.com/itsmail_ok",
-        icon: TwitterIcon,
-    },
-];
+const iconMap: Record<string, any> = {
+    github: GithubIcon,
+    linkedin: LinkedinIcon,
+    twitter: TwitterIcon,
+};
 ---
 
 <section class="section" id="contact">
@@ -34,35 +20,33 @@ const socials = [
 
             <div class="contact-inner">
                 <div class="contact-left">
-                    <p class="section-label">let's collaborate</p>
+                    <p class="section-label">{contactData.collaborateText}</p>
                     <h2 class="contact-title">
-                        Let's build<br /><span class="text-green"
-                            >something</span
-                        > great
+                        {contactData.titleStart}<br /><span class="text-green"
+                            >{contactData.titleHighlight}</span
+                        >
+                        {contactData.titleEnd}
                     </h2>
                     <p class="contact-desc">
-                        I'm currently open to freelance projects, full-time
-                        opportunities, and interesting collaborations. Whether
-                        you have a project in mind or just want to chat — I'm
-                        all ears.
+                        {contactData.description}
                     </p>
                     <a
-                        href="mailto:mail@itzmail.dev"
+                        href={`mailto:${siteInfo.email}`}
                         class="btn btn-primary contact-cta"
                     >
                         <MailIcon width="16" height="16" />
-                        mail@itzmail.dev
+                        {contactData.ctaText}
                     </a>
                 </div>
 
                 <div class="contact-right">
                     <p class="socials-label font-mono text-muted">
-                        // find me on
+                        {contactData.socialsLabel}
                     </p>
                     <div class="socials-list">
                         {
-                            socials.map((s) => {
-                                const Icon = s.icon;
+                            socialsData.map((s) => {
+                                const Icon = iconMap[s.iconKey];
                                 return (
                                     <a
                                         href={s.href}
@@ -102,14 +86,17 @@ const socials = [
 <footer class="footer">
     <div class="container footer-inner">
         <span class="font-mono text-muted footer-logo">
-            <span class="text-green">[</span>itzmail<span class="text-cyan"
-                >.</span
-            >dev<span class="text-green">]</span>
+            <span class="text-green">{footerData.logoBracketLeft}</span>{
+                footerData.logoName
+            }<span class="text-cyan">{footerData.logoDot}</span>{
+                footerData.logoDomain
+            }<span class="text-green">{footerData.logoBracketRight}</span>
         </span>
         <p class="footer-copy font-mono text-muted">
-            © {new Date().getFullYear()} Ismail Alam. Built with <span
-                class="text-green">Astro</span
-            >, vanilla CSS &amp; ☕
+            © {new Date().getFullYear()}
+            {footerData.author}. Built with <span class="text-green"
+                >{footerData.builtWith}</span
+            >{footerData.builtWithSuffix}
         </p>
     </div>
 </footer>
