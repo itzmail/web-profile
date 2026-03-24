@@ -1,4 +1,6 @@
-export const projectsList = [
+import type { Project } from "../types/index";
+
+export const projectsList: Project[] = [
     {
         name: "Warehouse Management System",
         desc: "Designed for warehouse monitoring activities such as picking, storing, and tracking inventory.",

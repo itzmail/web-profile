@@ -6,11 +6,13 @@ import MailIcon from "../assets/icons/MailIcon.astro";
 import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
 import { siteInfo, contactData, socialsData, footerData } from "../data/site";
 
-const iconMap: Record<string, any> = {
+const iconMap = {
     github: GithubIcon,
     linkedin: LinkedinIcon,
     twitter: TwitterIcon,
-};
+} as const;
+
+type IconKey = keyof typeof iconMap;
 ---
 
 <section class="section" id="contact">
@@ -46,7 +48,7 @@ const iconMap: Record<string, any> = {
                     <div class="socials-list">
                         {
                             socialsData.map((s) => {
-                                const Icon = iconMap[s.iconKey];
+                                const Icon = iconMap[s.iconKey as IconKey];
                                 return (
                                     <a
                                         href={s.href}

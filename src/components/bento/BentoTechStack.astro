@@ -1,0 +1,84 @@
+---
+---
+
+<div class="bento-card bento-card--stack" id="stack">
+    <div class="bento-label">// tech stack</div>
+    <div class="stack-pills">
+        <div class="pill-group">
+            <span class="pill-cat text-green">Backend</span>
+            <span class="pill">Express.js</span>
+            <span class="pill">Spring Boot</span>
+            <span class="pill">Java</span>
+            <span class="pill">Node.js</span>
+        </div>
+        <div class="pill-group">
+            <span class="pill-cat text-cyan">Frontend</span>
+            <span class="pill">React.js</span>
+            <span class="pill">Next.js</span>
+            <span class="pill">JavaScript</span>
+            <span class="pill">TypeScript</span>
+        </div>
+        <div class="pill-group">
+            <span class="pill-cat text-purple">Mobile</span>
+            <span class="pill">Flutter</span>
+            <span class="pill">React Native</span>
+            <span class="pill">Dart</span>
+        </div>
+        <div class="pill-group">
+            <span class="pill-cat" style="color:var(--yellow)">Tools</span>
+            <span class="pill">Git</span>
+            <span class="pill">Bitbucket</span>
+            <span class="pill">REST API</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bento-card--stack {
+        grid-column: 1 / 5;
+        grid-row: 3;
+    }
+
+    .stack-pills {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .pill-group {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-wrap: wrap;
+    }
+
+    .pill-cat {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        min-width: 68px;
+        letter-spacing: 0.05em;
+    }
+
+    .pill {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.15rem 0.5rem;
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+
+    .bento-card--stack:hover .pill {
+        color: var(--text);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 1024px) {
+        .bento-card--stack {
+            grid-column: 1 / -1;
+        }
+    }
+</style>

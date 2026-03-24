@@ -1,0 +1,120 @@
+---
+import LocationIcon from "../../assets/icons/LocationIcon.astro";
+---
+
+<div class="bento-card bento-card--location">
+    <div class="bento-label">// base location</div>
+    <div class="location-content">
+        <div class="location-icon-wrapper">
+            <LocationIcon
+                class="location-icon text-green"
+                width="24"
+                height="24"
+            />
+        </div>
+        <div class="location-details">
+            <span class="location-city">Jakarta, Indonesia</span>
+            <div class="location-time">
+                <span class="time-dot"></span>
+                <span id="local-time" class="font-mono text-muted">00:00:00</span
+                >
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bento-card--location {
+        grid-column: 5 / 9;
+        grid-row: 3;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .location-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: auto;
+    }
+
+    .location-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: rgba(0, 255, 136, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(0, 255, 136, 0.2);
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    .location-city {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--text);
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .location-time {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .time-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        animation: blink 1s step-end infinite;
+    }
+
+    @media (max-width: 1024px) {
+        .bento-card--location {
+            grid-column: 1 / 7;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .bento-card--location {
+            grid-column: 1 / -1;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const timeEl = document.getElementById("local-time");
+        if (!timeEl) return;
+
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString("en-US", {
+                timeZone: "Asia/Jakarta",
+                hour12: true,
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+            });
+            const parts = timeString.split(" ");
+            timeEl!.innerHTML = `${parts[0]} <span style="font-size: 0.7em;">${parts[1]}</span>`;
+        }
+
+        updateTime();
+        setInterval(updateTime, 1000);
+    });
+</script>

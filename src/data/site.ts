@@ -1,3 +1,5 @@
+import type { Social } from "../types/index";
+
 export const siteInfo = {
     name: "Ismail Alam",
     title: "Software Engineer",
@@ -15,7 +17,7 @@ export const contactData = {
     socialsLabel: "// find me on",
 };
 
-export const socialsData = [
+export const socialsData: Social[] = [
     {
         name: "GitHub",
         user: "@itzmail",

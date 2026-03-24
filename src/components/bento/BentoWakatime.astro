@@ -1,0 +1,127 @@
+---
+import type { WakatimeStats } from "../../types/index";
+
+interface Props {
+    wakatime: WakatimeStats | null;
+}
+
+const { wakatime } = Astro.props;
+
+const topLanguages = wakatime?.languages?.slice(0, 3) ?? [];
+const totalHours = wakatime?.human_readable_total_including_other_language ?? "0 hrs";
+const dailyAverage = wakatime?.human_readable_daily_average ?? "0 hrs";
+---
+
+<div class="bento-card bento-card--contrib">
+    <div
+        class="bento-label"
+        style="display:flex; justify-content:space-between;"
+    >
+        <span>// coding activity (7 days)</span>
+        <span class="text-green font-mono" style="font-size:0.6rem;">● live</span>
+    </div>
+    <div class="waka-content">
+        <div class="waka-header">
+            <span class="waka-time text-cyan font-mono">{totalHours}</span>
+            <span class="waka-subtitle">Avg: {dailyAverage}/day</span>
+        </div>
+
+        <div class="waka-langs">
+            {
+                topLanguages.map((lang) => (
+                    <div class="waka-lang-item">
+                        <div class="waka-lang-top">
+                            <span class="waka-lang-name">{lang.name}</span>
+                            <span class="waka-lang-pct font-mono text-muted">
+                                {lang.percent}%
+                            </span>
+                        </div>
+                        <div class="waka-progress-bg">
+                            <div
+                                class="waka-progress-bar"
+                                style={`width: ${lang.percent}%; background: var(--green);`}
+                            />
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .bento-card--contrib {
+        grid-column: 9 / 13;
+        grid-row: 3;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .waka-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        margin-top: auto;
+    }
+
+    .waka-header {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .waka-time {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .waka-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .waka-langs {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .waka-lang-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .waka-lang-name {
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .waka-progress-bg {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .waka-progress-bar {
+        height: 100%;
+        border-radius: 4px;
+        box-shadow: 0 0 10px var(--green-glow);
+    }
+
+    @media (max-width: 1024px) {
+        .bento-card--contrib {
+            grid-column: 7 / 13;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .bento-card--contrib {
+            grid-column: 1 / -1;
+        }
+    }
+</style>
