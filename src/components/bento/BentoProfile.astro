@@ -3,7 +3,7 @@ import userPhoto from "../../assets/images/user-photo.JPG";
 import QuoteIcon from "../../assets/icons/QuoteIcon.astro";
 ---
 
-<article class="bento-card bento-card--featured" id="projects">
+<article class="bento-card bento-card--featured" id="profile">
     <div class="featured-portrait-container">
         <img
             src={userPhoto.src}
@@ -114,7 +114,26 @@ import QuoteIcon from "../../assets/icons/QuoteIcon.astro";
 
     @media (max-width: 768px) {
         .bento-card--featured {
+            grid-column: 1 / -1;
             flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+        }
+
+        .featured-portrait-container {
+            width: 180px;
+            height: 180px;
+        }
+
+        .quote-text-large {
+            font-size: 1.25rem;
+        }
+
+        #profile {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
         }
     }
 </style>
