@@ -1,4 +1,6 @@
 ---
+import SunIcon from "../assets/icons/SunIcon.astro";
+import MoonIcon from "../assets/icons/MoonIcon.astro";
 ---
 
 <nav class="navbar" id="navbar">
@@ -21,6 +23,10 @@
             <li><a href="#experience" class="nav-link">Experience</a></li>
             <li><a href="#contact" class="nav-link">Contact</a></li>
         </ul>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+            <SunIcon class="theme-icon theme-icon-sun" width="18" height="18" />
+            <MoonIcon class="theme-icon theme-icon-moon" width="18" height="18" />
+        </button>
         <a href="mailto:mail@itzmail.dev" class="btn btn-ghost nav-cta">
             <span class="text-green">$</span> hire me
         </a>
@@ -40,7 +46,7 @@
     }
 
     .navbar.scrolled {
-        background: rgba(10, 10, 15, 0.85);
+        background: var(--nav-scrolled-bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-bottom-color: var(--border);
@@ -114,6 +120,45 @@
         font-size: 0.8125rem;
     }
 
+    /* Theme toggle */
+    .theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: transparent;
+        border: 1px solid var(--border-glow);
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        transition: all var(--duration) var(--ease);
+    }
+
+    .theme-toggle:hover {
+        color: var(--green);
+        border-color: var(--green);
+        background: var(--green-glow);
+    }
+
+    :global(.theme-icon) {
+        display: block;
+        transition: transform var(--duration) var(--ease);
+    }
+
+    :global(.theme-icon-moon) {
+        display: none;
+    }
+
+    :global([data-theme="light"] .theme-icon-sun) {
+        display: none;
+    }
+
+    :global([data-theme="light"] .theme-icon-moon) {
+        display: block;
+    }
+
     /* Mobile toggle */
     .nav-toggle {
         display: none;
@@ -148,6 +193,12 @@
     @media (max-width: 768px) {
         .nav-toggle {
             display: flex;
+            order: 3;
+            margin-left: 0;
+        }
+        .theme-toggle {
+            order: 2;
+            margin-left: auto;
         }
         .nav-cta {
             display: none;
@@ -158,19 +209,22 @@
             top: var(--nav-h);
             left: 0;
             right: 0;
-            background: rgba(10, 10, 15, 0.97);
+            z-index: 999;
+            background: var(--nav-mobile-bg);
             backdrop-filter: blur(20px);
             flex-direction: column;
             padding: 1.5rem;
             gap: 0.5rem;
             border-bottom: 1px solid var(--border);
-            transform: translateY(-110%);
+            transform: translateY(calc(-100% - var(--nav-h)));
             transition: transform 0.3s var(--ease);
             margin-left: 0;
+            pointer-events: none;
         }
 
         .nav-links.open {
             transform: translateY(0);
+            pointer-events: auto;
         }
 
         .nav-link {
@@ -184,6 +238,16 @@
     const navbar = document.getElementById("navbar");
     const toggle = document.getElementById("navToggle");
     const links = document.getElementById("navLinks");
+    const themeToggle = document.getElementById("themeToggle");
+
+    // Theme toggle
+    themeToggle?.addEventListener("click", () => {
+        const html = document.documentElement;
+        const isLight = html.getAttribute("data-theme") === "light";
+        const next = isLight ? "dark" : "light";
+        html.setAttribute("data-theme", next);
+        localStorage.setItem("theme", next);
+    });
 
     // Scroll effect
     window.addEventListener("scroll", () => {

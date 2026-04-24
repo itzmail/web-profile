@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Navbar from "../components/Navbar.astro";
 import Modal from "../components/Modal.astro";
 interface Props {
 	title?: string;
@@ -14,6 +15,14 @@ const {
 <!DOCTYPE html>
 <html lang="en">
 	<head>
+		<script is:inline>
+			(function() {
+				var t = localStorage.getItem("theme");
+				if (t === "light" || t === "dark") {
+					document.documentElement.setAttribute("data-theme", t);
+				}
+			})();
+		</script>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -31,6 +40,7 @@ const {
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	</head>
 	<body>
+		<Navbar />
 		<slot />
 		<Modal />
 		<!-- Scroll Reveal Script -->
