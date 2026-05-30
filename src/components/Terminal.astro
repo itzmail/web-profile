@@ -1,4 +1,73 @@
 ---
+import { apiFetch } from "../utils/api";
+import type { ApiProject, ApiSocial, Experience } from "../types/index";
+import { experienceList } from "../data/experience";
+import { socialsData } from "../data/site";
+
+const [apiExperiences, apiProjects, apiSocials] = await Promise.all([
+    apiFetch<Experience[]>("/experiences"),
+    apiFetch<ApiProject[]>("/projects"),
+    apiFetch<ApiSocial[]>("/socials"),
+]);
+
+const termExperiences = (apiExperiences ?? experienceList).map((e) => ({
+    role: `${e.title} · ${e.web_profile.data.company}`,
+    period: e.web_profile.data.date,
+    desc: e.description,
+}));
+
+const termProjects = apiProjects
+    ? apiProjects.map((p) => ({
+          name: p.title,
+          stack: p.web_profile.data.stack.join(" · "),
+          desc: p.description,
+      }))
+    : [];
+
+const termSocials = apiSocials
+    ? apiSocials.map((s) => ({
+          name: s.title,
+          key: s.web_profile.data.icon_key,
+          href: s.web_profile.data.href,
+          user: s.web_profile.data.user,
+      }))
+    : socialsData.map((s) => ({
+          name: s.name,
+          key: s.iconKey,
+          href: s.href,
+          user: s.user,
+      }));
+
+interface MasterItem {
+    key: string;
+    value: string;
+    metadata: { category: string; icon: string };
+    order: number;
+}
+interface MasterResponse {
+    items: MasterItem[];
+}
+
+const apiSkills = await apiFetch<MasterResponse>("/master/skills");
+
+const termSkills: Record<string, string[]> = {};
+if (apiSkills) {
+    for (const item of apiSkills.items) {
+        const cat = item.metadata.category;
+        if (!termSkills[cat]) termSkills[cat] = [];
+        termSkills[cat].push(item.value);
+    }
+} else {
+    Object.assign(termSkills, {
+        Backend: ["Express.js", "Spring Boot", "Golang", "Java", "Node.js"],
+        Frontend: ["React.js", "Next.js", "JavaScript", "TypeScript"],
+        Mobile: ["Flutter", "React Native", "Dart"],
+        Database: ["PostgreSQL"],
+        Tools: ["Git"],
+    });
+}
+
+const termData = JSON.stringify({ termProjects, termExperiences, termSocials, termSkills });
 ---
 
 <div class="terminal-window" id="terminal">
@@ -226,66 +295,29 @@
     }
 </style>
 
+<script type="application/json" id="termData" set:html={termData}></script>
 <script>
     const output = document.getElementById("termOutput");
-    const input = document.getElementById("termInput") as HTMLInputElement;
-    const body = document.querySelector(".terminal-body") as HTMLElement;
+    const input = document.getElementById("termInput");
+    const body = document.querySelector(".terminal-body");
 
-    let history: string[] = [];
+    let history = [];
     let histIdx = -1;
 
     // ── Data ──────────────────────────────────────────────────────
     const DATA = {
         name: "Ismail Nur Alam",
-        role: "Software Engineer & Full-stack Developer",
+        role: "Fullstack Engineer for Hire",
         location: "Kota Magelang, Indonesia 🇮🇩",
         email: "ismailnuralam@gmail.com",
-        bio: "Software Engineer and Full-stack Developer building scalable mobile applications and robust APIs with Flutter, React Native, Express.js, and Spring Boot.",
-        github: "github.com/itzmail",
-        linkedin: "linkedin.com/in/ismailnuralam",
-        twitter: "@itzmail_dev",
+        bio: "I help businesses ship fast, reliable products — from mobile apps to backend APIs. 3 years, 20+ products delivered, zero ghosted deadlines.",
     };
 
-    const SKILLS = {
-        Backend: ["Express.js", "Spring Boot", "Golang", "Java", "Node.js"],
-        Frontend: ["React.js", "Next.js", "JavaScript", "TypeScript"],
-        Mobile: ["Flutter", "React Native", "Dart"],
-        Database: ["PostgreSQL"],
-        Tools: ["Git", "Restful API", "Object-oriented Programming"],
-    };
-
-    const PROJECTS = [
-        {
-            name: "Warehouse Management System",
-            stack: "React Native · Express JS",
-            desc: "Designed for warehouse monitoring activities such as picking, storing, and tracking inventory.",
-        },
-        {
-            name: "HRIS Mobile Application",
-            stack: "Flutter · Spring Boot · Java",
-            desc: "Enterprise employee management platform for tracking activities and calculating salaries.",
-        },
-        {
-            name: "Sales Force Application",
-            stack: "React Native · Javascript",
-            desc: "Mobile application for sales activities, including product catalogs and payment calculations.",
-        },
-    ];
-
-    const EXPERIENCE = [
-        {
-            role: "Fullstack Developer at Pintro",
-            desc: "Developed high-performance web and mobile applications using Next JS, Flutter, and Golang.",
-        },
-        {
-            role: "Software Engineer at PT Kuantum Solusi Teknologi",
-            desc: "Engineered mobile apps with React Native/Flutter and developed REST APIs using Express.js/Spring Boot.",
-        },
-        {
-            role: "Mobile Developer at CV Mutif Corporation",
-            desc: "Maintained HRIS mobile app, developed a Warehouse Management System, and built Sales platforms.",
-        },
-    ];
+    const __data = JSON.parse(document.getElementById("termData").textContent);
+    const PROJECTS = __data.termProjects;
+    const EXPERIENCE = __data.termExperiences;
+    const SOCIALS = __data.termSocials;
+    const SKILLS = __data.termSkills;
 
     // ── Helpers ───────────────────────────────────────────────────
     function appendLine(html: string) {
@@ -316,17 +348,18 @@
     }
 
     // ── Commands ──────────────────────────────────────────────────
-    const commands: Record<string, () => void> = {
+    const commands = {
         help() {
             spacer();
             appendLine(
                 `<span class="t-info t-bold">Available commands:</span>`
             );
             const cmds = [
-                ["whoami", "About me"],
+                ["whoami", "Who am I & why hire me"],
                 ["skills", "Tech stack & proficiency"],
-                ["projects", "Selected projects"],
-                ["experience", "Open source & contributions"],
+                ["projects", "Selected projects with outcomes"],
+                ["experience", "Work history & what I delivered"],
+                ["availability", "Current status & response time"],
                 ["contact", "Get in touch"],
                 ["clear", "Clear terminal"],
                 ["motto", "My engineering philosophy"],
@@ -396,7 +429,7 @@
         experience() {
             spacer();
             appendLine(
-                `<span class="t-info t-bold">// Open Source & Contributions</span>`
+                `<span class="t-info t-bold">// Work History</span>`
             );
             spacer();
             EXPERIENCE.forEach((e) => {
@@ -406,10 +439,24 @@
                     )}</span></div>`
                 );
                 appendLine(
-                    `<div class="t-block t-dim">${escHTML(e.desc)}</div>`
+                    `<div class="t-block t-dim" style="font-size:0.75rem">${escHTML(e.period)}</div>`
                 );
-                appendLine('<div style="height:4px"></div>');
+                appendLine(
+                    `<div class="t-block t-output">→ ${escHTML(e.desc)}</div>`
+                );
+                appendLine('<div style="height:6px"></div>');
             });
+            spacer();
+        },
+
+        availability() {
+            spacer();
+            appendLine(`<span class="t-info t-bold">// Status</span>`);
+            spacer();
+            appendLine(`<div><span class="t-purple">▸</span> <span class="t-dim">Open to    </span><span class="t-success">Freelance projects, Full-time roles</span></div>`);
+            appendLine(`<div><span class="t-purple">▸</span> <span class="t-dim">Response   </span><span class="t-success">&lt; 24 hours</span></div>`);
+            appendLine(`<div><span class="t-purple">▸</span> <span class="t-dim">Timezone   </span><span class="t-success">WIB (UTC+7)</span></div>`);
+            appendLine(`<div><span class="t-purple">▸</span> <span class="t-dim">Contact    </span><span class="t-success">${escHTML(DATA.email)}</span></div>`);
             spacer();
         },
 
@@ -420,25 +467,14 @@
             );
             spacer();
             appendLine(
-                `<div><span class="t-dim">email   </span><span class="t-success">${escHTML(
-                    DATA.email
-                )}</span></div>`
+                `<div><span class="t-dim">email   </span><span class="t-success">${escHTML(DATA.email)}</span></div>`
             );
-            appendLine(
-                `<div><span class="t-dim">github  </span><span class="t-success">${escHTML(
-                    DATA.github
-                )}</span></div>`
-            );
-            appendLine(
-                `<div><span class="t-dim">linkedin</span><span class="t-success">${escHTML(
-                    DATA.linkedin
-                )}</span></div>`
-            );
-            appendLine(
-                `<div><span class="t-dim">twitter </span><span class="t-success">${escHTML(
-                    DATA.twitter
-                )}</span></div>`
-            );
+            SOCIALS.forEach((s) => {
+                const label = s.key.padEnd(8);
+                appendLine(
+                    `<div><span class="t-dim">${escHTML(label)}</span><span class="t-success">${escHTML(s.href)}</span></div>`
+                );
+            });
             spacer();
         },
 
@@ -449,9 +485,9 @@
             );
             spacer();
             const quotes = [
-                '"Make it work, make it right, make it fast."',
-                '"Code is read more often than written."',
-                '"Simplicity is the ultimate sophistication."',
+                '"Ship it. Then make it better."',
+                '"Code that no one uses is just an expensive hobby."',
+                '"Reliability is a feature. Treat it like one."',
             ];
             quotes.forEach((q) =>
                 appendLine(
@@ -485,7 +521,7 @@
     // ── Boot message ──────────────────────────────────────────────
     function boot() {
         appendLine(
-            `<span class="t-success t-bold">Welcome to ismail.portfolio v1.0.0</span>`
+            `<span class="t-success t-bold">ismail.portfolio v2.0.0 — type 'help' to run due diligence.</span>`
         );
         appendLine(
             `<span class="t-dim">Type <span class="t-success">help</span> to see available commands.</span>`
@@ -513,32 +549,34 @@
     }
 
     // ── Event Listeners ───────────────────────────────────────────
-    input?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            const val = input.value;
-            if (val.trim()) {
-                history.unshift(val);
-                histIdx = -1;
+    if (input) {
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const val = input.value;
+                if (val.trim()) {
+                    history.unshift(val);
+                    histIdx = -1;
+                }
+                execute(val);
+                input.value = "";
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                histIdx = Math.min(histIdx + 1, history.length - 1);
+                input.value = history[histIdx] ?? "";
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                histIdx = Math.max(histIdx - 1, -1);
+                input.value = histIdx >= 0 ? history[histIdx] : "";
+            } else if (e.key === "Tab") {
+                e.preventDefault();
+                const partial = input.value.toLowerCase();
+                const match = Object.keys(commands).find((c) =>
+                    c.startsWith(partial)
+                );
+                if (match) input.value = match;
             }
-            execute(val);
-            input.value = "";
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            histIdx = Math.min(histIdx + 1, history.length - 1);
-            input.value = history[histIdx] ?? "";
-        } else if (e.key === "ArrowDown") {
-            e.preventDefault();
-            histIdx = Math.max(histIdx - 1, -1);
-            input.value = histIdx >= 0 ? history[histIdx] : "";
-        } else if (e.key === "Tab") {
-            e.preventDefault();
-            const partial = input.value.toLowerCase();
-            const match = Object.keys(commands).find((c) =>
-                c.startsWith(partial)
-            );
-            if (match) input.value = match;
-        }
-    });
+        });
+    }
 
     // Click anywhere in terminal → focus input
     document

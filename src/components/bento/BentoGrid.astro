@@ -2,7 +2,8 @@
 import { projectsList } from "../../data/projects";
 import { experienceList } from "../../data/experience";
 import { getWakatimeData } from "../../utils/wakatime";
-import type { Experience } from "../../types/index";
+import { apiFetch } from "../../utils/api";
+import type { Experience, ApiProject, Project, MasterSkillItem, SkillGroup } from "../../types/index";
 
 import Contact from "../Contact.astro";
 import BentoProfile from "./BentoProfile.astro";
@@ -13,17 +14,42 @@ import BentoTechStack from "./BentoTechStack.astro";
 import BentoLocation from "./BentoLocation.astro";
 import BentoWakatime from "./BentoWakatime.astro";
 
-let experiences: Experience[] = experienceList;
-try {
-    const res = await fetch("http://my-data.nuropia.my.id/api/experiences");
-    if (res.ok) {
-        experiences = await res.json();
-    }
-} catch {
-    // API unavailable — fallback to static data
-}
+interface MasterResponse { items: MasterSkillItem[]; }
 
-const wakatimeData = await getWakatimeData();
+const [apiExperiences, apiProjects, apiSkills, wakatimeData] = await Promise.all([
+    apiFetch<Experience[]>("/experiences"),
+    apiFetch<ApiProject[]>("/projects"),
+    apiFetch<MasterResponse>("/master/skills"),
+    getWakatimeData(),
+]);
+
+const experiences: Experience[] = apiExperiences ?? experienceList;
+
+const projects: Project[] = apiProjects
+    ? apiProjects.map((p) => ({
+          name: p.title,
+          desc: p.description,
+          stack: p.web_profile.data.stack,
+          accent: p.web_profile.data.accent,
+          links: {
+              github: p.web_profile.data.links.find((l) => l.label.toLowerCase() === "github")?.url ?? "#",
+              live: p.web_profile.data.links.find((l) => l.label.toLowerCase() === "live")?.url ?? "#",
+          },
+      }))
+    : projectsList;
+
+const skillGroups: SkillGroup[] = [];
+if (apiSkills) {
+    const map = new Map<string, MasterSkillItem[]>();
+    for (const item of apiSkills.items) {
+        const cat = item.metadata.category;
+        if (!map.has(cat)) map.set(cat, []);
+        map.get(cat)!.push(item);
+    }
+    for (const [category, items] of map) {
+        skillGroups.push({ category, items });
+    }
+}
 ---
 
 <section class="section bento-section" id="bento">
@@ -31,9 +57,9 @@ const wakatimeData = await getWakatimeData();
         <div class="bento-grid">
             <BentoProfile />
             <BentoStats />
-            <BentoProjectsPreview projects={projectsList} />
+            <BentoProjectsPreview projects={projects} />
             <BentoExperiencePreview experiences={experiences} />
-            <BentoTechStack />
+            <BentoTechStack skillGroups={skillGroups} />
             <BentoLocation />
             <BentoWakatime wakatime={wakatimeData} />
         </div>

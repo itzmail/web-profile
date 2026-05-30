@@ -5,6 +5,8 @@ import TwitterIcon from "../assets/icons/TwitterIcon.astro";
 import MailIcon from "../assets/icons/MailIcon.astro";
 import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
 import { siteInfo, contactData, socialsData, footerData } from "../data/site";
+import { apiFetch } from "../utils/api";
+import type { ApiSocial, Social } from "../types/index";
 
 const iconMap = {
     github: GithubIcon,
@@ -13,6 +15,17 @@ const iconMap = {
 } as const;
 
 type IconKey = keyof typeof iconMap;
+
+const apiSocials = await apiFetch<ApiSocial[]>("/socials");
+
+const socials: Social[] = apiSocials
+    ? apiSocials.map((s) => ({
+          name: s.title,
+          user: s.web_profile.data.user,
+          href: s.web_profile.data.href,
+          iconKey: s.web_profile.data.icon_key,
+      }))
+    : socialsData;
 ---
 
 <section class="section" id="contact">
@@ -47,7 +60,7 @@ type IconKey = keyof typeof iconMap;
                     </p>
                     <div class="socials-list">
                         {
-                            socialsData.map((s) => {
+                            socials.map((s) => {
                                 const Icon = iconMap[s.iconKey as IconKey];
                                 return (
                                     <a

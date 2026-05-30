@@ -2,7 +2,7 @@ import type { Social } from "../types/index";
 
 export const siteInfo = {
     name: "Ismail Alam",
-    title: "Software Engineer",
+    title: "Fullstack Engineer for Hire",
     email: "ismailnuralam@gmail.com",
 };
 
@@ -11,7 +11,7 @@ export const contactData = {
     titleHighlight: "something",
     titleEnd: "great",
     description:
-        "I'm currently open to freelance projects, full-time opportunities, and interesting collaborations. Whether you have a project in mind or just want to chat — I'm all ears.",
+        "Have a product idea or need a reliable engineer on your team? I'm open to freelance projects, full-time opportunities, and interesting collaborations. Let's talk.",
     ctaText: "ismailnuralam@gmail.com",
     collaborateText: "let's collaborate",
     socialsLabel: "// find me on",
