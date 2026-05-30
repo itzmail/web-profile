@@ -12,7 +12,7 @@ export async function getWakatimeData(): Promise<WakatimeStats | null> {
             "https://wakatime.com/api/v1/users/current/stats/last_7_days",
             {
                 headers: {
-                    Authorization: `Basic ${Buffer.from(apiKey).toString("base64")}`,
+                    Authorization: `Basic ${btoa(apiKey)}`,
                 },
             }
         );
