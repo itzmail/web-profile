@@ -1,20 +1,9 @@
 ---
-import GithubIcon from "../assets/icons/GithubIcon.astro";
-import LinkedinIcon from "../assets/icons/LinkedinIcon.astro";
-import TwitterIcon from "../assets/icons/TwitterIcon.astro";
 import MailIcon from "../assets/icons/MailIcon.astro";
 import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
 import { siteInfo, contactData, socialsData, footerData } from "../data/site";
 import { apiFetch } from "../utils/api";
 import type { ApiSocial, Social } from "../types/index";
-
-const iconMap = {
-    github: GithubIcon,
-    linkedin: LinkedinIcon,
-    twitter: TwitterIcon,
-} as const;
-
-type IconKey = keyof typeof iconMap;
 
 const apiSocials = await apiFetch<ApiSocial[]>("/socials");
 
@@ -23,7 +12,7 @@ const socials: Social[] = apiSocials
           name: s.title,
           user: s.web_profile.data.user,
           href: s.web_profile.data.href,
-          iconKey: s.web_profile.data.icon_key,
+          iconUrl: s.web_profile.data.icon_url,
       }))
     : socialsData;
 ---
@@ -60,19 +49,19 @@ const socials: Social[] = apiSocials
                     </p>
                     <div class="socials-list">
                         {
-                            socials.map((s) => {
-                                const Icon = iconMap[s.iconKey as IconKey];
-                                return (
+                            socials.map((s) => (
                                     <a
                                         href={s.href}
                                         class="social-item"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
-                                        <Icon
+                                        <img
+                                            src={s.iconUrl}
                                             class="social-icon"
                                             width="20"
                                             height="20"
+                                            alt={s.name}
                                         />
                                         <div>
                                             <span class="social-name">
@@ -88,8 +77,7 @@ const socials: Social[] = apiSocials
                                             height="14"
                                         />
                                     </a>
-                                );
-                            })
+                            ))
                         }
                     </div>
                 </div>

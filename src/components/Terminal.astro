@@ -27,13 +27,13 @@ const termProjects = apiProjects
 const termSocials = apiSocials
     ? apiSocials.map((s) => ({
           name: s.title,
-          key: s.web_profile.data.icon_key,
+          iconUrl: s.web_profile.data.icon_url,
           href: s.web_profile.data.href,
           user: s.web_profile.data.user,
       }))
     : socialsData.map((s) => ({
           name: s.name,
-          key: s.iconKey,
+          iconUrl: s.iconUrl,
           href: s.href,
           user: s.user,
       }));
@@ -470,7 +470,7 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
                 `<div><span class="t-dim">email   </span><span class="t-success">${escHTML(DATA.email)}</span></div>`
             );
             SOCIALS.forEach((s) => {
-                const label = s.key.padEnd(8);
+                const label = s.name.padEnd(8);
                 appendLine(
                     `<div><span class="t-dim">${escHTML(label)}</span><span class="t-success">${escHTML(s.href)}</span></div>`
                 );

@@ -22,19 +22,19 @@ export const socialsData: Social[] = [
         name: "GitHub",
         user: "@itsmail",
         href: "https://github.com/itzmail",
-        iconKey: "github",
+        iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg",
     },
     {
         name: "LinkedIn",
         user: "Ismail Alam",
         href: "https://www.linkedin.com/in/ismail-alam-3a6490230/",
-        iconKey: "linkedin",
+        iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linkedin/linkedin-plain.svg",
     },
     {
         name: "Twitter",
         user: "@itzmail_dev",
         href: "https://x.com/itsmail_ok",
-        iconKey: "twitter",
+        iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/twitter/twitter-original.svg",
     },
 ];
 

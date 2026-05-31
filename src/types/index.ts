@@ -44,7 +44,7 @@ export interface Social {
     name: string;
     user: string;
     href: string;
-    iconKey: string;
+    iconUrl: string;
 }
 
 export interface MasterSkillItem {
@@ -69,7 +69,7 @@ export interface ApiSocial {
         data: {
             href: string;
             user: string;
-            icon_key: string;
+            icon_url: string;
         };
     };
 }
