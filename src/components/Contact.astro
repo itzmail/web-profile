@@ -1,7 +1,7 @@
 ---
 import MailIcon from "../assets/icons/MailIcon.astro";
 import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
-import { siteInfo, contactData, socialsData, footerData } from "../data/site";
+import { siteInfo, contactData, footerData } from "../data/site";
 import { apiFetch } from "../utils/api";
 import type { ApiSocial, Social } from "../types/index";
 
@@ -14,7 +14,7 @@ const socials: Social[] = apiSocials
           href: s.web_profile.data.href,
           iconUrl: s.web_profile.data.icon_url,
       }))
-    : socialsData;
+    : [];
 ---
 
 <section class="section" id="contact">

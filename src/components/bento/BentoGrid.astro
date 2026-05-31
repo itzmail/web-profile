@@ -1,6 +1,4 @@
 ---
-import { projectsList } from "../../data/projects";
-import { experienceList } from "../../data/experience";
 import { getWakatimeData } from "../../utils/wakatime";
 import { apiFetch } from "../../utils/api";
 import type { Experience, ApiProject, Project, MasterSkillItem, SkillGroup } from "../../types/index";
@@ -23,7 +21,7 @@ const [apiExperiences, apiProjects, apiSkills, wakatimeData] = await Promise.all
     getWakatimeData(),
 ]);
 
-const experiences: Experience[] = apiExperiences ?? experienceList;
+const experiences: Experience[] = apiExperiences ?? [];
 
 const projects: Project[] = apiProjects
     ? apiProjects.map((p) => ({
@@ -36,7 +34,7 @@ const projects: Project[] = apiProjects
               live: p.web_profile.data.links.find((l) => l.label.toLowerCase() === "live")?.url ?? "#",
           },
       }))
-    : projectsList;
+    : [];
 
 const skillGroups: SkillGroup[] = [];
 if (apiSkills) {

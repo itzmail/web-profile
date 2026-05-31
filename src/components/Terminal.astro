@@ -1,16 +1,13 @@
 ---
 import { apiFetch } from "../utils/api";
 import type { ApiProject, ApiSocial, Experience } from "../types/index";
-import { experienceList } from "../data/experience";
-import { socialsData } from "../data/site";
-
 const [apiExperiences, apiProjects, apiSocials] = await Promise.all([
     apiFetch<Experience[]>("/experiences"),
     apiFetch<ApiProject[]>("/projects"),
     apiFetch<ApiSocial[]>("/socials"),
 ]);
 
-const termExperiences = (apiExperiences ?? experienceList).map((e) => ({
+const termExperiences = (apiExperiences ?? []).map((e) => ({
     role: `${e.title} · ${e.web_profile.data.company}`,
     period: e.web_profile.data.date,
     desc: e.description,
@@ -31,12 +28,7 @@ const termSocials = apiSocials
           href: s.web_profile.data.href,
           user: s.web_profile.data.user,
       }))
-    : socialsData.map((s) => ({
-          name: s.name,
-          iconUrl: s.iconUrl,
-          href: s.href,
-          user: s.user,
-      }));
+    : [];
 
 interface MasterItem {
     key: string;

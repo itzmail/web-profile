@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.API_BASE_URL ?? "http://my-data.nuropia.my.id/api";
+const BASE_URL = import.meta.env.API_BASE_URL ?? "http://my-data.itsmail.dev/api";
 
 export async function apiFetch<T>(path: string): Promise<T | null> {
   try {
