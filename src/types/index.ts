@@ -89,3 +89,24 @@ export interface WakatimeStats {
     human_readable_total_including_other_language: string;
     human_readable_daily_average: string;
 }
+
+export interface ApiCertificate {
+    id: string;
+    title: string;
+    description: string;
+    is_active: number;
+    order: number;
+    web_profile: {
+        data: {
+            slug: string;
+            issuer: string;
+            issued_at: string;
+            expired_at: string | null;
+            credential_id: string | null;
+            credential_url: string | null;
+            category: string | null;
+            file_url: string | null;
+            file_type: "pdf" | "image" | null;
+        };
+    };
+}

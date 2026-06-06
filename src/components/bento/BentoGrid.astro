@@ -1,11 +1,11 @@
 ---
 import { getWakatimeData } from "../../utils/wakatime";
 import { apiFetch } from "../../utils/api";
-import type { Experience, ApiProject, MasterSkillItem, SkillGroup } from "../../types/index";
+import type { Experience, ApiProject, ApiCertificate, MasterSkillItem, SkillGroup } from "../../types/index";
 
 import BentoProfile from "./BentoProfile.astro";
 import BentoStats from "./BentoStats.astro";
-import BentoProjectsPreview from "./BentoProjectsPreview.astro";
+import BentoCertificatesPreview from "./BentoCertificatesPreview.astro";
 import BentoExperiencePreview from "./BentoExperiencePreview.astro";
 import BentoTechStack from "./BentoTechStack.astro";
 import BentoLocation from "./BentoLocation.astro";
@@ -13,16 +13,16 @@ import BentoWakatime from "./BentoWakatime.astro";
 
 interface MasterResponse { items: MasterSkillItem[]; }
 
-const [apiExperiences, apiProjects, apiSkills, wakatimeData] = await Promise.all([
+const [apiExperiences, apiCertificates, apiSkills, wakatimeData] = await Promise.all([
     apiFetch<Experience[]>("/experiences"),
-    apiFetch<ApiProject[]>("/projects"),
+    apiFetch<ApiCertificate[]>("/certificates"),
     apiFetch<MasterResponse>("/master/skills"),
     getWakatimeData(),
 ]);
 
 const experiences: Experience[] = apiExperiences ?? [];
 
-const projects = apiProjects ?? [];
+const certificates = apiCertificates ?? [];
 
 const skillGroups: SkillGroup[] = [];
 if (apiSkills) {
@@ -43,7 +43,7 @@ if (apiSkills) {
         <div class="bento-grid">
             <BentoProfile />
             <BentoStats />
-            <BentoProjectsPreview projects={projects} />
+            <BentoCertificatesPreview certificates={certificates} />
             <BentoExperiencePreview experiences={experiences} />
             <BentoTechStack skillGroups={skillGroups} />
             <BentoLocation />

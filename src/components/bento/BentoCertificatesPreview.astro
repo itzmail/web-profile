@@ -1,0 +1,141 @@
+---
+import type { ApiCertificate } from "../../types/index";
+import ArrowRightIcon from "../../assets/icons/ArrowRightIcon.astro";
+
+interface Props {
+    certificates: ApiCertificate[];
+}
+
+const { certificates } = Astro.props;
+
+const now = new Date();
+const active = certificates.filter((c) => {
+    const exp = c.web_profile?.data?.expired_at;
+    return !exp || new Date(exp) >= now;
+});
+const expired = certificates.length - active.length;
+---
+
+<a href="/certificates" class="bento-card bento-card--certs-list">
+    <div class="bento-label">// certificates</div>
+    <div class="cert-stats">
+        <div class="cert-count">
+            <span class="font-mono text-cyan count-num">{certificates.length}</span>
+            <span class="text-muted count-label">Total Certs</span>
+        </div>
+        {expired > 0 && (
+            <div class="cert-expired-badge font-mono">
+                <span>{expired} expired</span>
+            </div>
+        )}
+    </div>
+    {certificates.length > 0 && (
+        <div class="cert-preview">
+            {certificates.slice(0, 3).map((c) => {
+                const data = c.web_profile?.data;
+                const isExpired = data?.expired_at && new Date(data.expired_at) < now;
+                return (
+                    <div class={`cert-item ${isExpired ? "cert-item--expired" : ""}`}>
+                        <span class="cert-title font-mono">{c.title}</span>
+                        {data?.issuer && (
+                            <span class="cert-issuer">{data.issuer}</span>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    )}
+    <div class="bento-card-action">
+        <span class="font-mono text-cyan" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+            View All &rarr;
+        </span>
+    </div>
+</a>
+
+<style>
+    .bento-card--certs-list {
+        grid-column: 1 / 7;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: inherit;
+        gap: 0.75rem;
+    }
+
+    .cert-stats {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .cert-count {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .count-num {
+        font-size: 3rem;
+        line-height: 1;
+    }
+
+    .count-label {
+        font-size: 0.9rem;
+    }
+
+    .cert-expired-badge {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        padding: 0.2rem 0.5rem;
+        background: rgba(255, 100, 80, 0.08);
+        color: rgba(255, 140, 100, 0.8);
+        align-self: flex-start;
+    }
+
+    .cert-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        flex: 1;
+    }
+
+    .cert-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        padding: 0.3rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .cert-item:last-child {
+        border-bottom: none;
+    }
+
+    .cert-item--expired .cert-title {
+        opacity: 0.45;
+    }
+
+    .cert-title {
+        font-size: 0.72rem;
+        color: var(--text);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cert-issuer {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        .bento-card--certs-list {
+            grid-column: 1 / -1;
+        }
+    }
+</style>
