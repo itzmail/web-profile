@@ -1,29 +1,34 @@
-export interface Project {
-    name: string;
-    desc: string;
-    stack: string[];
-    accent: string;
-    links: {
-        github: string;
-        live: string;
-    };
-}
-
 export interface ApiProjectLink {
     url: string;
     label: string;
 }
 
 export interface ApiProject {
+    id: string;
     title: string;
     description: string;
     web_profile: {
         data: {
+            slug: string;
             stack: string[];
             accent: string;
+            images: string[];
+            content: string;
             links: ApiProjectLink[];
         };
     };
+}
+
+export interface Project {
+    id: string;
+    slug: string;
+    name: string;
+    desc: string;
+    stack: string[];
+    accent: string;
+    images: string[];
+    content: string;
+    links: ApiProjectLink[];
 }
 
 export interface ExperienceWebProfile {

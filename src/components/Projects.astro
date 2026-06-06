@@ -1,54 +1,9 @@
 ---
-import GithubIcon from "../assets/icons/GithubIcon.astro";
-import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
+import { apiFetch } from "../utils/api";
+import type { ApiProject } from "../types/index";
 
-const projects = [
-    {
-        num: "01",
-        name: "Warehouse Management System (WMS)",
-        slug: "warehouse-system",
-        desc: "Designed for warehouse monitoring activities such as picking, storing, and tracking inventory. Boosted tracking by 50%.",
-        stack: ["React Native", "Express JS"],
-        accent: "var(--green)",
-        links: { github: "#", live: "#" },
-    },
-    {
-        num: "02",
-        name: "HRIS Mobile Application",
-        slug: "hris-mobile",
-        desc: "Enterprise employee management platform for tracking activities, calculating salaries, and viewing payslips. Improved user satisfaction by 40%.",
-        stack: ["Flutter", "Spring Boot", "Java"],
-        accent: "var(--cyan)",
-        links: { github: "#", live: "#" },
-    },
-    {
-        num: "03",
-        name: "Sales Force Application",
-        slug: "sales-app-mobile",
-        desc: "Mobile application for sales activities, including product catalogs, customer visits tracking, quotations, and payment calculations.",
-        stack: ["React Native", "Javascript", "Restful API"],
-        accent: "var(--purple)",
-        links: { github: "#", live: "#" },
-    },
-    {
-        num: "04",
-        name: "Employee ID System",
-        slug: "employee-identification",
-        desc: "Website for employee identification using multifunctional ID cards, enabling quick retrieval of employee information through QR scanning.",
-        stack: ["React JS", "Node.js"],
-        accent: "var(--yellow)",
-        links: { github: "#", live: "#" },
-    },
-    {
-        num: "05",
-        name: "Job Application Dashboard",
-        slug: "job-application-portal",
-        desc: "Web platform serving as a comprehensive dashboard for prospective employees to apply and track their applications.",
-        stack: ["Next JS", "Golang", "PostgreSQL"],
-        accent: "var(--green)",
-        links: { github: "#", live: "#" },
-    },
-];
+const apiProjects = await apiFetch<ApiProject[]>("/projects");
+const projects = apiProjects ?? [];
 ---
 
 <section class="section" id="projects">
@@ -58,77 +13,118 @@ const projects = [
             <h2 class="section-title">Selected <span>Projects</span></h2>
         </div>
 
-        <div class="projects-grid">
-            {
-                projects.map((p) => (
-                    <article
-                        class="project-card reveal"
-                        style={`--accent: ${p.accent}`}
-                    >
-                        <div class="project-num">{p.num}</div>
-                        <div class="project-body">
-                            <div class="project-top">
-                                <div>
-                                    <p class="project-slug font-mono text-muted">
-                                        {p.slug}.ts
-                                    </p>
-                                    <h3 class="project-name">{p.name}</h3>
+        {projects.length === 0 ? (
+            <p class="text-muted font-mono" style="font-size:0.875rem;">No projects yet.</p>
+        ) : (
+            <div class="carousel-wrapper">
+            <div class="projects-carousel">
+                {projects.map((p, i) => {
+                    const slug = p.web_profile?.data?.slug ?? "";
+                    const accent = p.web_profile?.data?.accent ?? "var(--green)";
+                    const stack = p.web_profile?.data?.stack ?? [];
+                    const images = p.web_profile?.data?.images ?? [];
+                    const links = p.web_profile?.data?.links ?? [];
+                    const thumb = images[0] ?? null;
+
+                    return (
+                        <a
+                            href={`/projects/${slug}`}
+                            class="project-card reveal"
+                            style={`--accent: ${accent};`}
+                        >
+                            {thumb && (
+                                <div class="project-thumb">
+                                    <img src={thumb} alt={p.title} loading="lazy" />
                                 </div>
-                                <div class="project-links">
-                                    <a
-                                        href={p.links.github}
-                                        class="icon-link"
-                                        title="GitHub"
-                                        aria-label="GitHub"
-                                    >
-                                        <GithubIcon width="16" height="16" />
-                                    </a>
-                                    <a
-                                        href={p.links.live}
-                                        class="icon-link"
-                                        title="Live Demo"
-                                        aria-label="Live Demo"
-                                    >
-                                        <ExternalLinkIcon
-                                            width="16"
-                                            height="16"
-                                        />
-                                    </a>
+                            )}
+                            <div class="project-num">{String(i + 1).padStart(2, "0")}</div>
+                            <div class="project-body">
+                                <div class="project-top">
+                                    <div>
+                                        <p class="project-slug font-mono text-muted">{slug}.ts</p>
+                                        <h3 class="project-name">{p.title}</h3>
+                                    </div>
+                                    <div class="project-links-count font-mono">
+                                        {links.length > 0 && (
+                                            <span class="link-badge">{links.length} link{links.length > 1 ? "s" : ""}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <p class="project-desc">{p.description}</p>
+                                <div class="project-tags">
+                                    {stack.map((tag) => (
+                                        <span class="tag">{tag}</span>
+                                    ))}
                                 </div>
                             </div>
-                            <p class="project-desc">{p.desc}</p>
-                            <div class="project-tags">
-                                {p.stack.map((tag) => (
-                                    <span class="tag">{tag}</span>
-                                ))}
-                            </div>
-                        </div>
-                        <div class="project-accent-bar" />
-                    </article>
-                ))
-            }
-        </div>
+                            <div class="project-accent-bar" />
+                        </a>
+                    );
+                })}
+            </div>
+            </div>
+        )}
     </div>
 </section>
 
 <style>
-    .projects-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    .carousel-wrapper {
+        position: relative;
+        margin: 0 calc(-1 * clamp(1.5rem, 5vw, 3rem));
+    }
+
+    .carousel-wrapper::before,
+    .carousel-wrapper::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 1rem;
+        width: clamp(2rem, 6vw, 4rem);
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .carousel-wrapper::before {
+        left: 0;
+        background: linear-gradient(to right, var(--bg), transparent);
+    }
+
+    .carousel-wrapper::after {
+        right: 0;
+        background: linear-gradient(to left, var(--bg), transparent);
+    }
+
+    .projects-carousel {
+        display: flex;
         gap: 1.5rem;
+        overflow-x: auto;
+        overflow-y: visible;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px clamp(1.5rem, 5vw, 3rem) 1rem;
+        scrollbar-width: none;
+    }
+
+    .projects-carousel::-webkit-scrollbar {
+        display: none;
     }
 
     .project-card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1.5rem;
         position: relative;
         overflow: hidden;
-        transition: all 0.35s var(--ease);
+        transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
         display: flex;
         flex-direction: column;
         gap: 1rem;
+        text-decoration: none;
+        color: inherit;
+        scroll-snap-align: start;
+        flex: 0 0 300px;
+        min-height: 240px;
     }
 
     .project-card::before {
@@ -147,11 +143,32 @@ const projects = [
     .project-card:hover {
         border-color: var(--accent);
         transform: translateY(-6px);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+        color: inherit;
     }
 
     .project-card:hover::before {
         opacity: 1;
+    }
+
+    .project-thumb {
+        width: 100%;
+        height: 160px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: -0.25rem;
+        flex-shrink: 0;
+    }
+
+    .project-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.35s var(--ease);
+    }
+
+    .project-card:hover .project-thumb img {
+        transform: scale(1.04);
     }
 
     .project-accent-bar {
@@ -188,6 +205,7 @@ const projects = [
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        flex: 1;
     }
 
     .project-top {
@@ -209,38 +227,32 @@ const projects = [
         line-height: 1.2;
     }
 
-    .project-links {
-        display: flex;
-        gap: 0.5rem;
-        flex-shrink: 0;
-    }
-
-    .icon-link {
-        color: var(--text-muted);
-        padding: 0.4rem;
-        border-radius: 6px;
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        transition: all var(--duration) var(--ease);
-    }
-
-    .icon-link:hover {
+    .link-badge {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
         color: var(--accent);
-        border-color: var(--accent);
-        background: rgba(var(--accent-rgb, 0, 255, 136), 0.08);
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+        padding: 0.15rem 0.5rem;
+        white-space: nowrap;
     }
 
     .project-desc {
         font-size: 0.875rem;
         color: var(--text-muted);
         line-height: 1.65;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .project-tags {
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
+        margin-top: auto;
     }
 
     .tag {
@@ -256,5 +268,20 @@ const projects = [
 
     .project-card:hover .tag {
         border-color: rgba(var(--accent-rgb, 0, 255, 136), 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .project-card {
+            flex: 0 0 260px;
+        }
+
+        .project-card:hover {
+            transform: none;
+        }
+
+        .carousel-wrapper::before,
+        .carousel-wrapper::after {
+            width: 2.5rem;
+        }
     }
 </style>
