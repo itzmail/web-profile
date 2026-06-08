@@ -1,23 +1,5 @@
 ---
-import { apiFetch } from "../../utils/api";
 import Layout from "../../layouts/Layout.astro";
-import type { ApiCertificate } from "../../types/index";
-
-const apiCertificates = await apiFetch<ApiCertificate[]>("/certificates");
-const certificates = apiCertificates ?? [];
-
-const now = new Date();
-
-function isExpired(expiredAt: string | null): boolean {
-    if (!expiredAt) return false;
-    return new Date(expiredAt) < now;
-}
-
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { year: "numeric", month: "short" });
-}
 ---
 
 <Layout
@@ -38,82 +20,26 @@ function formatDate(dateStr: string | null): string {
             <header class="page-header reveal">
                 <p class="page-label font-mono">// credentials</p>
                 <h1 class="page-title">Certificates <span>&amp; Training</span></h1>
-                <p class="page-subtitle">{certificates.length} credential{certificates.length !== 1 ? "s" : ""}</p>
+                <p class="page-subtitle" id="cert-count">&nbsp;</p>
             </header>
 
-            {certificates.length === 0 ? (
-                <p class="text-muted font-mono" style="font-size:0.875rem;">No certificates yet.</p>
-            ) : (
-                <div class="certs-grid">
-                    {certificates.map((cert) => {
-                        const data = cert.web_profile?.data;
-                        const expired = isExpired(data?.expired_at ?? null);
-                        return (
-                            <button
-                                class={`cert-card reveal ${expired ? "cert-card--expired" : ""}`}
-                                data-cert={JSON.stringify({
-                                    id: cert.id,
-                                    title: cert.title,
-                                    description: cert.description,
-                                    ...data,
-                                })}
-                                aria-label={`View ${cert.title}`}
-                            >
-                                <div class="cert-card-header">
-                                    {data?.category && (
-                                        <span class="cert-category font-mono">{data.category}</span>
-                                    )}
-                                    {expired ? (
-                                        <span class="cert-badge cert-badge--expired font-mono">expired</span>
-                                    ) : data?.expired_at ? (
-                                        <span class="cert-badge cert-badge--valid font-mono">valid</span>
-                                    ) : (
-                                        <span class="cert-badge cert-badge--lifetime font-mono">lifetime</span>
-                                    )}
-                                </div>
-
-                                <h2 class="cert-title">{cert.title}</h2>
-
-                                {data?.issuer && (
-                                    <p class="cert-issuer font-mono">
-                                        <span class="issuer-label">by</span> {data.issuer}
-                                    </p>
-                                )}
-
-                                {cert.description && (
-                                    <p class="cert-desc">{cert.description}</p>
-                                )}
-
-                                <div class="cert-dates font-mono">
-                                    {data?.issued_at && (
-                                        <span class="cert-date">
-                                            <span class="date-label">issued</span>
-                                            {formatDate(data.issued_at)}
-                                        </span>
-                                    )}
-                                    {data?.expired_at && (
-                                        <span class="cert-date">
-                                            <span class="date-label">expires</span>
-                                            {formatDate(data.expired_at)}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div class="cert-card-footer">
-                                    {data?.file_url && (
-                                        <span class="cert-file-badge font-mono">
-                                            {data.file_type === "pdf" ? "PDF" : "IMG"}
-                                        </span>
-                                    )}
-                                    {data?.credential_url && (
-                                        <span class="cert-verify font-mono">verify &rarr;</span>
-                                    )}
-                                </div>
-                            </button>
-                        );
-                    })}
+            <div id="certs-loading" class="loading-state">
+                <div class="skeleton-grid">
+                    {Array.from({ length: 6 }).map(() => (
+                        <div class="skeleton-card">
+                            <div class="skeleton-line skeleton-line--short"></div>
+                            <div class="skeleton-line skeleton-line--long"></div>
+                            <div class="skeleton-line skeleton-line--medium"></div>
+                        </div>
+                    ))}
                 </div>
-            )}
+            </div>
+
+            <div id="certs-error" class="error-state" style="display:none;">
+                <p class="font-mono text-muted">Failed to load certificates.</p>
+            </div>
+
+            <div id="certs-grid" class="certs-grid" style="display:none;"></div>
         </div>
     </main>
 
@@ -121,15 +47,14 @@ function formatDate(dateStr: string | null): string {
     <div id="cert-modal" class="modal-backdrop" aria-hidden="true">
         <div class="modal-box" role="dialog" aria-modal="true">
             <button class="modal-close font-mono" id="cert-modal-close" aria-label="Close">&times;</button>
-
-            <div class="modal-body" id="cert-modal-body">
-                <!-- filled by JS -->
-            </div>
+            <div class="modal-body" id="cert-modal-body"></div>
         </div>
     </div>
 </Layout>
 
 <script>
+    const API_BASE = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/api";
+
     interface CertData {
         id: string;
         title: string;
@@ -144,15 +69,97 @@ function formatDate(dateStr: string | null): string {
         file_type?: "pdf" | "image" | null;
     }
 
+    interface ApiCertificate {
+        id: string;
+        title: string;
+        description: string;
+        is_active: number;
+        order: number;
+        web_profile: {
+            data: {
+                slug: string;
+                issuer: string;
+                issued_at: string;
+                expired_at: string | null;
+                credential_id: string | null;
+                credential_url: string | null;
+                category: string | null;
+                file_url: string | null;
+                file_type: "pdf" | "image" | null;
+            };
+        };
+    }
+
     function formatDate(dateStr: string | null | undefined): string {
         if (!dateStr) return "";
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    }
+
+    function formatDateShort(dateStr: string | null | undefined): string {
+        if (!dateStr) return "";
+        return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "short" });
     }
 
     function isExpired(expiredAt: string | null | undefined): boolean {
         if (!expiredAt) return false;
         return new Date(expiredAt) < new Date();
+    }
+
+    function buildCardData(cert: ApiCertificate): CertData {
+        const data = cert.web_profile?.data ?? {} as ApiCertificate["web_profile"]["data"];
+        return {
+            id: cert.id,
+            title: cert.title,
+            description: cert.description,
+            ...data,
+        };
+    }
+
+    function renderCard(cert: ApiCertificate): string {
+        const data = cert.web_profile?.data ?? {} as ApiCertificate["web_profile"]["data"];
+        const expired = isExpired(data.expired_at);
+        const cardData = JSON.stringify(buildCardData(cert)).replace(/"/g, "&quot;");
+
+        const badge = expired
+            ? `<span class="cert-badge cert-badge--expired font-mono">expired</span>`
+            : data.expired_at
+                ? `<span class="cert-badge cert-badge--valid font-mono">valid</span>`
+                : `<span class="cert-badge cert-badge--lifetime font-mono">lifetime</span>`;
+
+        const categoryHtml = data.category
+            ? `<span class="cert-category font-mono">${data.category}</span>`
+            : `<span></span>`;
+
+        const issuedHtml = data.issued_at
+            ? `<span class="cert-date"><span class="date-label">issued</span>${formatDateShort(data.issued_at)}</span>`
+            : "";
+
+        const expiredHtml = data.expired_at
+            ? `<span class="cert-date"><span class="date-label">expires</span>${formatDateShort(data.expired_at)}</span>`
+            : "";
+
+        const fileBadge = data.file_url
+            ? `<span class="cert-file-badge font-mono">${data.file_type === "pdf" ? "PDF" : "IMG"}</span>`
+            : "";
+
+        const verifyHtml = data.credential_url
+            ? `<span class="cert-verify font-mono">verify &rarr;</span>`
+            : "";
+
+        const descHtml = cert.description
+            ? `<p class="cert-desc">${cert.description}</p>`
+            : "";
+
+        return `
+            <button class="cert-card${expired ? " cert-card--expired" : ""}" data-cert="${cardData}" aria-label="View ${cert.title}">
+                <div class="cert-card-header">${categoryHtml}${badge}</div>
+                <h2 class="cert-title">${cert.title}</h2>
+                ${data.issuer ? `<p class="cert-issuer font-mono"><span class="issuer-label">by</span> ${data.issuer}</p>` : ""}
+                ${descHtml}
+                <div class="cert-dates font-mono">${issuedHtml}${expiredHtml}</div>
+                <div class="cert-card-footer">${fileBadge}${verifyHtml}</div>
+            </button>
+        `;
     }
 
     function renderModal(data: CertData): void {
@@ -179,9 +186,7 @@ function formatDate(dateStr: string | null): string {
             : "";
 
         const verifyHtml = data.credential_url
-            ? `<a href="${data.credential_url}" target="_blank" rel="noopener noreferrer" class="modal-verify-btn font-mono">
-                   Verify Credential &rarr;
-               </a>`
+            ? `<a href="${data.credential_url}" target="_blank" rel="noopener noreferrer" class="modal-verify-btn font-mono">Verify Credential &rarr;</a>`
             : "";
 
         const credentialIdHtml = data.credential_id
@@ -205,23 +210,13 @@ function formatDate(dateStr: string | null): string {
                 <h2 class="modal-title">${data.title}</h2>
                 ${data.issuer ? `<p class="modal-issuer font-mono">by ${data.issuer}</p>` : ""}
             </div>
-
             ${data.description ? `<p class="modal-description">${data.description}</p>` : ""}
-
             <div class="modal-meta">
-                ${data.issued_at ? `<div class="modal-meta-row">
-                    <span class="modal-meta-label font-mono">Issued</span>
-                    <span class="modal-meta-value font-mono">${formatDate(data.issued_at)}</span>
-                </div>` : ""}
-                ${data.expired_at ? `<div class="modal-meta-row">
-                    <span class="modal-meta-label font-mono">Expires</span>
-                    <span class="modal-meta-value font-mono ${expired ? "text-expired" : ""}">${formatDate(data.expired_at)}</span>
-                </div>` : ""}
+                ${data.issued_at ? `<div class="modal-meta-row"><span class="modal-meta-label font-mono">Issued</span><span class="modal-meta-value font-mono">${formatDate(data.issued_at)}</span></div>` : ""}
+                ${data.expired_at ? `<div class="modal-meta-row"><span class="modal-meta-label font-mono">Expires</span><span class="modal-meta-value font-mono${expired ? " text-expired" : ""}">${formatDate(data.expired_at)}</span></div>` : ""}
                 ${credentialIdHtml}
             </div>
-
             ${fileHtml}
-
             ${verifyHtml}
         `;
     }
@@ -242,26 +237,54 @@ function formatDate(dateStr: string | null): string {
         document.body.style.overflow = "";
     }
 
-    document.querySelectorAll<HTMLButtonElement>(".cert-card").forEach((card) => {
-        card.addEventListener("click", () => {
-            const raw = card.dataset.cert;
-            if (!raw) return;
-            try {
-                const data = JSON.parse(raw) as CertData;
-                openModal(data);
-            } catch {}
+    function attachCardListeners(): void {
+        document.querySelectorAll<HTMLButtonElement>(".cert-card").forEach((card) => {
+            card.addEventListener("click", () => {
+                const raw = card.dataset.cert;
+                if (!raw) return;
+                try {
+                    openModal(JSON.parse(raw) as CertData);
+                } catch {}
+            });
         });
-    });
+    }
 
     closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
-    modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-    });
+    // Fetch data client-side
+    async function loadCertificates(): Promise<void> {
+        const loading = document.getElementById("certs-loading")!;
+        const errorEl = document.getElementById("certs-error")!;
+        const grid = document.getElementById("certs-grid")!;
+        const countEl = document.getElementById("cert-count")!;
 
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeModal();
-    });
+        try {
+            const res = await fetch(`${API_BASE}/certificates`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const certs: ApiCertificate[] = await res.json();
+
+            loading.style.display = "none";
+
+            if (certs.length === 0) {
+                countEl.textContent = "0 credentials";
+                errorEl.innerHTML = `<p class="font-mono text-muted" style="font-size:0.875rem;">No certificates yet.</p>`;
+                errorEl.style.display = "block";
+                return;
+            }
+
+            countEl.textContent = `${certs.length} credential${certs.length !== 1 ? "s" : ""}`;
+            grid.innerHTML = certs.map(renderCard).join("");
+            grid.style.display = "grid";
+            attachCardListeners();
+        } catch {
+            loading.style.display = "none";
+            errorEl.style.display = "block";
+        }
+    }
+
+    loadCertificates();
 </script>
 
 <style>
@@ -315,8 +338,47 @@ function formatDate(dateStr: string | null): string {
         color: var(--text-muted);
     }
 
-    .certs-grid {
+    /* Skeleton */
+    .skeleton-grid {
         display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .skeleton-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        height: 180px;
+    }
+
+    .skeleton-line {
+        background: linear-gradient(90deg, var(--border) 25%, rgba(255,255,255,0.04) 50%, var(--border) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+        height: 12px;
+    }
+
+    .skeleton-line--short { width: 40%; }
+    .skeleton-line--medium { width: 60%; }
+    .skeleton-line--long { width: 85%; height: 18px; }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .error-state {
+        text-align: center;
+        padding: 3rem 0;
+    }
+
+    .certs-grid {
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 1.25rem;
     }
@@ -352,17 +414,10 @@ function formatDate(dateStr: string | null): string {
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 20px var(--green-glow);
     }
 
-    .cert-card:hover::before {
-        opacity: 1;
-    }
+    .cert-card:hover::before { opacity: 1; }
 
-    .cert-card--expired {
-        opacity: 0.65;
-    }
-
-    .cert-card--expired:hover {
-        opacity: 1;
-    }
+    .cert-card--expired { opacity: 0.65; }
+    .cert-card--expired:hover { opacity: 1; }
 
     .cert-card-header {
         display: flex;
@@ -417,9 +472,7 @@ function formatDate(dateStr: string | null): string {
         margin: 0;
     }
 
-    .issuer-label {
-        opacity: 0.5;
-    }
+    .issuer-label { opacity: 0.5; }
 
     .cert-desc {
         font-size: 0.82rem;
@@ -475,7 +528,7 @@ function formatDate(dateStr: string | null): string {
         margin-left: auto;
     }
 
-    /* ── Modal ─────────────────────────────────────── */
+    /* Modal */
     .modal-backdrop {
         position: fixed;
         inset: 0;
@@ -632,13 +685,9 @@ function formatDate(dateStr: string | null): string {
         font-size: 0.7rem;
     }
 
-    :global(.modal-meta-value) {
-        color: var(--text);
-    }
+    :global(.modal-meta-value) { color: var(--text); }
 
-    :global(.text-expired) {
-        color: rgba(255, 140, 100, 0.85) !important;
-    }
+    :global(.text-expired) { color: rgba(255, 140, 100, 0.85) !important; }
 
     :global(.modal-file-section) {
         display: flex;
@@ -673,9 +722,7 @@ function formatDate(dateStr: string | null): string {
         transition: background var(--duration) var(--ease);
     }
 
-    :global(.modal-file-link:hover) {
-        background: rgba(0, 255, 136, 0.06);
-    }
+    :global(.modal-file-link:hover) { background: rgba(0, 255, 136, 0.06); }
 
     :global(.modal-verify-btn) {
         display: inline-block;
@@ -690,11 +737,10 @@ function formatDate(dateStr: string | null): string {
         cursor: pointer;
     }
 
-    :global(.modal-verify-btn:hover) {
-        background: rgba(0, 255, 136, 0.08);
-    }
+    :global(.modal-verify-btn:hover) { background: rgba(0, 255, 136, 0.08); }
 
     @media (max-width: 768px) {
+        .skeleton-grid,
         .certs-grid {
             grid-template-columns: 1fr;
         }
