@@ -592,25 +592,26 @@ import Layout from "../../layouts/Layout.astro";
         border-color: var(--text-muted);
     }
 
-    :global(.modal-body) {
+    .modal-body {
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 1.5rem;
     }
 
-    :global(.modal-cert-header) {
+    .modal-cert-header {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.6rem;
+        padding-right: 2.5rem;
     }
 
-    :global(.modal-badges) {
+    .modal-badges {
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
     }
 
-    :global(.modal-badge) {
+    .modal-badge {
         font-size: 0.6rem;
         padding: 0.15rem 0.5rem;
         border-radius: 4px;
@@ -618,31 +619,31 @@ import Layout from "../../layouts/Layout.astro";
         border: 1px solid;
     }
 
-    :global(.modal-badge--category) {
+    .modal-badge--category {
         color: var(--text-muted);
         border-color: var(--border);
         background: rgba(255, 255, 255, 0.04);
     }
 
-    :global(.modal-badge--valid) {
+    .modal-badge--valid {
         color: var(--green);
         border-color: rgba(0, 255, 136, 0.3);
         background: rgba(0, 255, 136, 0.06);
     }
 
-    :global(.modal-badge--lifetime) {
+    .modal-badge--lifetime {
         color: var(--cyan, #00d4ff);
         border-color: rgba(0, 212, 255, 0.3);
         background: rgba(0, 212, 255, 0.06);
     }
 
-    :global(.modal-badge--expired) {
+    .modal-badge--expired {
         color: rgba(255, 140, 100, 0.9);
         border-color: rgba(255, 100, 80, 0.25);
         background: rgba(255, 100, 80, 0.06);
     }
 
-    :global(.modal-title) {
+    .modal-title {
         font-size: 1.5rem;
         font-weight: 700;
         color: var(--text);
@@ -650,66 +651,81 @@ import Layout from "../../layouts/Layout.astro";
         margin: 0;
     }
 
-    :global(.modal-issuer) {
-        font-size: 0.8rem;
+    .modal-issuer {
+        font-size: 0.78rem;
         color: var(--text-muted);
         margin: 0;
+        opacity: 0.85;
     }
 
-    :global(.modal-description) {
+    .modal-description {
         font-size: 0.9rem;
         color: var(--text-muted);
         line-height: 1.7;
         margin: 0;
     }
 
-    :global(.modal-meta) {
+    .modal-meta {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
-        padding: 1rem;
+        gap: 0;
+        padding: 0;
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid var(--border);
         border-radius: 10px;
+        overflow: hidden;
     }
 
-    :global(.modal-meta-row) {
+    .modal-meta-row {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        font-size: 0.78rem;
+        align-items: baseline;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border);
     }
 
-    :global(.modal-meta-label) {
+    .modal-meta-row:last-child {
+        border-bottom: none;
+    }
+
+    .modal-meta-label {
         color: var(--text-muted);
-        font-size: 0.7rem;
+        font-size: 0.68rem;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
     }
 
-    :global(.modal-meta-value) { color: var(--text); }
+    .modal-meta-value {
+        color: var(--text);
+        font-size: 0.78rem;
+        text-align: right;
+        word-break: break-all;
+    }
 
-    :global(.text-expired) { color: rgba(255, 140, 100, 0.85) !important; }
+    .text-expired { color: rgba(255, 140, 100, 0.85) !important; }
 
-    :global(.modal-file-section) {
+    .modal-file-section {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
     }
 
-    :global(.modal-section-label) {
+    .modal-section-label {
         font-size: 0.65rem;
         color: var(--text-muted);
         letter-spacing: 0.1em;
         margin: 0;
     }
 
-    :global(.modal-cert-image) {
+    .modal-cert-image {
         width: 100%;
         border-radius: 10px;
         border: 1px solid var(--border);
         display: block;
     }
 
-    :global(.modal-file-link) {
+    .modal-file-link {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
@@ -722,9 +738,9 @@ import Layout from "../../layouts/Layout.astro";
         transition: background var(--duration) var(--ease);
     }
 
-    :global(.modal-file-link:hover) { background: rgba(0, 255, 136, 0.06); }
+    .modal-file-link:hover { background: rgba(0, 255, 136, 0.06); }
 
-    :global(.modal-verify-btn) {
+    .modal-verify-btn {
         display: inline-block;
         font-size: 0.82rem;
         color: var(--green);
@@ -737,7 +753,7 @@ import Layout from "../../layouts/Layout.astro";
         cursor: pointer;
     }
 
-    :global(.modal-verify-btn:hover) { background: rgba(0, 255, 136, 0.08); }
+    .modal-verify-btn:hover { background: rgba(0, 255, 136, 0.08); }
 
     @media (max-width: 768px) {
         .skeleton-grid,
