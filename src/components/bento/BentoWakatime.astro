@@ -1,15 +1,4 @@
 ---
-import type { WakatimeStats } from "../../types/index";
-
-interface Props {
-    wakatime: WakatimeStats | null;
-}
-
-const { wakatime } = Astro.props;
-
-const topLanguages = wakatime?.languages?.slice(0, 3) ?? [];
-const totalHours = wakatime?.human_readable_total_including_other_language ?? "0 hrs";
-const dailyAverage = wakatime?.human_readable_daily_average ?? "0 hrs";
 ---
 
 <div class="bento-card bento-card--contrib">
@@ -22,32 +11,51 @@ const dailyAverage = wakatime?.human_readable_daily_average ?? "0 hrs";
     </div>
     <div class="waka-content">
         <div class="waka-header">
-            <span class="waka-time text-cyan font-mono">{totalHours}</span>
-            <span class="waka-subtitle">Avg: {dailyAverage}/day</span>
+            <span id="waka-total" class="waka-time text-cyan font-mono">...</span>
+            <span id="waka-avg" class="waka-subtitle">Avg: .../day</span>
         </div>
-
-        <div class="waka-langs">
-            {
-                topLanguages.map((lang) => (
-                    <div class="waka-lang-item">
-                        <div class="waka-lang-top">
-                            <span class="waka-lang-name">{lang.name}</span>
-                            <span class="waka-lang-pct font-mono text-muted">
-                                {lang.percent}%
-                            </span>
-                        </div>
-                        <div class="waka-progress-bg">
-                            <div
-                                class="waka-progress-bar"
-                                style={`width: ${lang.percent}%; background: var(--green);`}
-                            />
-                        </div>
-                    </div>
-                ))
-            }
-        </div>
+        <div id="waka-langs" class="waka-langs"></div>
     </div>
 </div>
+
+<script>
+    async function loadWakatime() {
+        try {
+            const res = await fetch("/api/wakatime");
+            if (!res.ok) return;
+            const data = await res.json() as {
+                human_readable_total_including_other_language?: string;
+                human_readable_daily_average?: string;
+                languages?: { name: string; percent: number }[];
+            };
+
+            const total = document.getElementById("waka-total");
+            const avg = document.getElementById("waka-avg");
+            const langs = document.getElementById("waka-langs");
+
+            if (total) total.textContent = data.human_readable_total_including_other_language ?? "0 hrs";
+            if (avg) avg.textContent = `Avg: ${data.human_readable_daily_average ?? "0 hrs"}/day`;
+
+            if (langs && data.languages) {
+                langs.innerHTML = data.languages.slice(0, 3).map((lang) => `
+                    <div style="display:flex;flex-direction:column;gap:0.25rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:0.75rem;">
+                            <span style="font-weight:500;color:var(--text);">${lang.name}</span>
+                            <span style="font-family:var(--font-mono);color:var(--text-muted);">${lang.percent}%</span>
+                        </div>
+                        <div style="height:4px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;">
+                            <div style="width:${lang.percent}%;height:100%;border-radius:4px;background:var(--green);box-shadow:0 0 10px var(--green-glow);"></div>
+                        </div>
+                    </div>
+                `).join("");
+            }
+        } catch (e) {
+            console.error("Failed to load wakatime", e);
+        }
+    }
+
+    loadWakatime();
+</script>
 
 <style>
     .bento-card--contrib {

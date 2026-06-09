@@ -1,5 +1,4 @@
 ---
-import { getWakatimeData } from "../../utils/wakatime";
 import { apiFetch } from "../../utils/api";
 import type { Experience, ApiProject, ApiCertificate, MasterSkillItem, SkillGroup } from "../../types/index";
 
@@ -10,14 +9,14 @@ import BentoExperiencePreview from "./BentoExperiencePreview.astro";
 import BentoTechStack from "./BentoTechStack.astro";
 import BentoLocation from "./BentoLocation.astro";
 import BentoWakatime from "./BentoWakatime.astro";
+import BentoGitActivity from "./BentoGitActivity.astro";
 
 interface MasterResponse { items: MasterSkillItem[]; }
 
-const [apiExperiences, apiCertificates, apiSkills, wakatimeData] = await Promise.all([
+const [apiExperiences, apiCertificates, apiSkills] = await Promise.all([
     apiFetch<Experience[]>("/experiences"),
     apiFetch<ApiCertificate[]>("/certificates"),
     apiFetch<MasterResponse>("/master/skills"),
-    getWakatimeData(),
 ]);
 
 const experiences: Experience[] = apiExperiences ?? [];
@@ -47,7 +46,8 @@ if (apiSkills) {
             <BentoExperiencePreview experiences={experiences} />
             <BentoTechStack skillGroups={skillGroups} />
             <BentoLocation />
-            <BentoWakatime wakatime={wakatimeData} />
+            <BentoWakatime />
+            <BentoGitActivity />
         </div>
     </div>
 </section>
