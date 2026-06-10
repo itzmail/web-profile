@@ -9,7 +9,6 @@ import BentoExperiencePreview from "./BentoExperiencePreview.astro";
 import BentoTechStack from "./BentoTechStack.astro";
 import BentoLocation from "./BentoLocation.astro";
 import BentoWakatime from "./BentoWakatime.astro";
-import BentoGitActivity from "./BentoGitActivity.astro";
 
 interface MasterResponse { items: MasterSkillItem[]; }
 
@@ -47,7 +46,6 @@ if (apiSkills) {
             <BentoTechStack skillGroups={skillGroups} />
             <BentoLocation />
             <BentoWakatime />
-            <BentoGitActivity />
         </div>
     </div>
 </section>
