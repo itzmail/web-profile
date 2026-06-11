@@ -4,21 +4,16 @@ import { apiFetch } from "../../utils/api";
 import Layout from "../../layouts/Layout.astro";
 import type { ApiProject } from "../../types/index";
 
-export async function getStaticPaths() {
-    const projects = await apiFetch<ApiProject[]>("/projects");
-    if (!projects) return [];
+const { slug: slugParam } = Astro.params;
 
-    return projects.map((p) => ({
-        params: { slug: p.web_profile?.data?.slug ?? p.id },
-        props: { project: p },
-    }));
+const projects = await apiFetch<ApiProject[]>("/projects");
+const project = projects?.find(
+    (p) => (p.web_profile?.data?.slug ?? p.id) === slugParam
+);
+
+if (!project) {
+    return Astro.redirect("/404");
 }
-
-interface Props {
-    project: ApiProject;
-}
-
-const { project } = Astro.props;
 const data = project.web_profile?.data;
 const slug = data?.slug ?? "";
 const accent = data?.accent ?? "#00ff88";
