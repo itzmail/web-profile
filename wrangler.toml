@@ -1,2 +1,6 @@
 name = "web-profile"
 compatibility_date = "2026-04-15"
+
+[[kv_namespaces]]
+binding = "SESSION"
+id = "d96c770cd5a8428b9298846c9cec1e84"
