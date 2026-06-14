@@ -14,21 +14,30 @@ const { experiences } = Astro.props;
     data-modal-title="Work Experience"
     data-modal-subtitle="Career Timeline"
 >
-    <div class="bento-label">// work experience</div>
-    <div class="quote-content-large" style="text-align: left;">
-        <span
-            class="font-mono text-green"
-            style="font-size:3rem; line-height:1; margin-bottom:0.5rem"
-            >{experiences.length}</span
-        >
-        <span class="text-muted" style="font-size:0.9rem">Companies</span>
+    <div class="exp-header">
+        <span class="font-mono text-green exp-num">{experiences.length}</span>
+        <div class="exp-header-text">
+            <span class="bento-label" style="margin-bottom:0">// work experience</span>
+            <span class="text-muted" style="font-size:0.75rem">Companies</span>
+        </div>
+    </div>
+    <div class="exp-list">
+        {experiences.map((e) => {
+            const { title, web_profile } = e;
+            const { date, accent, company } = web_profile.data;
+            return (
+                <div class="exp-item">
+                    <div class="exp-left">
+                        <span class="exp-role font-mono">{title}</span>
+                        <span class="exp-company" style={`color: ${accent}`}>{company}</span>
+                    </div>
+                    <span class="exp-date text-muted">{date}</span>
+                </div>
+            );
+        })}
     </div>
     <div class="bento-card-action">
-        <span
-            class="font-mono text-green"
-            style="font-size: 0.75rem; letter-spacing: 0.05em;"
-            >View Timeline &rarr;</span
-        >
+        <span class="font-mono text-green" style="font-size: 0.75rem; letter-spacing: 0.05em;">View Timeline &rarr;</span>
     </div>
 </button>
 
@@ -71,6 +80,73 @@ const { experiences } = Astro.props;
     .bento-card--experience-list {
         grid-column: 7 / 13;
         grid-row: 2;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .exp-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .exp-num {
+        font-size: 3rem;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .exp-header-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .exp-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        flex: 1;
+    }
+
+    .exp-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.75rem;
+    }
+
+    .exp-item:last-child {
+        border-bottom: none;
+    }
+
+    .exp-left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 0;
+    }
+
+    .exp-role {
+        color: var(--text);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .exp-company {
+        font-size: 0.68rem;
+    }
+
+    .exp-date {
+        font-size: 0.65rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     /* Timeline styles injected into modal */

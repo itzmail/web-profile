@@ -17,16 +17,14 @@ const expired = certificates.length - active.length;
 ---
 
 <a href="/certificates" class="bento-card bento-card--certs-list">
-    <div class="bento-label">// certificates</div>
-    <div class="cert-stats">
-        <div class="cert-count">
-            <span class="font-mono text-cyan count-num">{certificates.length}</span>
-            <span class="text-muted count-label">Total Certs</span>
+    <div class="cert-header">
+        <span class="font-mono text-cyan cert-num">{certificates.length}</span>
+        <div class="cert-header-text">
+            <span class="bento-label" style="margin-bottom:0">// certificates</span>
+            <span class="text-muted" style="font-size:0.75rem">Total Certs</span>
         </div>
         {expired > 0 && (
-            <div class="cert-expired-badge font-mono">
-                <span>{expired} expired</span>
-            </div>
+            <span class="cert-expired-badge font-mono">{expired} expired</span>
         )}
     </div>
     {certificates.length > 0 && (
@@ -63,24 +61,22 @@ const expired = certificates.length - active.length;
         gap: 0.75rem;
     }
 
-    .cert-stats {
+    .cert-header {
         display: flex;
         align-items: center;
         gap: 1rem;
     }
 
-    .cert-count {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .count-num {
+    .cert-num {
         font-size: 3rem;
         line-height: 1;
+        flex-shrink: 0;
     }
 
-    .count-label {
-        font-size: 0.9rem;
+    .cert-header-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
     }
 
     .cert-expired-badge {
@@ -106,7 +102,7 @@ const expired = certificates.length - active.length;
         align-items: center;
         gap: 0.5rem;
         font-size: 0.75rem;
-        padding: 0.3rem 0;
+        padding: 0.5rem 0;
         border-bottom: 1px solid var(--border);
     }
 
