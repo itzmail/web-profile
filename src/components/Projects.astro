@@ -2,8 +2,10 @@
 import { apiFetch } from "../utils/api";
 import type { ApiProject } from "../types/index";
 
-const apiProjects = await apiFetch<ApiProject[]>("/projects");
+const apiProjects = await apiFetch<ApiProject[]>("/projects/highlighted");
 const projects = apiProjects ?? [];
+
+const typeLabel: Record<string, string> = { production: 'Prod App', client_work: 'Client', side_project: 'Side' };
 ---
 
 <section class="section" id="projects">
@@ -24,6 +26,8 @@ const projects = apiProjects ?? [];
                     const stack = p.web_profile?.data?.stack ?? [];
                     const images = p.web_profile?.data?.images ?? [];
                     const links = p.web_profile?.data?.links ?? [];
+                    const isOSS = p.web_profile?.data?.is_open_source ?? false;
+                    const pType = p.web_profile?.data?.project_type ?? 'side_project';
                     const thumb = images[0] ?? null;
 
                     return (
@@ -44,10 +48,9 @@ const projects = apiProjects ?? [];
                                         <p class="project-slug font-mono text-muted">{slug}.ts</p>
                                         <h3 class="project-name">{p.title}</h3>
                                     </div>
-                                    <div class="project-links-count font-mono">
-                                        {links.length > 0 && (
-                                            <span class="link-badge">{links.length} link{links.length > 1 ? "s" : ""}</span>
-                                        )}
+                                    <div class="project-badges font-mono">
+                                        {isOSS && <span class="badge badge--oss">OSS</span>}
+                                        <span class="badge badge--type">{typeLabel[pType] ?? pType}</span>
                                     </div>
                                 </div>
                                 <p class="project-desc">{p.description}</p>
@@ -64,6 +67,12 @@ const projects = apiProjects ?? [];
             </div>
             </div>
         )}
+
+        <div class="view-all-wrapper reveal">
+            <a href="/projects" class="view-all-btn font-mono">
+                View All Projects →
+            </a>
+        </div>
     </div>
 </section>
 
@@ -227,15 +236,54 @@ const projects = apiProjects ?? [];
         line-height: 1.2;
     }
 
-    .link-badge {
-        font-family: var(--font-mono);
-        font-size: 0.65rem;
-        color: var(--accent);
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+    .project-badges {
+        display: flex;
+        gap: 0.35rem;
+        align-items: flex-start;
+        flex-shrink: 0;
+    }
+
+    .badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.45rem;
         border-radius: 4px;
-        padding: 0.15rem 0.5rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
         white-space: nowrap;
+    }
+
+    .badge--oss {
+        background: rgba(0, 255, 136, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .badge--type {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .view-all-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 2.5rem;
+    }
+
+    .view-all-btn {
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        color: var(--green);
+        text-decoration: none;
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .view-all-btn:hover {
+        background: rgba(0, 255, 136, 0.06);
+        border-color: var(--green);
     }
 
     .project-desc {

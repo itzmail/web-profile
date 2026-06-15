@@ -1,34 +1,54 @@
 ---
 import type { ApiProject } from "../../types/index";
-import ArrowRightIcon from "../../assets/icons/ArrowRightIcon.astro";
 
 interface Props {
     projects: ApiProject[];
 }
 
 const { projects } = Astro.props;
+
+const typeLabels: Record<string, string> = {
+    production: 'Prod App',
+    client_work: 'Client',
+    side_project: 'Side',
+};
 ---
 
-<a href="#projects" class="bento-card bento-card--projects-list">
-    <div class="bento-label">// selected projects</div>
-    <div class="quote-content-large" style="text-align: left;">
-        <span
-            class="font-mono text-cyan"
-            style="font-size:3rem; line-height:1; margin-bottom:0.5rem"
-            >{projects.length}</span
-        >
-        <span class="text-muted" style="font-size:0.9rem"
-            >Portfolio Applications</span
-        >
-    </div>
+<div class="bento-card bento-card--projects-list">
+    <div class="bento-label">// highlighted projects</div>
+
+    {projects.length === 0 ? (
+        <div class="empty-state">
+            <span class="font-mono text-cyan" style="font-size:2rem; line-height:1;">0</span>
+            <span class="text-muted" style="font-size:0.85rem; margin-top:0.5rem;">No highlighted projects yet</span>
+        </div>
+    ) : (
+        <div class="projects-list">
+            {projects.map((p) => {
+                const d = p.web_profile?.data;
+                const accent = d?.accent ?? '#00ff88';
+                const type = d?.project_type ?? 'side_project';
+                const isOSS = d?.is_open_source ?? false;
+                return (
+                    <a href={`/projects/${d?.slug}`} class="project-row">
+                        <span class="project-accent-dot" style={`background: ${accent};`}></span>
+                        <span class="project-title">{p.title}</span>
+                        <div class="project-badges">
+                            {isOSS && <span class="badge badge--oss">OSS</span>}
+                            <span class="badge badge--type">{typeLabels[type] ?? type}</span>
+                        </div>
+                    </a>
+                );
+            })}
+        </div>
+    )}
+
     <div class="bento-card-action">
-        <span
-            class="font-mono text-cyan"
-            style="font-size: 0.75rem; letter-spacing: 0.05em;"
-            >View Projects &rarr;</span
-        >
+        <a href="/projects" class="view-all-link font-mono">
+            View All Projects →
+        </a>
     </div>
-</a>
+</div>
 
 <style>
     .bento-card--projects-list {
@@ -36,8 +56,92 @@ const { projects } = Astro.props;
         grid-row: 2;
         display: flex;
         flex-direction: column;
+    }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .projects-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 1;
+    }
+
+    .project-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
         text-decoration: none;
-        color: inherit;
+        color: var(--text);
+        border: 1px solid transparent;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    .project-row:hover {
+        background: rgba(255,255,255,0.04);
+        border-color: var(--border);
+    }
+
+    .project-accent-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .project-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .project-badges {
+        display: flex;
+        gap: 0.35rem;
+        flex-shrink: 0;
+    }
+
+    .badge {
+        font-family: var(--font-mono);
+        font-size: 0.6rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    .badge--oss {
+        background: rgba(0, 255, 136, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .badge--type {
+        background: rgba(255,255,255,0.06);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+
+    .view-all-link {
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: var(--cyan);
+        text-decoration: none;
+        transition: opacity 0.15s;
+    }
+
+    .view-all-link:hover {
+        opacity: 0.7;
     }
 
     @media (max-width: 768px) {

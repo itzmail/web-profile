@@ -1,0 +1,344 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { apiFetch } from "../../utils/api";
+import type { ApiProject } from "../../types/index";
+
+const projects = await apiFetch<ApiProject[]>("/projects") ?? [];
+
+const highlighted = projects.filter(p => p.web_profile?.is_highlighted);
+const others = projects.filter(p => !p.web_profile?.is_highlighted);
+
+const typeLabels: Record<string, string> = {
+    production: 'Production App',
+    client_work: 'Client Work',
+    side_project: 'Side Project',
+};
+
+const typeColors: Record<string, string> = {
+    production: 'var(--green)',
+    client_work: 'var(--cyan)',
+    side_project: 'var(--text-muted)',
+};
+---
+
+<Layout title="Projects — Ismail Alam" description="All projects by Ismail Alam">
+    <main class="projects-page">
+        <div class="container">
+            <header class="page-header reveal">
+                <p class="font-mono text-muted page-eyebrow">// projects</p>
+                <h1 class="page-title">All Projects</h1>
+                <p class="page-sub text-muted">Things I've built, shipped, and open-sourced.</p>
+            </header>
+
+            {highlighted.length > 0 && (
+                <section class="section-block reveal">
+                    <h2 class="section-title font-mono">★ Featured</h2>
+                    <div class="projects-grid">
+                        {highlighted.map((p) => {
+                            const d = p.web_profile?.data;
+                            const accent = d?.accent ?? '#00ff88';
+                            const type = d?.project_type ?? 'side_project';
+                            const isOSS = d?.is_open_source ?? false;
+                            const stack = d?.stack ?? [];
+                            const liveLink = d?.links?.find(l => l.label === 'live');
+                            const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
+                            return (
+                                <article class="project-card project-card--featured reveal-stagger" style={`--accent: ${accent};`}>
+                                    <div class="card-accent-bar"></div>
+                                    <div class="card-body">
+                                        <div class="card-top">
+                                            <div class="card-badges">
+                                                <span class="badge badge--featured">★ Featured</span>
+                                                {isOSS && <span class="badge badge--oss">Open Source</span>}
+                                                <span class="badge badge--type" style={`color: ${typeColors[type]};`}>{typeLabels[type] ?? type}</span>
+                                            </div>
+                                        </div>
+                                        <h3 class="card-title">{p.title}</h3>
+                                        {p.description && <p class="card-desc text-muted">{p.description}</p>}
+                                        {stack.length > 0 && (
+                                            <div class="card-stack">
+                                                {stack.slice(0, 6).map(t => (
+                                                    <span class="stack-tag font-mono">{t}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div class="card-links">
+                                            <a href={`/projects/${d?.slug}`} class="card-link card-link--primary font-mono">
+                                                View Details →
+                                            </a>
+                                            {liveLink && (
+                                                <a href={liveLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
+                                                    Live ↗
+                                                </a>
+                                            )}
+                                            {repoLink && (
+                                                <a href={repoLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
+                                                    Repo ↗
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {others.length > 0 && (
+                <section class="section-block reveal">
+                    <h2 class="section-title font-mono">{highlighted.length > 0 ? '// other projects' : '// all projects'}</h2>
+                    <div class="projects-grid projects-grid--compact">
+                        {others.map((p) => {
+                            const d = p.web_profile?.data;
+                            const accent = d?.accent ?? '#00ff88';
+                            const type = d?.project_type ?? 'side_project';
+                            const isOSS = d?.is_open_source ?? false;
+                            const stack = d?.stack ?? [];
+                            const liveLink = d?.links?.find(l => l.label === 'live');
+                            const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
+                            return (
+                                <article class="project-card reveal-stagger" style={`--accent: ${accent};`}>
+                                    <div class="card-accent-bar"></div>
+                                    <div class="card-body">
+                                        <div class="card-top">
+                                            <div class="card-badges">
+                                                {isOSS && <span class="badge badge--oss">Open Source</span>}
+                                                <span class="badge badge--type" style={`color: ${typeColors[type]};`}>{typeLabels[type] ?? type}</span>
+                                            </div>
+                                        </div>
+                                        <h3 class="card-title">{p.title}</h3>
+                                        {p.description && <p class="card-desc text-muted">{p.description}</p>}
+                                        {stack.length > 0 && (
+                                            <div class="card-stack">
+                                                {stack.slice(0, 5).map(t => (
+                                                    <span class="stack-tag font-mono">{t}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div class="card-links">
+                                            <a href={`/projects/${d?.slug}`} class="card-link card-link--primary font-mono">
+                                                View →
+                                            </a>
+                                            {liveLink && (
+                                                <a href={liveLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
+                                                    Live ↗
+                                                </a>
+                                            )}
+                                            {repoLink && (
+                                                <a href={repoLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
+                                                    Repo ↗
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {projects.length === 0 && (
+                <div class="empty-page reveal">
+                    <p class="font-mono text-muted">// no projects yet</p>
+                </div>
+            )}
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .projects-page {
+        padding: 4rem 0 6rem;
+    }
+
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+    }
+
+    .page-header {
+        margin-bottom: 3rem;
+    }
+
+    .page-eyebrow {
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-sub {
+        font-size: 0.95rem;
+    }
+
+    .section-block {
+        margin-bottom: 3rem;
+    }
+
+    .section-title {
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 1.25rem;
+        text-transform: lowercase;
+    }
+
+    .projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .project-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .project-card:hover {
+        border-color: var(--accent, var(--border-glow));
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 20px rgba(var(--accent-rgb, 0,255,136), 0.08);
+    }
+
+    .card-accent-bar {
+        height: 3px;
+        background: var(--accent, var(--green));
+    }
+
+    .card-body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 0.75rem;
+    }
+
+    .card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .card-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .badge {
+        font-family: var(--font-mono);
+        font-size: 0.6rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    .badge--featured {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .badge--oss {
+        background: rgba(0, 255, 136, 0.08);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .badge--type {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        font-size: 0.6rem;
+    }
+
+    .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.3;
+    }
+
+    .card-desc {
+        font-size: 0.85rem;
+        line-height: 1.6;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .card-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: auto;
+    }
+
+    .stack-tag {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.5rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-muted);
+    }
+
+    .card-links {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+        margin-top: auto;
+    }
+
+    .card-link {
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+        transition: opacity 0.15s;
+    }
+
+    .card-link--primary {
+        color: var(--accent, var(--green));
+    }
+
+    .card-link--secondary {
+        color: var(--text-muted);
+    }
+
+    .card-link:hover {
+        opacity: 0.7;
+    }
+
+    .empty-page {
+        padding: 4rem 0;
+        text-align: center;
+    }
+
+    @media (max-width: 640px) {
+        .page-title {
+            font-size: 1.75rem;
+        }
+
+        .projects-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

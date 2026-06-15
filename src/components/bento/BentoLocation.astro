@@ -1,5 +1,11 @@
 ---
 import LocationIcon from "../../assets/icons/LocationIcon.astro";
+
+interface Props {
+    location?: string;
+}
+
+const { location = "Jakarta, Indonesia" } = Astro.props;
 ---
 
 <div class="bento-card bento-card--location">
@@ -13,7 +19,7 @@ import LocationIcon from "../../assets/icons/LocationIcon.astro";
             />
         </div>
         <div class="location-details">
-            <span class="location-city">Jakarta, Indonesia</span>
+            <span class="location-city">{location}</span>
             <div class="location-time">
                 <span class="time-dot"></span>
                 <span id="local-time" class="font-mono text-muted">00:00:00</span

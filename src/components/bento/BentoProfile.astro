@@ -1,19 +1,33 @@
 ---
 import userPhoto from "../../assets/images/user-photo.JPG";
 import QuoteIcon from "../../assets/icons/QuoteIcon.astro";
+import type { ApiSettings } from "../../types/index";
+
+interface Props {
+    settings: ApiSettings;
+}
+
+const { settings } = Astro.props;
+const isAvailable = settings.available_for_work === 'true';
 ---
 
 <article class="bento-card bento-card--featured" id="profile">
     <div class="featured-portrait-container">
         <img
             src={userPhoto.src}
-            alt="Ismail Alam"
+            alt={settings.profile_name || "Ismail Alam"}
             class="featured-portrait"
         />
         <div class="portrait-overlay"></div>
     </div>
 
     <div class="quote-content-large">
+        {isAvailable && (
+            <div class="available-badge">
+                <span class="available-dot"></span>
+                <span>Available for work</span>
+            </div>
+        )}
         <QuoteIcon class="quote-icon-large" width="40" height="40" />
         <div class="quote-text-large">
             <span id="dynamic-typing-text" class="text-green font-mono"></span
@@ -111,6 +125,31 @@ import QuoteIcon from "../../assets/icons/QuoteIcon.astro";
         animation: blink 1s step-end infinite;
         color: var(--green);
     }
+
+    .available-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        font-family: var(--font-mono);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        background: rgba(0, 255, 136, 0.06);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        margin-bottom: 0.75rem;
+        width: fit-content;
+    }
+
+    .available-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        animation: blink 1.5s step-end infinite;
+        flex-shrink: 0;
+    }
+
 
     @media (max-width: 768px) {
         .bento-card--featured {

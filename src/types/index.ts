@@ -8,6 +8,7 @@ export interface ApiProject {
     title: string;
     description: string;
     web_profile: {
+        is_highlighted: boolean;
         data: {
             slug: string;
             stack: string[];
@@ -15,6 +16,8 @@ export interface ApiProject {
             images: string[];
             content: string;
             links: ApiProjectLink[];
+            is_open_source: boolean;
+            project_type: 'production' | 'client_work' | 'side_project';
         };
     };
 }
@@ -29,6 +32,24 @@ export interface Project {
     images: string[];
     content: string;
     links: ApiProjectLink[];
+    is_highlighted: boolean;
+    is_open_source: boolean;
+    project_type: 'production' | 'client_work' | 'side_project';
+}
+
+export interface ApiSettings {
+    available_for_work: string;
+    profile_name: string;
+    profile_bio: string;
+    profile_location: string;
+    profile_email: string;
+}
+
+export interface ApiStats {
+    years_exp: string;
+    total_projects: number;
+    prod_apps: number;
+    open_source: number;
 }
 
 export interface ExperienceWebProfile {

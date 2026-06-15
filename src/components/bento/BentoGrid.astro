@@ -1,6 +1,6 @@
 ---
 import { apiFetch } from "../../utils/api";
-import type { Experience, ApiProject, ApiCertificate, MasterSkillItem, SkillGroup } from "../../types/index";
+import type { Experience, ApiCertificate, MasterSkillItem, SkillGroup, ApiSettings, ApiStats } from "../../types/index";
 
 import BentoProfile from "./BentoProfile.astro";
 import BentoStats from "./BentoStats.astro";
@@ -12,15 +12,29 @@ import BentoWakatime from "./BentoWakatime.astro";
 
 interface MasterResponse { items: MasterSkillItem[]; }
 
-const [apiExperiences, apiCertificates, apiSkills] = await Promise.all([
+const [apiExperiences, apiCertificates, apiSkills, apiSettings, apiStats] = await Promise.all([
     apiFetch<Experience[]>("/experiences"),
     apiFetch<ApiCertificate[]>("/certificates"),
     apiFetch<MasterResponse>("/master/skills"),
+    apiFetch<ApiSettings>("/settings"),
+    apiFetch<ApiStats>("/stats"),
 ]);
 
 const experiences: Experience[] = apiExperiences ?? [];
-
 const certificates = apiCertificates ?? [];
+const settings: ApiSettings = apiSettings ?? {
+    available_for_work: 'false',
+    profile_name: '',
+    profile_bio: '',
+    profile_location: '',
+    profile_email: '',
+};
+const stats: ApiStats = apiStats ?? {
+    years_exp: '0',
+    total_projects: 0,
+    prod_apps: 0,
+    open_source: 0,
+};
 
 const skillGroups: SkillGroup[] = [];
 if (apiSkills) {
@@ -39,12 +53,12 @@ if (apiSkills) {
 <section class="section bento-section" id="bento">
     <div class="container">
         <div class="bento-grid">
-            <BentoProfile />
-            <BentoStats />
+            <BentoProfile settings={settings} />
+            <BentoStats stats={stats} />
             <BentoCertificatesPreview certificates={certificates} />
             <BentoExperiencePreview experiences={experiences} />
             <BentoTechStack skillGroups={skillGroups} />
-            <BentoLocation />
+            <BentoLocation location={settings.profile_location} />
             <BentoWakatime />
         </div>
     </div>
