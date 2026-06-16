@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import Navbar from "../components/Navbar.astro";
 import Modal from "../components/Modal.astro";
+import CvFab from "../components/CvFab.astro";
 interface Props {
 	title?: string;
 	description?: string;
@@ -43,6 +44,7 @@ const {
 		<Navbar />
 		<slot />
 		<Modal />
+		<CvFab />
 		<!-- Scroll Reveal Script -->
 		<script>
 			const observer = new IntersectionObserver(
