@@ -49,7 +49,6 @@ const typeColors: Record<string, string> = {
                             const d = p.web_profile?.data;
                             const accent = d?.accent ?? '#00ff88';
                             const type = d?.project_type ?? 'side_project';
-                            const isOSS = d?.project_type === 'open_source';
                             const stack = d?.stack ?? [];
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
@@ -60,7 +59,6 @@ const typeColors: Record<string, string> = {
                                         <div class="card-top">
                                             <div class="card-badges">
                                                 <span class="badge badge--featured">★ Featured</span>
-                                                {isOSS && <span class="badge badge--oss">Open Source</span>}
                                                 <span class="badge badge--type" style={`color: ${typeColors[type]};`}>{typeLabels[type] ?? type}</span>
                                             </div>
                                         </div>
@@ -104,7 +102,6 @@ const typeColors: Record<string, string> = {
                             const d = p.web_profile?.data;
                             const accent = d?.accent ?? '#00ff88';
                             const type = d?.project_type ?? 'side_project';
-                            const isOSS = d?.project_type === 'open_source';
                             const stack = d?.stack ?? [];
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
@@ -114,7 +111,6 @@ const typeColors: Record<string, string> = {
                                     <div class="card-body">
                                         <div class="card-top">
                                             <div class="card-badges">
-                                                {isOSS && <span class="badge badge--oss">Open Source</span>}
                                                 <span class="badge badge--type" style={`color: ${typeColors[type]};`}>{typeLabels[type] ?? type}</span>
                                             </div>
                                         </div>

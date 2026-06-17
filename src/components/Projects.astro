@@ -26,7 +26,6 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
                     const stack = p.web_profile?.data?.stack ?? [];
                     const images = p.web_profile?.data?.images ?? [];
                     const links = p.web_profile?.data?.links ?? [];
-                    const isOSS = p.web_profile?.data?.project_type === 'open_source';
                     const pType = p.web_profile?.data?.project_type ?? 'side_project';
                     const thumb = images[0] ?? null;
 
@@ -49,7 +48,6 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
                                         <h3 class="project-name">{p.title}</h3>
                                     </div>
                                     <div class="project-badges font-mono">
-                                        {isOSS && <span class="badge badge--oss">OSS</span>}
                                         <span class="badge badge--type">{typeLabel[pType] ?? pType}</span>
                                     </div>
                                 </div>
