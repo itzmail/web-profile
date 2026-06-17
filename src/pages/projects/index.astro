@@ -12,18 +12,29 @@ const typeLabels: Record<string, string> = {
     production: 'Production App',
     client_work: 'Client Work',
     side_project: 'Side Project',
+    open_source: 'Open Source',
 };
 
 const typeColors: Record<string, string> = {
     production: 'var(--green)',
     client_work: 'var(--cyan)',
     side_project: 'var(--text-muted)',
+    open_source: 'var(--purple)',
 };
 ---
 
 <Layout title="Projects — Ismail Alam" description="All projects by Ismail Alam">
     <main class="projects-page">
         <div class="container">
+            <nav class="breadcrumb">
+                <a href="/" class="back-link font-mono">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    Back to Home
+                </a>
+            </nav>
+
             <header class="page-header reveal">
                 <p class="font-mono text-muted page-eyebrow">// projects</p>
                 <h1 class="page-title">All Projects</h1>
@@ -38,7 +49,7 @@ const typeColors: Record<string, string> = {
                             const d = p.web_profile?.data;
                             const accent = d?.accent ?? '#00ff88';
                             const type = d?.project_type ?? 'side_project';
-                            const isOSS = d?.is_open_source ?? false;
+                            const isOSS = d?.project_type === 'open_source';
                             const stack = d?.stack ?? [];
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
@@ -93,7 +104,7 @@ const typeColors: Record<string, string> = {
                             const d = p.web_profile?.data;
                             const accent = d?.accent ?? '#00ff88';
                             const type = d?.project_type ?? 'side_project';
-                            const isOSS = d?.is_open_source ?? false;
+                            const isOSS = d?.project_type === 'open_source';
                             const stack = d?.stack ?? [];
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
@@ -157,6 +168,24 @@ const typeColors: Record<string, string> = {
         max-width: 1100px;
         margin: 0 auto;
         padding: 0 1.5rem;
+    }
+
+    .breadcrumb {
+        margin-bottom: 2.5rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color var(--duration) var(--ease);
+    }
+
+    .back-link:hover {
+        color: var(--green);
     }
 
     .page-header {

@@ -26,7 +26,7 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
                     const stack = p.web_profile?.data?.stack ?? [];
                     const images = p.web_profile?.data?.images ?? [];
                     const links = p.web_profile?.data?.links ?? [];
-                    const isOSS = p.web_profile?.data?.is_open_source ?? false;
+                    const isOSS = p.web_profile?.data?.project_type === 'open_source';
                     const pType = p.web_profile?.data?.project_type ?? 'side_project';
                     const thumb = images[0] ?? null;
 

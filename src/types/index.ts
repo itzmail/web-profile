@@ -16,8 +16,7 @@ export interface ApiProject {
             images: string[];
             content: string;
             links: ApiProjectLink[];
-            is_open_source: boolean;
-            project_type: 'production' | 'client_work' | 'side_project';
+            project_type: 'production' | 'client_work' | 'side_project' | 'open_source';
         };
     };
 }
@@ -33,8 +32,7 @@ export interface Project {
     content: string;
     links: ApiProjectLink[];
     is_highlighted: boolean;
-    is_open_source: boolean;
-    project_type: 'production' | 'client_work' | 'side_project';
+    project_type: 'production' | 'client_work' | 'side_project' | 'open_source';
 }
 
 export interface ApiSettings {
