@@ -38,24 +38,38 @@ function formatDate(iso: string) {
                         <article class="post-card reveal">
                             <div class="post-log-prefix font-mono" aria-hidden="true">&gt;</div>
                             <div class="post-body">
-                                <div class="post-meta">
-                                    <time class="font-mono text-muted post-date" datetime={post.published_at}>
-                                        {formatDate(post.published_at)}
-                                    </time>
-                                    {post.reading_time && (
-                                        <span class="font-mono text-muted post-read-time">
-                                            · {post.reading_time} min read
-                                        </span>
+                                <div class="post-content">
+                                    <div class="post-meta">
+                                        <time class="font-mono text-muted post-date" datetime={post.published_at}>
+                                            {formatDate(post.published_at)}
+                                        </time>
+                                        {post.reading_time && (
+                                            <span class="font-mono text-muted post-read-time">
+                                                · {post.reading_time} min read
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <h2 class="post-title">
+                                        <a href={`/blog/${post.slug}`}>{post.title}</a>
+                                    </h2>
+
+                                    {post.excerpt && (
+                                        <p class="post-excerpt text-muted">{post.excerpt}</p>
                                     )}
+
+                                    {post.tags && post.tags.length > 0 && (
+                                        <div class="post-tags">
+                                            {post.tags.map((tag) => (
+                                                <span class="tag font-mono">{tag}</span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <a href={`/blog/${post.slug}`} class="post-read-link font-mono">
+                                        read more →
+                                    </a>
                                 </div>
-
-                                <h2 class="post-title">
-                                    <a href={`/blog/${post.slug}`}>{post.title}</a>
-                                </h2>
-
-                                {post.excerpt && (
-                                    <p class="post-excerpt text-muted">{post.excerpt}</p>
-                                )}
 
                                 {post.cover_image && (
                                     <a href={`/blog/${post.slug}`} class="post-cover-link">
@@ -67,18 +81,6 @@ function formatDate(iso: string) {
                                         />
                                     </a>
                                 )}
-
-                                {post.tags && post.tags.length > 0 && (
-                                    <div class="post-tags">
-                                        {post.tags.map((tag) => (
-                                            <span class="tag font-mono">{tag}</span>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <a href={`/blog/${post.slug}`} class="post-read-link font-mono">
-                                    read more →
-                                </a>
                             </div>
                         </article>
                     ))}
@@ -135,7 +137,14 @@ function formatDate(iso: string) {
         user-select: none;
     }
 
-    .post-body { display: flex; flex-direction: column; gap: 0.6rem; }
+    .post-body {
+        display: grid;
+        grid-template-columns: 1fr 220px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .post-content { display: flex; flex-direction: column; gap: 0.6rem; }
 
     .post-meta {
         display: flex;
@@ -159,16 +168,23 @@ function formatDate(iso: string) {
     .post-excerpt {
         font-size: 0.875rem;
         line-height: 1.7;
-        max-width: 65ch;
     }
 
-    .post-cover-link { display: block; margin-top: 0.25rem; }
+    .post-cover-link { display: block; }
     .post-cover {
         width: 100%;
-        max-height: 200px;
+        height: 130px;
         object-fit: cover;
         border-radius: 4px;
         border: 1px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+        .post-body {
+            grid-template-columns: 1fr;
+        }
+        .post-cover-link { order: -1; }
+        .post-cover { height: 180px; }
     }
 
     .post-tags {
