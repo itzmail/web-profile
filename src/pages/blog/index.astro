@@ -29,17 +29,18 @@ function formatDate(iso: string) {
                 <p class="page-sub text-muted">Thoughts on engineering, architecture, and building things that last.</p>
             </header>
 
-            <div class="search-form reveal">
+            <form class="search-form reveal" method="get" action="/blog">
                 <span class="search-prefix font-mono">$</span>
                 <input
                     type="search"
-                    id="search-input"
+                    name="q"
                     class="search-input font-mono"
                     placeholder="grep posts..."
                     value={q}
                     autocomplete="off"
                 />
-            </div>
+                <button type="submit" class="search-btn font-mono">→</button>
+            </form>
 
             {q && (
                 <p class="search-result-label font-mono text-muted reveal">
@@ -257,6 +258,18 @@ function formatDate(iso: string) {
     }
     .search-input::placeholder { color: var(--text-muted); }
 
+    .search-btn {
+        background: transparent;
+        border: none;
+        color: var(--green);
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 0 0.25rem;
+        flex-shrink: 0;
+        transition: opacity var(--duration) var(--ease);
+    }
+    .search-btn:hover { opacity: 0.7; }
+
     .search-result-label {
         font-size: 0.75rem;
         margin-bottom: 1rem;
@@ -264,16 +277,3 @@ function formatDate(iso: string) {
     }
 </style>
 
-<script>
-    const input = document.getElementById("search-input") as HTMLInputElement | null;
-    let timer: ReturnType<typeof setTimeout>;
-
-    input?.addEventListener("input", () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-            const q = input.value.trim();
-            const url = q ? `/blog?q=${encodeURIComponent(q)}` : "/blog";
-            window.location.href = url;
-        }, 400);
-    });
-</script>
