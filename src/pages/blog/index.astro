@@ -1,0 +1,194 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { apiFetch } from "../../utils/api";
+import type { PostListItem } from "../../types/index";
+
+const posts = await apiFetch<PostListItem[]>("/posts") ?? [];
+
+function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+}
+---
+
+<Layout
+    title="Blog — Ismail Alam"
+    description="Thoughts, learnings, and write-ups on software engineering, architecture, and the craft of building things."
+    showCvFab={false}
+>
+    <main class="blog-list-page">
+        <div class="container">
+
+            <header class="page-header reveal">
+                <p class="font-mono text-muted page-eyebrow">// blog</p>
+                <h1 class="page-title">Writing</h1>
+                <p class="page-sub text-muted">Thoughts on engineering, architecture, and building things that last.</p>
+            </header>
+
+            {posts.length === 0 ? (
+                <div class="empty-state reveal">
+                    <p class="font-mono text-muted">// no posts yet — check back soon</p>
+                </div>
+            ) : (
+                <div class="posts-list">
+                    {posts.map((post) => (
+                        <article class="post-card reveal">
+                            {post.cover_image && (
+                                <a href={`/blog/${post.slug}`} class="post-cover-link">
+                                    <img
+                                        src={post.cover_image}
+                                        alt={post.title}
+                                        class="post-cover"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            )}
+                            <div class="post-body">
+                                <div class="post-meta">
+                                    <time class="font-mono text-muted post-date" datetime={post.published_at}>
+                                        {formatDate(post.published_at)}
+                                    </time>
+                                    {post.reading_time && (
+                                        <span class="font-mono text-muted post-read-time">
+                                            {post.reading_time} min read
+                                        </span>
+                                    )}
+                                </div>
+
+                                <h2 class="post-title">
+                                    <a href={`/blog/${post.slug}`}>{post.title}</a>
+                                </h2>
+
+                                {post.excerpt && (
+                                    <p class="post-excerpt text-muted">{post.excerpt}</p>
+                                )}
+
+                                {post.tags && post.tags.length > 0 && (
+                                    <div class="post-tags">
+                                        {post.tags.map((tag) => (
+                                            <span class="tag font-mono">{tag}</span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <a href={`/blog/${post.slug}`} class="post-read-link font-mono">
+                                    Read more →
+                                </a>
+                            </div>
+                        </article>
+                    ))}
+                </div>
+            )}
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .blog-list-page {
+        padding-top: calc(var(--nav-h) + 3rem);
+        padding-bottom: 6rem;
+    }
+
+
+    .page-header { margin-bottom: 3rem; }
+    .page-eyebrow { font-size: 0.75rem; margin-bottom: 0.5rem; }
+    .page-title {
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.1;
+        margin-bottom: 0.75rem;
+    }
+    .page-sub { font-size: 1rem; max-width: 55ch; line-height: 1.7; }
+
+    .empty-state {
+        padding: 4rem 0;
+        text-align: center;
+    }
+
+    .posts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+    }
+
+    .post-card {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 1.75rem;
+        padding-bottom: 2.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .post-card:last-child { border-bottom: none; }
+
+    .post-cover-link { display: block; }
+    .post-cover {
+        width: 100%;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+
+    .post-body { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.75rem;
+    }
+
+    .post-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .post-title a {
+        color: var(--text);
+        text-decoration: none;
+        transition: color var(--duration) var(--ease);
+    }
+    .post-title a:hover { color: var(--green); }
+
+    .post-excerpt {
+        font-size: 0.9rem;
+        line-height: 1.7;
+        max-width: 65ch;
+    }
+
+    .post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    .tag {
+        font-size: 0.7rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.15rem 0.5rem;
+        color: var(--text-muted);
+    }
+
+    .post-read-link {
+        font-size: 0.8rem;
+        color: var(--green);
+        text-decoration: none;
+        margin-top: auto;
+        transition: opacity var(--duration) var(--ease);
+    }
+    .post-read-link:hover { opacity: 0.75; }
+
+    @media (max-width: 640px) {
+        .post-card {
+            grid-template-columns: 1fr;
+        }
+        .post-cover {
+            height: 200px;
+        }
+    }
+</style>

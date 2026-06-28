@@ -109,6 +109,23 @@ export interface WakatimeStats {
     human_readable_daily_average: string;
 }
 
+export interface PostListItem {
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    cover_image: string | null;
+    tags: string[];
+    published_at: string;
+    reading_time: number | null;
+}
+
+export interface Post extends PostListItem {
+    body: string;
+    meta_title: string | null;
+    meta_description: string | null;
+}
+
 export interface ApiCertificate {
     id: string;
     title: string;

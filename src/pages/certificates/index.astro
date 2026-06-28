@@ -35,9 +35,7 @@ import Layout from "../../layouts/Layout.astro";
                 </div>
             </div>
 
-            <div id="certs-error" class="error-state" style="display:none;">
-                <p class="font-mono text-muted">Failed to load certificates.</p>
-            </div>
+            <div id="certs-error" class="error-state" style="display:none;text-align:center;padding:4rem 0;"></div>
 
             <div id="certs-grid" class="certs-grid" style="display:none;"></div>
         </div>
@@ -269,7 +267,11 @@ import Layout from "../../layouts/Layout.astro";
 
             if (certs.length === 0) {
                 countEl.textContent = "0 credentials";
-                errorEl.innerHTML = `<p class="font-mono text-muted" style="font-size:0.875rem;">No certificates yet.</p>`;
+                errorEl.innerHTML = `
+                    <p class="font-mono text-muted" style="font-size:0.875rem;">// no certificates yet</p>
+                    <p style="font-size:0.9rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.6;max-width:40ch;">
+                        Still earning them — credentials will appear here once added.
+                    </p>`;
                 errorEl.style.display = "block";
                 return;
             }
@@ -280,6 +282,11 @@ import Layout from "../../layouts/Layout.astro";
             attachCardListeners();
         } catch {
             loading.style.display = "none";
+            errorEl.innerHTML = `
+                <p class="font-mono text-muted" style="font-size:0.875rem;">// failed to load</p>
+                <p style="font-size:0.9rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.6;">
+                    Couldn't reach the server — try refreshing the page.
+                </p>`;
             errorEl.style.display = "block";
         }
     }

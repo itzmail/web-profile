@@ -6,10 +6,12 @@ import CvFab from "../components/CvFab.astro";
 interface Props {
 	title?: string;
 	description?: string;
+	showCvFab?: boolean;
 }
 const {
 	title = "Ismail Alam — Fullstack Architect",
 	description = "Fullstack developer & architect. Building scalable systems, beautiful interfaces, and everything in between.",
+	showCvFab = true,
 } = Astro.props;
 ---
 
@@ -44,7 +46,7 @@ const {
 		<Navbar />
 		<slot />
 		<Modal />
-		<CvFab />
+		{showCvFab && <CvFab />}
 		<!-- Scroll Reveal Script -->
 		<script>
 			const observer = new IntersectionObserver(

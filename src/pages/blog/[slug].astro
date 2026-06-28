@@ -1,0 +1,251 @@
+---
+import { marked } from "marked";
+import { apiFetch } from "../../utils/api";
+import Layout from "../../layouts/Layout.astro";
+import type { Post } from "../../types/index";
+
+const { slug } = Astro.params;
+
+const post = await apiFetch<Post>(`/posts/${slug}`);
+
+if (!post) {
+    return Astro.redirect("/404");
+}
+
+const htmlContent = post.body ? marked(post.body) : "";
+
+function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+}
+
+const pageTitle = post.meta_title ?? post.title;
+const pageDesc = post.meta_description ?? post.excerpt ?? "";
+---
+
+<Layout title={`${pageTitle} — Ismail Alam`} description={pageDesc} showCvFab={false}>
+    <!-- Reading progress bar -->
+    <div id="progress-bar"></div>
+
+    <main class="blog-detail">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="/blog" class="back-link font-mono">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    Back to Blog
+                </a>
+            </nav>
+
+            <article>
+                <header class="post-header reveal">
+                    <div class="post-meta">
+                        <time class="font-mono text-muted" datetime={post.published_at}>
+                            {formatDate(post.published_at)}
+                        </time>
+                        {post.reading_time && (
+                            <span class="font-mono text-muted">·</span>
+                            <span class="font-mono text-muted">{post.reading_time} min read</span>
+                        )}
+                    </div>
+
+                    <h1 class="post-title">{post.title}</h1>
+
+                    {post.excerpt && (
+                        <p class="post-excerpt text-muted">{post.excerpt}</p>
+                    )}
+
+                    {post.tags && post.tags.length > 0 && (
+                        <div class="post-tags">
+                            {post.tags.map((tag) => (
+                                <span class="tag font-mono">{tag}</span>
+                            ))}
+                        </div>
+                    )}
+                </header>
+
+                {post.cover_image && (
+                    <div class="cover-wrap reveal">
+                        <img src={post.cover_image} alt={post.title} class="cover-img" />
+                    </div>
+                )}
+
+                <div class="post-content reveal" set:html={htmlContent} />
+            </article>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    #progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 3px;
+        background: var(--green);
+        z-index: 1000;
+        transition: width 0.1s linear;
+    }
+
+    .blog-detail {
+        padding-top: calc(var(--nav-h) + 3rem);
+        padding-bottom: 6rem;
+    }
+
+    .breadcrumb { margin-bottom: 2.5rem; }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color var(--duration) var(--ease);
+    }
+    .back-link:hover { color: var(--green); }
+
+    .post-header { margin-bottom: 2.5rem; }
+
+    .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .post-title {
+        font-size: clamp(1.75rem, 5vw, 3rem);
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.15;
+        margin-bottom: 1rem;
+    }
+
+    .post-excerpt {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        max-width: 65ch;
+        margin-bottom: 1rem;
+    }
+
+    .post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    .tag {
+        font-size: 0.7rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.15rem 0.5rem;
+        color: var(--text-muted);
+    }
+
+    .cover-wrap {
+        margin-bottom: 2.5rem;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+    .cover-img {
+        width: 100%;
+        max-height: 480px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .post-content {
+        max-width: 72ch;
+        line-height: 1.8;
+        color: var(--text-muted);
+    }
+
+    .post-content :global(h1),
+    .post-content :global(h2),
+    .post-content :global(h3),
+    .post-content :global(h4) {
+        color: var(--text);
+        margin-top: 2rem;
+        margin-bottom: 0.75rem;
+    }
+    .post-content :global(h2) {
+        font-size: 1.375rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .post-content :global(h3) { font-size: 1.1rem; }
+    .post-content :global(p) { margin-bottom: 1rem; }
+    .post-content :global(ul),
+    .post-content :global(ol) { margin-bottom: 1rem; padding-left: 1.5rem; }
+    .post-content :global(li) { margin-bottom: 0.4rem; }
+    .post-content :global(code) {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.1em 0.4em;
+        color: var(--green);
+    }
+    .post-content :global(pre) {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.25rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+    .post-content :global(pre code) {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 0.875rem;
+    }
+    .post-content :global(a) {
+        color: var(--green);
+        text-decoration: underline;
+        text-decoration-color: rgba(0, 255, 136, 0.3);
+    }
+    .post-content :global(a:hover) { text-decoration-color: var(--green); }
+    .post-content :global(blockquote) {
+        border-left: 3px solid var(--green);
+        padding-left: 1rem;
+        margin: 1rem 0;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+    .post-content :global(img) {
+        max-width: 100%;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin: 1rem 0;
+    }
+    .post-content :global(hr) {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 2rem 0;
+    }
+</style>
+
+<script>
+    const bar = document.getElementById("progress-bar");
+    if (bar) {
+        let raf: number;
+        window.addEventListener("scroll", () => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(() => {
+                const scrolled = window.scrollY;
+                const total = document.documentElement.scrollHeight - window.innerHeight;
+                bar.style.width = total > 0 ? `${(scrolled / total) * 100}%` : "0%";
+            });
+        }, { passive: true });
+    }
+</script>
