@@ -200,9 +200,9 @@ function formatDate(iso: string) {
     }
 
     @media (max-width: 640px) {
-        .post-body {
-            grid-template-columns: 1fr;
-        }
+        .post-log-prefix { display: none; }
+        .post-card { grid-template-columns: 1fr; }
+        .post-body { grid-template-columns: 1fr; }
         .post-cover-link { order: -1; }
         .post-cover { height: 180px; }
     }

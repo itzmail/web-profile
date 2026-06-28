@@ -3,6 +3,10 @@ import { marked } from "marked";
 import { apiFetch } from "../../utils/api";
 import Layout from "../../layouts/Layout.astro";
 import type { Post } from "../../types/index";
+import TwitterIcon from "../../assets/icons/TwitterIcon.astro";
+import LinkedinIcon from "../../assets/icons/LinkedinIcon.astro";
+import WhatsAppIcon from "../../assets/icons/WhatsAppIcon.astro";
+import FacebookIcon from "../../assets/icons/FacebookIcon.astro";
 
 const { slug } = Astro.params;
 
@@ -75,9 +79,41 @@ const pageDesc = post.meta_description ?? post.excerpt ?? "";
                 )}
 
                 <div class="post-content reveal" set:html={htmlContent} />
+
             </article>
         </div>
     </main>
+
+    <div class="share-fab" id="share-fab">
+        <div class="share-items" id="share-items">
+            <a class="share-item share-item--x" id="share-x" href="#" target="_blank" rel="noopener" aria-label="Share on X">
+                <TwitterIcon width="18" height="18" class="icon-x" />
+            </a>
+            <a class="share-item share-item--wa" id="share-wa" href="#" target="_blank" rel="noopener" aria-label="Share on WhatsApp">
+                <WhatsAppIcon width="18" height="18" />
+            </a>
+            <a class="share-item share-item--li" id="share-li" href="#" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+                <LinkedinIcon width="18" height="18" />
+            </a>
+            <a class="share-item share-item--fb" id="share-fb" href="#" target="_blank" rel="noopener" aria-label="Share on Facebook">
+                <FacebookIcon width="18" height="18" class="icon-fb" />
+            </a>
+            <button class="share-item" id="share-copy" aria-label="Copy link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+            </button>
+        </div>
+        <button class="share-trigger" id="share-trigger" aria-label="Share">
+            <svg class="icon-share" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <svg class="icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    </div>
 </Layout>
 
 <style>
@@ -233,6 +269,89 @@ const pageDesc = post.meta_description ?? post.excerpt ?? "";
         border-top: 1px solid var(--border);
         margin: 2rem 0;
     }
+
+    .share-fab {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        z-index: 100;
+    }
+
+    .share-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: border-color var(--duration) var(--ease), color var(--duration) var(--ease);
+    }
+    .share-trigger:hover { border-color: var(--green); color: var(--green); }
+
+    .icon-close { display: none; }
+    .share-fab.open .icon-share { display: none; }
+    .share-fab.open .icon-close { display: block; }
+
+    .share-items {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.2s ease;
+    }
+    .share-fab.open .share-items {
+        max-height: 300px;
+        opacity: 1;
+    }
+
+    .share-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        cursor: pointer;
+        text-decoration: none;
+        transform: scale(0.7);
+        opacity: 0;
+        transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+    }
+    .share-fab.open .share-item {
+        transform: scale(1);
+        opacity: 1;
+    }
+    /* stagger per item */
+    .share-fab.open .share-item:nth-child(1) { transition-delay: 0.05s; }
+    .share-fab.open .share-item:nth-child(2) { transition-delay: 0.1s; }
+    .share-fab.open .share-item:nth-child(3) { transition-delay: 0.15s; }
+    .share-fab.open .share-item:nth-child(4) { transition-delay: 0.2s; }
+    .share-fab.open .share-item:nth-child(5) { transition-delay: 0.25s; }
+
+    .share-item:hover { border-color: var(--green); transform: scale(1.1); }
+    .share-item--wa { color: #25D366; }
+    .share-item--li { color: #0A66C2; }
+    .share-item--fb { color: #1877F2; }
+
+    :global(.icon-x), :global(.icon-fb) {
+        background: #fff;
+        border-radius: 3px;
+        padding: 1px;
+    }
 </style>
 
 <script>
@@ -248,4 +367,35 @@ const pageDesc = post.meta_description ?? post.excerpt ?? "";
             });
         }, { passive: true });
     }
+
+    const url = encodeURIComponent(window.location.href);
+    const title = encodeURIComponent(document.title);
+
+    (document.getElementById("share-x") as HTMLAnchorElement).href =
+        `https://twitter.com/intent/tweet?text=${title}&url=${url}`;
+    (document.getElementById("share-wa") as HTMLAnchorElement).href =
+        `https://wa.me/?text=${title}%20${url}`;
+    (document.getElementById("share-li") as HTMLAnchorElement).href =
+        `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+    (document.getElementById("share-fb") as HTMLAnchorElement).href =
+        `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+
+    const fab = document.getElementById("share-fab")!;
+    document.getElementById("share-trigger")?.addEventListener("click", () => {
+        fab.classList.toggle("open");
+    });
+
+    // tutup kalau klik di luar
+    document.addEventListener("click", (e) => {
+        if (!fab.contains(e.target as Node)) fab.classList.remove("open");
+    });
+
+    document.getElementById("share-copy")?.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(window.location.href);
+        const btn = document.getElementById("share-copy")!;
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        setTimeout(() => {
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+        }, 2000);
+    });
 </script>
