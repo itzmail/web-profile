@@ -3,7 +3,8 @@ import Layout from "../../layouts/Layout.astro";
 import { apiFetch } from "../../utils/api";
 import type { PostListItem } from "../../types/index";
 
-const posts = await apiFetch<PostListItem[]>("/posts") ?? [];
+const q = Astro.url.searchParams.get("q") ?? "";
+const posts = await apiFetch<PostListItem[]>(`/posts${q ? `?q=${encodeURIComponent(q)}` : ""}`) ?? [];
 
 function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-US", {
@@ -27,6 +28,24 @@ function formatDate(iso: string) {
                 <h1 class="page-title">Writing</h1>
                 <p class="page-sub text-muted">Thoughts on engineering, architecture, and building things that last.</p>
             </header>
+
+            <form class="search-form reveal" method="get" action="/blog">
+                <span class="search-prefix font-mono">$</span>
+                <input
+                    type="search"
+                    name="q"
+                    class="search-input font-mono"
+                    placeholder="grep posts..."
+                    value={q}
+                    autocomplete="off"
+                />
+            </form>
+
+            {q && (
+                <p class="search-result-label font-mono text-muted reveal">
+                    // {posts.length} result{posts.length !== 1 ? "s" : ""} for "{q}"
+                </p>
+            )}
 
             {posts.length === 0 ? (
                 <div class="empty-state reveal">
@@ -209,4 +228,38 @@ function formatDate(iso: string) {
         transition: opacity var(--duration) var(--ease);
     }
     .post-read-link:hover { opacity: 0.75; }
+
+    .search-form {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.6rem 1rem;
+        transition: border-color var(--duration) var(--ease);
+    }
+    .search-form:focus-within { border-color: var(--green); }
+
+    .search-prefix {
+        font-size: 0.85rem;
+        color: var(--green);
+        user-select: none;
+    }
+
+    .search-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-size: 0.875rem;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .search-result-label {
+        font-size: 0.75rem;
+        margin-bottom: 1rem;
+        margin-top: -1rem;
+    }
 </style>
