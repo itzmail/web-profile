@@ -29,17 +29,17 @@ function formatDate(iso: string) {
                 <p class="page-sub text-muted">Thoughts on engineering, architecture, and building things that last.</p>
             </header>
 
-            <form class="search-form reveal" method="get" action="/blog">
+            <div class="search-form reveal">
                 <span class="search-prefix font-mono">$</span>
                 <input
                     type="search"
-                    name="q"
+                    id="search-input"
                     class="search-input font-mono"
                     placeholder="grep posts..."
                     value={q}
                     autocomplete="off"
                 />
-            </form>
+            </div>
 
             {q && (
                 <p class="search-result-label font-mono text-muted reveal">
@@ -263,3 +263,17 @@ function formatDate(iso: string) {
         margin-top: -1rem;
     }
 </style>
+
+<script>
+    const input = document.getElementById("search-input") as HTMLInputElement | null;
+    let timer: ReturnType<typeof setTimeout>;
+
+    input?.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const q = input.value.trim();
+            const url = q ? `/blog?q=${encodeURIComponent(q)}` : "/blog";
+            window.location.href = url;
+        }, 400);
+    });
+</script>
