@@ -31,11 +31,23 @@ const linkIcons: Record<string, string> = {
     appstore: "M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1.177 14.58L7.6 13.35l1.415-1.415 1.808 1.808 4.95-4.95 1.415 1.414-6.365 6.373z",
     youtube: "M19.59 6.69a4.83 4.83 0 01-3.77-2.75 12.65 12.65 0 00-8.45 0A4.83 4.83 0 013.6 6.69 49.17 49.17 0 002 12a49.17 49.17 0 001.6 5.31 4.83 4.83 0 003.77 2.75 12.65 12.65 0 008.45 0 4.83 4.83 0 003.77-2.75A49.17 49.17 0 0022 12a49.17 49.17 0 00-2.41-5.31zM10 15V9l5 3-5 3z",
 };
+
+const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: project.title,
+    description: project.description,
+    creator: { "@type": "Person", name: "Ismail Alam" },
+    ...(images[0] && { image: images[0] }),
+};
 ---
 
 <Layout
     title={`${project.title} — Ismail Alam`}
     description={project.description}
+    canonicalURL={`https://itsmail.dev/projects/${slug}`}
+    image={images[0]}
+    jsonLd={jsonLd}
 >
     <main class="project-detail">
         <div class="container">

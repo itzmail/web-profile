@@ -28,9 +28,28 @@ function formatDate(iso: string) {
 
 const pageTitle = post.meta_title ?? post.title;
 const pageDesc = post.meta_description ?? post.excerpt ?? "";
+const canonicalURL = `https://itsmail.dev/blog/${post.slug}`;
+
+const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: pageDesc,
+    datePublished: post.published_at,
+    author: { "@type": "Person", name: "Ismail Alam" },
+    ...(post.cover_image && { image: post.cover_image }),
+};
 ---
 
-<Layout title={`${pageTitle} — Ismail Alam`} description={pageDesc} showCvFab={false}>
+<Layout
+    title={`${pageTitle} — Ismail Alam`}
+    description={pageDesc}
+    showCvFab={false}
+    canonicalURL={canonicalURL}
+    type="article"
+    image={post.cover_image ?? undefined}
+    jsonLd={jsonLd}
+>
     <!-- Reading progress bar -->
     <div id="progress-bar"></div>
 

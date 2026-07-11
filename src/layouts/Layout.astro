@@ -7,12 +7,21 @@ interface Props {
 	title?: string;
 	description?: string;
 	showCvFab?: boolean;
+	image?: string;
+	canonicalURL?: string;
+	type?: "website" | "article";
+	jsonLd?: Record<string, unknown>;
 }
 const {
 	title = "Ismail Alam — Fullstack Architect",
 	description = "Fullstack developer & architect. Building scalable systems, beautiful interfaces, and everything in between.",
 	showCvFab = true,
+	image = "/favicon.svg",
+	canonicalURL = new URL(Astro.url.pathname, "https://itsmail.dev").toString(),
+	type = "website",
+	jsonLd,
 } = Astro.props;
+const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 ---
 
 <!DOCTYPE html>
@@ -33,11 +42,21 @@ const {
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		<meta name="author" content="Ismail Alam" />
+		<link rel="canonical" href={canonicalURL} />
 		<!-- OG -->
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
-		<meta property="og:type" content="website" />
+		<meta property="og:type" content={type} />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:image" content={absoluteImage} />
+		<meta property="og:site_name" content="itsmail.dev" />
 		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={absoluteImage} />
+		{jsonLd && (
+			<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+		)}
 		<!-- Preload fonts -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -4,11 +4,21 @@ import Hero from "../components/Hero.astro";
 import BentoGrid from "../components/bento/BentoGrid.astro";
 import Projects from "../components/Projects.astro";
 import Contact from "../components/Contact.astro";
+
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "Person",
+	name: "Ismail Alam",
+	url: "https://itsmail.dev",
+	jobTitle: "Fullstack Engineer",
+	description: "Fullstack developer & architect. Building scalable backend systems, beautiful interfaces, and everything in between.",
+};
 ---
 
 <Layout
 	title="Ismail Alam — Fullstack Architect"
 	description="Fullstack developer & architect. Building scalable backend systems, beautiful interfaces, and everything in between."
+	jsonLd={jsonLd}
 >
 	<main>
 		<Hero />
