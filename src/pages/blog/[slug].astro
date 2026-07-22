@@ -165,7 +165,7 @@ const jsonLd = {
     }
     .back-link:hover { color: var(--green); }
 
-    .post-header { margin-bottom: 2.5rem; }
+    .post-header { max-width: 80ch; margin: 0 auto 2.5rem; }
 
     .post-meta {
         display: flex;
@@ -205,7 +205,8 @@ const jsonLd = {
     }
 
     .cover-wrap {
-        margin-bottom: 2.5rem;
+        max-width: 80ch;
+        margin: 0 auto 2.5rem;
         border-radius: 12px;
         overflow: hidden;
         border: 1px solid var(--border);
@@ -218,7 +219,8 @@ const jsonLd = {
     }
 
     .post-content {
-        max-width: 72ch;
+        max-width: 80ch;
+        margin: 0 auto;
         line-height: 1.8;
         color: var(--text-muted);
     }
