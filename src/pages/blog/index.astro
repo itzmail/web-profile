@@ -72,7 +72,7 @@ function formatDate(iso: string) {
                                     </div>
 
                                     <h2 class="post-title">
-                                        <a href={`/blog/${post.slug}`}>{post.title}</a>
+                                        <a href={`/blog/${post.short_code}`}>{post.title}</a>
                                     </h2>
 
                                     {post.excerpt && (
@@ -87,13 +87,13 @@ function formatDate(iso: string) {
                                         </div>
                                     )}
 
-                                    <a href={`/blog/${post.slug}`} class="post-read-link font-mono">
+                                    <a href={`/blog/${post.short_code}`} class="post-read-link font-mono">
                                         read more →
                                     </a>
                                 </div>
 
                                 {post.cover_image && (
-                                    <a href={`/blog/${post.slug}`} class="post-cover-link">
+                                    <a href={`/blog/${post.short_code}`} class="post-cover-link">
                                         <img
                                             src={post.cover_image}
                                             alt={post.title}

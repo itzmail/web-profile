@@ -113,6 +113,7 @@ export interface PostListItem {
     id: string;
     title: string;
     slug: string;
+    short_code: string;
     excerpt: string | null;
     cover_image: string | null;
     tags: string[];
