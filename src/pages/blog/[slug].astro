@@ -44,11 +44,16 @@ const jsonLd = {
 <Layout
     title={`${pageTitle} — Ismail Alam`}
     description={pageDesc}
-    showCvFab={false}
     canonicalURL={canonicalURL}
     type="article"
     image={post.cover_image ?? undefined}
     jsonLd={jsonLd}
+    chatPageContext={{
+        type: "blog",
+        title: post.title,
+        description: post.excerpt ?? post.title,
+        extra: post.tags.length > 0 ? `Tags: ${post.tags.join(", ")}` : undefined,
+    }}
 >
     <!-- Reading progress bar -->
     <div id="progress-bar"></div>

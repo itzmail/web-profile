@@ -2,24 +2,30 @@
 import "../styles/global.css";
 import Navbar from "../components/Navbar.astro";
 import Modal from "../components/Modal.astro";
-import CvFab from "../components/CvFab.astro";
+import ChatWidget from "../components/ChatWidget.astro";
+interface ChatPageContext {
+	type: "project" | "blog";
+	title: string;
+	description: string;
+	extra?: string;
+}
 interface Props {
 	title?: string;
 	description?: string;
-	showCvFab?: boolean;
 	image?: string;
 	canonicalURL?: string;
 	type?: "website" | "article";
 	jsonLd?: Record<string, unknown>;
+	chatPageContext?: ChatPageContext;
 }
 const {
 	title = "Ismail Alam — Fullstack Architect",
 	description = "Fullstack developer & architect. Building scalable systems, beautiful interfaces, and everything in between.",
-	showCvFab = true,
 	image = "/favicon.svg",
 	canonicalURL = new URL(Astro.url.pathname, "https://itsmail.dev").toString(),
 	type = "website",
 	jsonLd,
+	chatPageContext,
 } = Astro.props;
 const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 ---
@@ -65,7 +71,7 @@ const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 		<Navbar />
 		<slot />
 		<Modal />
-		{showCvFab && <CvFab />}
+		<ChatWidget pageContext={chatPageContext} />
 		<!-- Scroll Reveal Script -->
 		<script>
 			const observer = new IntersectionObserver(
