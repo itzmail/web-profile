@@ -87,6 +87,15 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         if (input) input.disabled = isLoading;
     }
 
+    function appendTypingIndicator(): HTMLDivElement {
+        const div = document.createElement("div");
+        div.className = "chat-message chat-message--bot chat-message--typing";
+        div.innerHTML = "<span></span><span></span><span></span>";
+        messagesEl!.appendChild(div);
+        messagesEl!.scrollTop = messagesEl!.scrollHeight;
+        return div;
+    }
+
     async function sendMessage() {
         if (!input) return;
         const text = input.value.trim();
@@ -97,6 +106,8 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         input.value = "";
         setLoading(true);
 
+        const typingEl = appendTypingIndicator();
+
         try {
             const res = await fetch("/api/chat", {
                 method: "POST",
@@ -106,33 +117,42 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
             if (!res.ok) {
                 const data = (await res.json()) as { error?: string };
-                appendMessage("bot", data.error ?? "Maaf, chatbot lagi bermasalah, coba lagi nanti.");
+                typingEl.classList.remove("chat-message--typing");
+                typingEl.textContent = data.error ?? "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
                 return;
             }
 
             if (!res.body) {
-                appendMessage("bot", "Maaf, chatbot lagi bermasalah, coba lagi nanti.");
+                typingEl.classList.remove("chat-message--typing");
+                typingEl.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
                 return;
             }
 
-            const botEl = appendMessage("bot", "");
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let fullReply = "";
+            let firstChunk = true;
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 fullReply += decoder.decode(value, { stream: true });
-                botEl.textContent = fullReply;
+                if (firstChunk) {
+                    typingEl.classList.remove("chat-message--typing");
+                    typingEl.innerHTML = "";
+                    firstChunk = false;
+                }
+                typingEl.textContent = fullReply;
                 messagesEl!.scrollTop = messagesEl!.scrollHeight;
             }
 
-            botEl.innerHTML = renderMarkdown(fullReply);
+            typingEl.classList.remove("chat-message--typing");
+            typingEl.innerHTML = renderMarkdown(fullReply);
             messagesEl!.scrollTop = messagesEl!.scrollHeight;
             history.push({ role: "assistant", content: fullReply });
         } catch {
-            appendMessage("bot", "Maaf, chatbot lagi bermasalah, coba lagi nanti.");
+            typingEl.classList.remove("chat-message--typing");
+            typingEl.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
         } finally {
             setLoading(false);
         }
@@ -271,6 +291,40 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         background: var(--green);
         color: #000;
         align-self: flex-end;
+    }
+
+    :global(.chat-message--typing) {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.6rem 0.8rem;
+    }
+
+    :global(.chat-message--typing span) {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        animation: chat-typing-bounce 1.2s infinite ease-in-out;
+    }
+
+    :global(.chat-message--typing span:nth-child(2)) {
+        animation-delay: 0.2s;
+    }
+
+    :global(.chat-message--typing span:nth-child(3)) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes chat-typing-bounce {
+        0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.4;
+        }
+        30% {
+            transform: translateY(-4px);
+            opacity: 1;
+        }
     }
 
     .chat-input-row {
