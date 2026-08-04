@@ -48,6 +48,12 @@ const jsonLd = {
     canonicalURL={`https://itsmail.dev/projects/${slug}`}
     image={images[0]}
     jsonLd={jsonLd}
+    chatPageContext={{
+        type: "project",
+        title: project.title,
+        description: project.description,
+        extra: stack.length > 0 ? `Tech stack: ${stack.join(", ")}` : undefined,
+    }}
 >
     <main class="project-detail">
         <div class="container">
