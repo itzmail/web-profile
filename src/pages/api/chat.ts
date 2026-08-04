@@ -112,7 +112,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     await kv.put(rateLimitKey, String(count + 1), { expirationTtl: RATE_LIMIT_WINDOW_SECONDS });
     await kv.put(globalKey, String(globalCount + 1), { expirationTtl: GLOBAL_DAILY_WINDOW_SECONDS });
 
-    const apiKey = import.meta.env.OPENROUTER_API_KEY;
+    const apiKey = env.OPENROUTER_API_KEY;
     if (!apiKey) {
         return new Response(JSON.stringify({ error: "Missing API key" }), {
             status: 500,
@@ -120,7 +120,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         });
     }
 
-    const model = import.meta.env.OPENROUTER_MODEL ?? "openai/gpt-oss-20b:free";
+    const model = env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
 
     const baseContext = await buildBaseContext();
     const systemPrompt = buildSystemPrompt(baseContext, body.pageContext);
