@@ -205,6 +205,7 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
 
     .terminal-input {
         flex: 1;
+        min-width: 0;
         background: transparent;
         border: none;
         outline: none;
@@ -283,6 +284,10 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
             min-height: 260px;
             max-height: 320px;
             padding: 1rem;
+        }
+
+        .terminal-input {
+            font-size: 16px;
         }
     }
 </style>

@@ -7,4 +7,9 @@ export default defineConfig({
   site: 'https://itsmail.dev',
   output: 'server',
   adapter: cloudflare(),
+  vite: {
+    server: {
+      allowedHosts: ['.ngrok-free.app'],
+    },
+  },
 });
