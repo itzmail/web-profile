@@ -23,7 +23,7 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
     <div class="chat-panel" id="chat-panel" hidden>
         <div class="chat-header">
-            <span class="font-mono">// tanya tentang Ismail</span>
+            <span class="font-mono">// ismail.agent</span>
             <button class="chat-close" id="chat-close" aria-label="Tutup chat">&times;</button>
         </div>
         <div class="chat-messages" id="chat-messages">
@@ -62,24 +62,69 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
     const rawPageContext = widget?.dataset.pageContext;
     const pageContext = rawPageContext ? JSON.parse(rawPageContext) : undefined;
+    const pageContextKey = pageContext ? `${pageContext.type}:${pageContext.title}` : "";
+
+    const HISTORY_KEY = "chat_history";
+    const GREETED_KEY = "chat_greeted_context";
 
     interface HistoryMessage {
         role: "user" | "assistant";
         content: string;
     }
-    const history: HistoryMessage[] = [];
+
+    function loadHistory(): HistoryMessage[] {
+        try {
+            const raw = sessionStorage.getItem(HISTORY_KEY);
+            return raw ? (JSON.parse(raw) as HistoryMessage[]) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    const history: HistoryMessage[] = loadHistory();
+
+    function persistHistory() {
+        sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
 
     function renderMarkdown(text: string): string {
         return DOMPurify.sanitize(marked.parse(text, { async: false }));
     }
 
-    function appendMessage(role: "user" | "bot", content: string): HTMLDivElement {
+    function appendMessage(role: "user" | "bot", content: string, asMarkdown = false): HTMLDivElement {
         const div = document.createElement("div");
         div.className = `chat-message chat-message--${role === "user" ? "user" : "bot"}`;
-        div.textContent = content;
+        if (asMarkdown) {
+            div.innerHTML = renderMarkdown(content);
+        } else {
+            div.textContent = content;
+        }
         messagesEl!.appendChild(div);
         messagesEl!.scrollTop = messagesEl!.scrollHeight;
         return div;
+    }
+
+    // Replay persisted history so it survives page navigation within the same tab.
+    // Replaces the server-rendered default greeting once real history exists.
+    if (history.length > 0) {
+        messagesEl!.innerHTML = "";
+        for (const msg of history) {
+            appendMessage(msg.role === "user" ? "user" : "bot", msg.content, msg.role === "assistant");
+        }
+    }
+
+    function showContextGreeting() {
+        if (!pageContext || sessionStorage.getItem(GREETED_KEY) === pageContextKey) return;
+        sessionStorage.setItem(GREETED_KEY, pageContextKey);
+
+        const greeting =
+            pageContext.type === "blog"
+                ? `Lagi baca **${pageContext.title}**? Boleh tanya soal isi tulisan ini atau hal lain soal Ismail.`
+                : `Lagi liat project **${pageContext.title}**? Tanya-tanya aja soal tech stack, cara kerja, atau hal lain soal Ismail.`;
+
+        appendMessage("bot", greeting, true);
+        history.push({ role: "assistant", content: greeting });
+        persistHistory();
     }
 
     function setLoading(isLoading: boolean) {
@@ -103,6 +148,7 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
         appendMessage("user", text);
         history.push({ role: "user", content: text });
+        persistHistory();
         input.value = "";
         setLoading(true);
 
@@ -150,6 +196,7 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
             typingEl.innerHTML = renderMarkdown(fullReply);
             messagesEl!.scrollTop = messagesEl!.scrollHeight;
             history.push({ role: "assistant", content: fullReply });
+            persistHistory();
         } catch {
             typingEl.classList.remove("chat-message--typing");
             typingEl.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
@@ -160,6 +207,7 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
     toggle?.addEventListener("click", () => {
         if (panel) panel.hidden = !panel.hidden;
+        if (panel && !panel.hidden) showContextGreeting();
     });
     closeBtn?.addEventListener("click", () => {
         if (panel) panel.hidden = true;
