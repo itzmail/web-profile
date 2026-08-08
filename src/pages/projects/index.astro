@@ -2,6 +2,8 @@
 import Layout from "../../layouts/Layout.astro";
 import { apiFetch } from "../../utils/api";
 import type { ApiProject } from "../../types/index";
+import ExternalLinkIcon from "../../assets/icons/ExternalLinkIcon.astro";
+import GithubIcon from "../../assets/icons/GithubIcon.astro";
 
 const projects = await apiFetch<ApiProject[]>("/projects") ?? [];
 
@@ -50,11 +52,42 @@ const typeColors: Record<string, string> = {
                             const accent = d?.accent ?? '#00ff88';
                             const type = d?.project_type ?? 'side_project';
                             const stack = d?.stack ?? [];
+                            const images = d?.images ?? [];
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
                             return (
                                 <article class="project-card project-card--featured reveal-stagger" style={`--accent: ${accent};`}>
                                     <div class="card-accent-bar"></div>
+                                    {images.length > 0 && (
+                                        <div class="card-cover card-cover--featured">
+                                            <div class="cover-track">
+                                                {images.map((src) => (
+                                                    <img src={src} alt={p.title} loading="lazy" class="cover-img" />
+                                                ))}
+                                            </div>
+                                            {(liveLink || repoLink) && (
+                                                <div class="cover-overlay">
+                                                    {liveLink && (
+                                                        <a href={liveLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Live link">
+                                                            <ExternalLinkIcon />
+                                                        </a>
+                                                    )}
+                                                    {repoLink && (
+                                                        <a href={repoLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Repository link">
+                                                            <GithubIcon />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {images.length > 1 && (
+                                                <div class="cover-dots">
+                                                    {images.map((_, i) => (
+                                                        <span class="cover-dot" data-dot-index={i}></span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div class="card-body">
                                         <div class="card-top">
                                             <div class="card-badges">
@@ -103,11 +136,42 @@ const typeColors: Record<string, string> = {
                             const accent = d?.accent ?? '#00ff88';
                             const type = d?.project_type ?? 'side_project';
                             const stack = d?.stack ?? [];
+                            const images = d?.images ?? [];
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
                             return (
                                 <article class="project-card reveal-stagger" style={`--accent: ${accent};`}>
                                     <div class="card-accent-bar"></div>
+                                    {images.length > 0 && (
+                                        <div class="card-cover">
+                                            <div class="cover-track">
+                                                {images.map((src) => (
+                                                    <img src={src} alt={p.title} loading="lazy" class="cover-img" />
+                                                ))}
+                                            </div>
+                                            {(liveLink || repoLink) && (
+                                                <div class="cover-overlay">
+                                                    {liveLink && (
+                                                        <a href={liveLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Live link">
+                                                            <ExternalLinkIcon />
+                                                        </a>
+                                                    )}
+                                                    {repoLink && (
+                                                        <a href={repoLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Repository link">
+                                                            <GithubIcon />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {images.length > 1 && (
+                                                <div class="cover-dots">
+                                                    {images.map((_, i) => (
+                                                        <span class="cover-dot" data-dot-index={i}></span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div class="card-body">
                                         <div class="card-top">
                                             <div class="card-badges">
