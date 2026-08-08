@@ -297,6 +297,11 @@ const typeColors: Record<string, string> = {
         transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
         display: flex;
         flex-direction: column;
+        min-height: 320px;
+    }
+
+    .project-card--featured {
+        min-height: 360px;
     }
 
     .project-card:hover {
@@ -308,6 +313,104 @@ const typeColors: Record<string, string> = {
     .card-accent-bar {
         height: 3px;
         background: var(--accent, var(--green));
+    }
+
+    .card-cover {
+        position: relative;
+        height: 180px;
+        overflow: hidden;
+    }
+
+    .card-cover--featured {
+        height: 220px;
+    }
+
+    .cover-track {
+        display: flex;
+        height: 100%;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cover-track::-webkit-scrollbar {
+        display: none;
+    }
+
+    .cover-img {
+        width: 100%;
+        height: 100%;
+        flex-shrink: 0;
+        object-fit: cover;
+        object-position: top;
+        scroll-snap-align: start;
+        transition: transform 0.35s var(--ease);
+    }
+
+    .project-card:hover .cover-img {
+        transform: scale(1.04);
+    }
+
+    .cover-overlay {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.6rem;
+        display: flex;
+        gap: 0.4rem;
+        z-index: 2;
+    }
+
+    .overlay-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        color: #fff;
+        transition: background 0.2s;
+    }
+
+    .overlay-icon:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
+
+    .overlay-icon :global(svg) {
+        width: 16px;
+        height: 16px;
+    }
+
+    .cover-dots {
+        position: absolute;
+        bottom: 0.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 2;
+    }
+
+    .cover-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        transition: background 0.2s, transform 0.2s;
+    }
+
+    .cover-dot.active {
+        background: #fff;
+        transform: scale(1.3);
     }
 
     .card-body {
