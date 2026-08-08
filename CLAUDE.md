@@ -21,7 +21,7 @@ No test suite — this is a static/SSR site.
 
 **Stack**: Astro 6 (SSR mode) + Cloudflare adapter + vanilla CSS. Deployed to Cloudflare Workers.
 
-**Runtime**: All pages are server-rendered at request time (`output: 'server'`). There is no static generation. Cloudflare KV (`SESSION` binding) is available but currently unused.
+**Runtime**: All pages are server-rendered at request time (`output: 'server'`). There is no static generation. Cloudflare KV (`SESSION` binding) is used for chat rate-limiting, analytics counters, and Telegram notify throttling — see `src/pages/api/chat.ts` and `src/pages/api/chat/contact.ts`.
 
 ---
 
@@ -46,6 +46,8 @@ Pages fetch directly in the Astro frontmatter at request time (no caching layer)
 | `/blog` | `pages/blog/index.astro` | `/posts` |
 | `/blog/[slug]` | `pages/blog/[slug].astro` | `/posts/{slug}` (redirect 404 if null/draft) |
 | `/api/wakatime` | `pages/api/wakatime.ts` | Wakatime API (proxied, 5min Cache-Control) |
+| `/api/chat` | `pages/api/chat.ts` | OpenRouter chat completion (streamed), forwards recruiter-intent questions |
+| `/api/chat/contact` | `pages/api/chat/contact.ts` | Lead capture form submit → Telegram push |
 
 ---
 
@@ -84,6 +86,10 @@ Pages fetch directly in the Astro frontmatter at request time (no caching layer)
 |----------|----------|---------|
 | `PUBLIC_API_URL` | No | Backend API base URL (default: `https://my-data.itsmail.dev/api`) |
 | `WAKATIME_API_KEY` | Yes (for stats) | Wakatime API key, server-side only |
+| `OPENROUTER_API_KEY` | Yes (for chat) | OpenRouter API key, server-side only |
+| `OPENROUTER_MODEL` | No | OpenRouter model id (default: `openai/gpt-oss-20b:free`) |
+| `TELEGRAM_BOT_TOKEN` | Yes (for lead notify) | Telegram bot token used to push recruiter leads |
+| `TELEGRAM_CHAT_ID` | Yes (for lead notify) | Telegram chat id that receives lead notifications |
 | `GITHUB_TOKEN` | No | For git activity heatmap component |
 | `GITHUB_USERNAME` | No | GitHub username for heatmap |
 | `GITLAB_TOKEN` | No | GitLab token for heatmap |

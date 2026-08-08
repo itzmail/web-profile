@@ -24,6 +24,13 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
     <div class="chat-panel" id="chat-panel" hidden>
         <div class="chat-header">
             <span class="font-mono">// ismail.agent</span>
+            <button class="chat-contact-pill" id="chat-contact-pill" hidden aria-label="Edit info kontak">
+                <span id="chat-contact-pill-label"></span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
             <button class="chat-close" id="chat-close" aria-label="Tutup chat">&times;</button>
         </div>
         <div class="chat-messages" id="chat-messages">
@@ -66,10 +73,16 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
     const HISTORY_KEY = "chat_history";
     const GREETED_KEY = "chat_greeted_context";
+    const CONTACT_KEY = "chat_contact";
 
     interface HistoryMessage {
         role: "user" | "assistant";
         content: string;
+    }
+
+    interface ContactInfo {
+        name: string;
+        email: string;
     }
 
     function loadHistory(): HistoryMessage[] {
@@ -85,6 +98,35 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
     function persistHistory() {
         sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+
+    function loadContact(): ContactInfo | null {
+        try {
+            const raw = sessionStorage.getItem(CONTACT_KEY);
+            return raw ? (JSON.parse(raw) as ContactInfo) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function saveContact(contact: ContactInfo) {
+        sessionStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
+        updateContactPill();
+    }
+
+    const contactPill = document.getElementById("chat-contact-pill") as HTMLButtonElement | null;
+    const contactPillLabel = document.getElementById("chat-contact-pill-label");
+
+    function updateContactPill() {
+        if (!contactPill || !contactPillLabel) return;
+        const contact = loadContact();
+        if (!contact) {
+            contactPill.hidden = true;
+            return;
+        }
+        const label = contact.name.length > 18 ? `${contact.name.slice(0, 18)}…` : contact.name;
+        contactPillLabel.textContent = label;
+        contactPill.hidden = false;
     }
 
     function renderMarkdown(text: string): string {
@@ -141,6 +183,81 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         return div;
     }
 
+    function appendContactForm(question: string, prefill?: ContactInfo) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "chat-message chat-message--bot chat-message--form";
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.placeholder = "Nama";
+        nameInput.className = "chat-form-input";
+        if (prefill?.name) nameInput.value = prefill.name;
+
+        const emailInput = document.createElement("input");
+        emailInput.type = "email";
+        emailInput.placeholder = "Email";
+        emailInput.className = "chat-form-input";
+        if (prefill?.email) emailInput.value = prefill.email;
+
+        const errorEl = document.createElement("div");
+        errorEl.className = "chat-form-error";
+        errorEl.hidden = true;
+
+        const submitBtn = document.createElement("button");
+        submitBtn.type = "button";
+        submitBtn.className = "chat-form-submit";
+        submitBtn.textContent = "Kirim";
+
+        wrapper.appendChild(nameInput);
+        wrapper.appendChild(emailInput);
+        wrapper.appendChild(errorEl);
+        wrapper.appendChild(submitBtn);
+        messagesEl!.appendChild(wrapper);
+        messagesEl!.scrollTop = messagesEl!.scrollHeight;
+
+        submitBtn.addEventListener("click", async () => {
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+
+            if (!name || !email || !email.includes("@")) {
+                errorEl.textContent = "Isi nama dan email yang valid ya.";
+                errorEl.hidden = false;
+                return;
+            }
+
+            errorEl.hidden = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Mengirim...";
+
+            try {
+                const res = await fetch("/api/chat/contact", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, question, pageContext }),
+                });
+
+                if (!res.ok) {
+                    const data = (await res.json().catch(() => ({}))) as { error?: string };
+                    errorEl.textContent = data.error ?? "Gagal mengirim, coba lagi ya.";
+                    errorEl.hidden = false;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Kirim";
+                    return;
+                }
+
+                saveContact({ name, email });
+                wrapper.innerHTML = "";
+                wrapper.textContent = "Sip, sudah aku teruskan ke Ismail. Nanti dia hubungi lewat email ya.";
+                messagesEl!.scrollTop = messagesEl!.scrollHeight;
+            } catch {
+                errorEl.textContent = "Gagal mengirim, coba lagi ya.";
+                errorEl.hidden = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Kirim";
+            }
+        });
+    }
+
     async function sendMessage() {
         if (!input) return;
         const text = input.value.trim();
@@ -174,6 +291,8 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
                 return;
             }
 
+            const isForward = res.headers.get("X-Chat-Action") === "collect-contact";
+
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let fullReply = "";
@@ -193,6 +312,31 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
             }
 
             typingEl.classList.remove("chat-message--typing");
+
+            if (isForward) {
+                // Fixed forward message is shown but deliberately not persisted to history —
+                // otherwise the model sees it as a prior example and keeps forwarding.
+                typingEl.textContent = fullReply;
+                messagesEl!.scrollTop = messagesEl!.scrollHeight;
+
+                const savedContact = loadContact();
+                if (savedContact) {
+                    try {
+                        await fetch("/api/chat/contact", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ ...savedContact, question: text, pageContext }),
+                        });
+                        appendMessage("bot", "Sudah aku teruskan ke Ismail ya.");
+                    } catch {
+                        appendMessage("bot", "Gagal mengirim, coba lagi ya.");
+                    }
+                } else {
+                    appendContactForm(text);
+                }
+                return;
+            }
+
             typingEl.innerHTML = renderMarkdown(fullReply);
             messagesEl!.scrollTop = messagesEl!.scrollHeight;
             history.push({ role: "assistant", content: fullReply });
@@ -216,6 +360,14 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
     input?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") sendMessage();
     });
+    contactPill?.addEventListener("click", () => {
+        if (panel) panel.hidden = false;
+        const savedContact = loadContact();
+        const lastUserMessage = [...history].reverse().find((m) => m.role === "user");
+        appendContactForm(lastUserMessage?.content ?? "(update info kontak)", savedContact ?? undefined);
+    });
+
+    updateContactPill();
 </script>
 
 <style>
@@ -281,6 +433,28 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         font-size: 1.2rem;
         cursor: pointer;
         line-height: 1;
+    }
+
+    .chat-contact-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: var(--surface-hover);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.2rem 0.6rem;
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: color 0.2s var(--ease);
+    }
+
+    .chat-contact-pill:hover {
+        color: var(--text);
+    }
+
+    .chat-contact-pill[hidden] {
+        display: none;
     }
 
     .chat-messages {
@@ -362,6 +536,43 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
     :global(.chat-message--typing span:nth-child(3)) {
         animation-delay: 0.4s;
+    }
+
+    :global(.chat-message--form) {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    :global(.chat-form-input) {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.4rem 0.6rem;
+        color: var(--text);
+        font-size: 0.78rem;
+    }
+
+    :global(.chat-form-error) {
+        color: #e5484d;
+        font-size: 0.72rem;
+    }
+
+    :global(.chat-form-submit) {
+        background: var(--green);
+        color: #000;
+        border: none;
+        border-radius: 6px;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.78rem;
+        cursor: pointer;
+    }
+
+    :global(.chat-form-submit:disabled) {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     @keyframes chat-typing-bounce {

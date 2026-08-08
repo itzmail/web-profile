@@ -7,6 +7,9 @@ interface __BaseEnv_Env {
 	PUBLIC_API_URL: string;
 	OPENROUTER_API_KEY: string;
 	OPENROUTER_MODEL: string;
+	TELEGRAM_BOT_TOKEN: string;
+	TELEGRAM_CHAT_ID: string;
+	TELEGRAM_CHAT_THREAD_ID: string;
 	GITHUB_TOKEN: string;
 	GITHUB_USERNAME: string;
 	GITLAB_TOKEN: string;
