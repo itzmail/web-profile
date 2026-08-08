@@ -550,3 +550,22 @@ const typeColors: Record<string, string> = {
         }
     }
 </style>
+
+<script>
+    document.querySelectorAll<HTMLElement>(".card-cover").forEach((cover) => {
+        const track = cover.querySelector<HTMLElement>(".cover-track");
+        const dots = cover.querySelectorAll<HTMLElement>(".cover-dot");
+        if (!track || dots.length === 0) return;
+
+        const setActive = (index: number) => {
+            dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
+        };
+
+        setActive(0);
+
+        track.addEventListener("scroll", () => {
+            const index = Math.round(track.scrollLeft / track.clientWidth);
+            setActive(Math.min(index, dots.length - 1));
+        });
+    });
+</script>
