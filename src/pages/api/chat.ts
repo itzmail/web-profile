@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { buildBaseContext } from "../../utils/chatContext";
+import { buildContentContext } from "../../utils/contentChunker";
 
 interface ChatMessage {
     role: "user" | "assistant";
@@ -14,6 +15,7 @@ interface PageContext {
     title: string;
     description: string;
     extra?: string;
+    body?: string;
 }
 
 interface ChatRequestBody {
@@ -30,7 +32,7 @@ const MAX_MESSAGE_LENGTH = 1000;
 
 const FORWARD_TAG = "[FORWARD]";
 
-function buildSystemPrompt(baseContext: string, pageContext?: PageContext): string {
+function buildSystemPrompt(baseContext: string, query: string, pageContext?: PageContext): string {
     const lines = [
         "You are the AI assistant on Ismail Alam's personal website. Ismail is an AI Engineer.",
         "Answer visitor questions about Ismail using the information below.",
@@ -53,6 +55,15 @@ function buildSystemPrompt(baseContext: string, pageContext?: PageContext): stri
         lines.push(`Visitor is viewing: ${pageContext.title} (${pageContext.type})`);
         lines.push(`Details: ${pageContext.description}`);
         if (pageContext.extra) lines.push(pageContext.extra);
+
+        if (pageContext.body) {
+            const content = buildContentContext(pageContext.body, query);
+            if (content) {
+                lines.push("");
+                lines.push("[ISI KONTEN HALAMAN]");
+                lines.push(content);
+            }
+        }
     }
 
     return lines.join("\n");
@@ -129,7 +140,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const model = env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
 
     const baseContext = await buildBaseContext();
-    const systemPrompt = buildSystemPrompt(baseContext, body.pageContext);
+    const systemPrompt = buildSystemPrompt(baseContext, lastMessage.content, body.pageContext);
 
     let upstream: Response;
     try {

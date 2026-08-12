@@ -53,6 +53,7 @@ const jsonLd = {
         title: project.title,
         description: project.description,
         extra: stack.length > 0 ? `Tech stack: ${stack.join(", ")}` : undefined,
+        body: rawContent,
     }}
 >
     <main class="project-detail">

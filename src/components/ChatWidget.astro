@@ -4,6 +4,7 @@ interface PageContext {
     title: string;
     description: string;
     extra?: string;
+    body?: string;
 }
 
 interface Props {
@@ -174,13 +175,54 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         if (input) input.disabled = isLoading;
     }
 
-    function appendTypingIndicator(): HTMLDivElement {
+    const TYPING_STATUS_MESSAGES = [
+        "Lagi compile jawaban, bentar ya...",
+        "Nunggu inspirasi turun dari langit...",
+        "Bentar, lagi ngoprek neuron dulu...",
+        "Hmm, pertanyaan bagus nih, mikir dulu...",
+        "Sabar ya, koneksi ke otak Ismail agak lemot...",
+        "Lagi scroll-scroll memori dulu...",
+        "Tunggu, masih loading kebijaksanaan...",
+    ];
+    const TYPING_STATUS_FIRST_DELAY_MS = 3000;
+    const TYPING_STATUS_INTERVAL_MS = 4000;
+
+    function appendTypingIndicator(): { el: HTMLDivElement; stopStatus: () => void } {
         const div = document.createElement("div");
         div.className = "chat-message chat-message--bot chat-message--typing";
-        div.innerHTML = "<span></span><span></span><span></span>";
+
+        const dots = document.createElement("span");
+        dots.className = "chat-typing-dots";
+        dots.innerHTML = "<span></span><span></span><span></span>";
+
+        const statusEl = document.createElement("span");
+        statusEl.className = "chat-typing-status";
+        statusEl.textContent = "Sedang berpikir...";
+
+        div.appendChild(dots);
+        div.appendChild(statusEl);
         messagesEl!.appendChild(div);
         messagesEl!.scrollTop = messagesEl!.scrollHeight;
-        return div;
+
+        let lastIndex = -1;
+        let intervalId: ReturnType<typeof setInterval> | undefined;
+        const timeoutId = setTimeout(() => {
+            intervalId = setInterval(() => {
+                let next = Math.floor(Math.random() * TYPING_STATUS_MESSAGES.length);
+                if (TYPING_STATUS_MESSAGES.length > 1 && next === lastIndex) {
+                    next = (next + 1) % TYPING_STATUS_MESSAGES.length;
+                }
+                lastIndex = next;
+                statusEl.textContent = TYPING_STATUS_MESSAGES[next];
+            }, TYPING_STATUS_INTERVAL_MS);
+        }, TYPING_STATUS_FIRST_DELAY_MS);
+
+        const stopStatus = () => {
+            clearTimeout(timeoutId);
+            if (intervalId) clearInterval(intervalId);
+        };
+
+        return { el: div, stopStatus };
     }
 
     function appendContactForm(question: string, prefill?: ContactInfo) {
@@ -280,14 +322,16 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
 
             if (!res.ok) {
                 const data = (await res.json()) as { error?: string };
-                typingEl.classList.remove("chat-message--typing");
-                typingEl.textContent = data.error ?? "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
+                typingEl.stopStatus();
+                typingEl.el.classList.remove("chat-message--typing");
+                typingEl.el.textContent = data.error ?? "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
                 return;
             }
 
             if (!res.body) {
-                typingEl.classList.remove("chat-message--typing");
-                typingEl.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
+                typingEl.stopStatus();
+                typingEl.el.classList.remove("chat-message--typing");
+                typingEl.el.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
                 return;
             }
 
@@ -303,20 +347,22 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
                 if (done) break;
                 fullReply += decoder.decode(value, { stream: true });
                 if (firstChunk) {
-                    typingEl.classList.remove("chat-message--typing");
-                    typingEl.innerHTML = "";
+                    typingEl.stopStatus();
+                    typingEl.el.classList.remove("chat-message--typing");
+                    typingEl.el.innerHTML = "";
                     firstChunk = false;
                 }
-                typingEl.textContent = fullReply;
+                typingEl.el.textContent = fullReply;
                 messagesEl!.scrollTop = messagesEl!.scrollHeight;
             }
 
-            typingEl.classList.remove("chat-message--typing");
+            typingEl.stopStatus();
+            typingEl.el.classList.remove("chat-message--typing");
 
             if (isForward) {
                 // Fixed forward message is shown but deliberately not persisted to history —
                 // otherwise the model sees it as a prior example and keeps forwarding.
-                typingEl.textContent = fullReply;
+                typingEl.el.textContent = fullReply;
                 messagesEl!.scrollTop = messagesEl!.scrollHeight;
 
                 const savedContact = loadContact();
@@ -337,13 +383,14 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
                 return;
             }
 
-            typingEl.innerHTML = renderMarkdown(fullReply);
+            typingEl.el.innerHTML = renderMarkdown(fullReply);
             messagesEl!.scrollTop = messagesEl!.scrollHeight;
             history.push({ role: "assistant", content: fullReply });
             persistHistory();
         } catch {
-            typingEl.classList.remove("chat-message--typing");
-            typingEl.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
+            typingEl.stopStatus();
+            typingEl.el.classList.remove("chat-message--typing");
+            typingEl.el.textContent = "Maaf, chatbot lagi bermasalah, coba lagi nanti.";
         } finally {
             setLoading(false);
         }
@@ -518,11 +565,18 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
     :global(.chat-message--typing) {
         display: flex;
         align-items: center;
-        gap: 0.3rem;
+        gap: 0.5rem;
         padding: 0.6rem 0.8rem;
     }
 
-    :global(.chat-message--typing span) {
+    :global(.chat-typing-dots) {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        flex-shrink: 0;
+    }
+
+    :global(.chat-typing-dots span) {
         width: 6px;
         height: 6px;
         border-radius: 50%;
@@ -530,12 +584,18 @@ const pageContextJson = pageContext ? JSON.stringify(pageContext) : "";
         animation: chat-typing-bounce 1.2s infinite ease-in-out;
     }
 
-    :global(.chat-message--typing span:nth-child(2)) {
+    :global(.chat-typing-dots span:nth-child(2)) {
         animation-delay: 0.2s;
     }
 
-    :global(.chat-message--typing span:nth-child(3)) {
+    :global(.chat-typing-dots span:nth-child(3)) {
         animation-delay: 0.4s;
+    }
+
+    :global(.chat-typing-status) {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-style: italic;
     }
 
     :global(.chat-message--form) {

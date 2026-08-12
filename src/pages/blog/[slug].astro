@@ -54,6 +54,7 @@ const jsonLd = {
         title: post.title,
         description: post.excerpt ?? post.title,
         extra: post.tags.length > 0 ? `Tags: ${post.tags.join(", ")}` : undefined,
+        body: post.body,
     }}
 >
     <!-- Reading progress bar -->
@@ -318,7 +319,7 @@ const jsonLd = {
     .share-fab {
         position: fixed;
         right: 1.5rem;
-        bottom: 2rem;
+        bottom: 6.5rem;
         display: flex;
         flex-direction: column;
         align-items: center;
