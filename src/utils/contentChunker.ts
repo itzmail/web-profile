@@ -19,6 +19,7 @@ export function stripMarkdown(md: string): string {
         .replace(/```[\s\S]*?```/g, "")
         .replace(/!\[.*?\]\(.*?\)/g, "")
         .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+        .replace(/https?:\/\/\S+/g, "")
         .replace(/^#{1,6}\s+/gm, "")
         .replace(/[*_~`>]/g, "")
         .replace(/\n{3,}/g, "\n\n")
