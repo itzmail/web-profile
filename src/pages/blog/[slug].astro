@@ -1,6 +1,7 @@
 ---
 import { marked } from "marked";
 import { apiFetch } from "../../utils/api";
+import { embedVideoLinks } from "../../utils/videoEmbed";
 import Layout from "../../layouts/Layout.astro";
 import type { Post } from "../../types/index";
 import TwitterIcon from "../../assets/icons/TwitterIcon.astro";
@@ -16,7 +17,7 @@ if (!post) {
     return Astro.redirect("/404");
 }
 
-const htmlContent = post.body ? marked(post.body) : "";
+const htmlContent = post.body ? marked(embedVideoLinks(post.body)) : "";
 
 function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-US", {
@@ -294,6 +295,24 @@ const jsonLd = {
         border: none;
         border-top: 1px solid var(--border);
         margin: 2rem 0;
+    }
+    .post-content :global(.video-embed) {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        margin: 1.5rem 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: #000;
+    }
+    .post-content :global(.video-embed iframe),
+    .post-content :global(.video-embed video) {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
     }
 
     .share-fab {
