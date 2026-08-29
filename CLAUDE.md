@@ -87,7 +87,7 @@ Pages fetch directly in the Astro frontmatter at request time (no caching layer)
 | `PUBLIC_API_URL` | No | Backend API base URL (default: `https://my-data.itsmail.dev/api`) |
 | `WAKATIME_API_KEY` | Yes (for stats) | Wakatime API key, server-side only |
 | `OPENROUTER_API_KEY` | Yes (for chat) | OpenRouter API key, server-side only |
-| `OPENROUTER_MODEL` | No | OpenRouter model id (default: `openai/gpt-oss-20b:free`) |
+| `OPENROUTER_MODEL` | No | OpenRouter fallback model id if `/api/chat-settings` is unavailable (default: `nvidia/nemotron-3.5-lightning:free`) |
 | `TELEGRAM_BOT_TOKEN` | Yes (for lead notify) | Telegram bot token used to push recruiter leads |
 | `TELEGRAM_CHAT_ID` | Yes (for lead notify) | Telegram chat id that receives lead notifications |
 | `GITHUB_TOKEN` | No | For git activity heatmap component |

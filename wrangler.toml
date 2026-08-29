@@ -2,7 +2,7 @@ name = "web-profile"
 compatibility_date = "2026-04-15"
 
 [vars]
-OPENROUTER_MODEL = "openai/gpt-oss-20b:free"
+OPENROUTER_MODEL = "nvidia/nemotron-3.5-lightning:free"
 
 [[kv_namespaces]]
 binding = "SESSION"

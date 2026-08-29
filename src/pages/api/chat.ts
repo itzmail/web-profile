@@ -30,6 +30,50 @@ const GLOBAL_DAILY_WINDOW_SECONDS = 86400; // 24 hours
 const ANALYTICS_RETENTION_SECONDS = GLOBAL_DAILY_WINDOW_SECONDS * 30; // 30 days
 const MAX_MESSAGE_LENGTH = 1000;
 
+const SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let cachedModel: string | null = null;
+let modelCachedAt = 0;
+
+interface ChatSettingsResponse {
+    model?: string;
+    data?: {
+        model?: string;
+    };
+}
+
+async function getChatModel(fallbackEnvModel?: string): Promise<string> {
+    const defaultModel = fallbackEnvModel || "nvidia/nemotron-3.5-lightning:free";
+    const now = Date.now();
+
+    if (cachedModel && now - modelCachedAt < SETTINGS_CACHE_TTL_MS) {
+        return cachedModel;
+    }
+
+    const baseUrl = env.PUBLIC_API_URL || import.meta.env.PUBLIC_API_URL || "https://my-data.itsmail.dev/api";
+
+    try {
+        const res = await fetch(`${baseUrl}/chat-settings`, {
+            signal: AbortSignal.timeout(2000),
+        });
+
+        if (res.ok) {
+            const json = (await res.json()) as ChatSettingsResponse;
+            const modelFromApi = json?.model || json?.data?.model;
+            if (typeof modelFromApi === "string" && modelFromApi.trim()) {
+                cachedModel = modelFromApi.trim();
+                modelCachedAt = now;
+                return cachedModel;
+            }
+        } else {
+            console.warn(`[chat] Failed to fetch /chat-settings: HTTP ${res.status}`);
+        }
+    } catch (err) {
+        console.warn("[chat] Warning: Failed to fetch chat settings from backend:", err);
+    }
+
+    return defaultModel;
+}
+
 const FORWARD_TAG = "[FORWARD]";
 
 function buildSystemPrompt(baseContext: string, query: string, pageContext?: PageContext): string {
@@ -137,9 +181,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         });
     }
 
-    const model = env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
-
-    const baseContext = await buildBaseContext();
+    const [model, baseContext] = await Promise.all([
+        getChatModel(env.OPENROUTER_MODEL),
+        buildBaseContext(),
+    ]);
     const systemPrompt = buildSystemPrompt(baseContext, lastMessage.content, body.pageContext);
 
     let upstream: Response;
