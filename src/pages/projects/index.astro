@@ -53,15 +53,18 @@ const typeColors: Record<string, string> = {
                             const type = d?.project_type ?? 'side_project';
                             const stack = d?.stack ?? [];
                             const images = d?.images ?? [];
+                            const cardImages = d?.cover_image
+                                ? [d.cover_image, ...images.filter((img) => img !== d.cover_image)]
+                                : images;
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
                             return (
                                 <article class="project-card project-card--featured reveal-stagger" style={`--accent: ${accent};`}>
                                     <div class="card-accent-bar"></div>
-                                    {images.length > 0 && (
+                                    {cardImages.length > 0 && (
                                         <div class="card-cover card-cover--featured">
                                             <div class="cover-track">
-                                                {images.map((src) => (
+                                                {cardImages.map((src) => (
                                                     <img src={src} alt={p.title} loading="lazy" class="cover-img" />
                                                 ))}
                                             </div>
@@ -79,9 +82,9 @@ const typeColors: Record<string, string> = {
                                                     )}
                                                 </div>
                                             )}
-                                            {images.length > 1 && (
+                                            {cardImages.length > 1 && (
                                                 <div class="cover-dots">
-                                                    {images.map((_, i) => (
+                                                    {cardImages.map((_, i) => (
                                                         <span class="cover-dot" data-dot-index={i}></span>
                                                     ))}
                                                 </div>
@@ -137,15 +140,18 @@ const typeColors: Record<string, string> = {
                             const type = d?.project_type ?? 'side_project';
                             const stack = d?.stack ?? [];
                             const images = d?.images ?? [];
+                            const cardImages = d?.cover_image
+                                ? [d.cover_image, ...images.filter((img) => img !== d.cover_image)]
+                                : images;
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
                             return (
                                 <article class="project-card reveal-stagger" style={`--accent: ${accent};`}>
                                     <div class="card-accent-bar"></div>
-                                    {images.length > 0 && (
+                                    {cardImages.length > 0 && (
                                         <div class="card-cover">
                                             <div class="cover-track">
-                                                {images.map((src) => (
+                                                {cardImages.map((src) => (
                                                     <img src={src} alt={p.title} loading="lazy" class="cover-img" />
                                                 ))}
                                             </div>
@@ -163,9 +169,9 @@ const typeColors: Record<string, string> = {
                                                     )}
                                                 </div>
                                             )}
-                                            {images.length > 1 && (
+                                            {cardImages.length > 1 && (
                                                 <div class="cover-dots">
-                                                    {images.map((_, i) => (
+                                                    {cardImages.map((_, i) => (
                                                         <span class="cover-dot" data-dot-index={i}></span>
                                                     ))}
                                                 </div>

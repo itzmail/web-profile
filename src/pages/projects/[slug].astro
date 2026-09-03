@@ -19,9 +19,18 @@ const slug = data?.slug ?? "";
 const accent = data?.accent ?? "#00ff88";
 const stack = data?.stack ?? [];
 const images = data?.images ?? [];
+const coverImage = data?.cover_image;
 const links = data?.links ?? [];
 const rawContent = data?.content ?? "";
 const htmlContent = rawContent ? marked(rawContent) : "";
+const pType = data?.project_type ?? "side_project";
+
+const typeLabel: Record<string, string> = {
+    production: "production app",
+    client_work: "client work",
+    side_project: "side project",
+    open_source: "open source",
+};
 
 const linkIcons: Record<string, string> = {
     github: "M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z",
@@ -32,13 +41,15 @@ const linkIcons: Record<string, string> = {
     youtube: "M19.59 6.69a4.83 4.83 0 01-3.77-2.75 12.65 12.65 0 00-8.45 0A4.83 4.83 0 013.6 6.69 49.17 49.17 0 002 12a49.17 49.17 0 001.6 5.31 4.83 4.83 0 003.77 2.75 12.65 12.65 0 008.45 0 4.83 4.83 0 003.77-2.75A49.17 49.17 0 0022 12a49.17 49.17 0 00-2.41-5.31zM10 15V9l5 3-5 3z",
 };
 
+const mainImage = coverImage ?? images[0];
+
 const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
     name: project.title,
     description: project.description,
     creator: { "@type": "Person", name: "Ismail Alam" },
-    ...(images[0] && { image: images[0] }),
+    ...(mainImage && { image: mainImage }),
 };
 ---
 
@@ -46,7 +57,7 @@ const jsonLd = {
     title={`${project.title} — Ismail Alam`}
     description={project.description}
     canonicalURL={`https://itsmail.dev/projects/${slug}`}
-    image={images[0]}
+    image={mainImage}
     jsonLd={jsonLd}
     chatPageContext={{
         type: "project",
@@ -59,7 +70,7 @@ const jsonLd = {
     <main class="project-detail">
         <div class="container">
             <nav class="breadcrumb">
-                <a href="/#projects" class="back-link font-mono">
+                <a href="/projects" class="back-link font-mono">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
                     </svg>
@@ -67,56 +78,76 @@ const jsonLd = {
                 </a>
             </nav>
 
+            <!-- ── Unified Header ── -->
             <header class="project-header reveal">
-                <div class="project-meta">
-                    <p class="project-slug font-mono text-muted">{slug}.ts</p>
-                    <h1 class="project-title" style={`--accent: ${accent}`}>{project.title}</h1>
+                <div class="header-main">
+                    <p class="project-slug font-mono text-muted">
+                        // {typeLabel[pType] ?? pType} &middot; {slug}.ts
+                    </p>
+                    <h1 class="project-title" style={`--accent: ${accent}`}>
+                        {project.title}
+                    </h1>
                     {project.description && (
                         <p class="project-description">{project.description}</p>
                     )}
                 </div>
 
-                <div class="project-sidebar">
+                <div class="project-header-meta">
                     {stack.length > 0 && (
-                        <div class="sidebar-block">
-                            <h3 class="sidebar-label font-mono">// tech stack</h3>
-                            <div class="tag-list">
-                                {stack.map((tag) => (
-                                    <span class="tag" style={`border-color: ${accent}33; color: ${accent}`}>{tag}</span>
-                                ))}
-                            </div>
+                        <div class="tag-list">
+                            {stack.map((tag) => (
+                                <span class="tag font-mono" style={`border-color: ${accent}33; color: ${accent}`}>
+                                    {tag}
+                                </span>
+                            ))}
                         </div>
                     )}
 
                     {links.length > 0 && (
-                        <div class="sidebar-block">
-                            <h3 class="sidebar-label font-mono">// links</h3>
-                            <div class="links-list">
-                                {links.map((link) => {
-                                    const iconPath = linkIcons[link.label.toLowerCase()] ?? linkIcons.live;
-                                    return (
-                                        <a
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="link-item"
-                                            style={`--accent: ${accent}`}
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d={iconPath} />
-                                            </svg>
-                                            <span class="font-mono">{link.label}</span>
-                                        </a>
-                                    );
-                                })}
-                            </div>
+                        <div class="links-list">
+                            {links.map((link) => {
+                                const iconPath = linkIcons[link.label.toLowerCase()] ?? linkIcons.live;
+                                return (
+                                    <a
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="link-item font-mono"
+                                        style={`--accent: ${accent}`}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d={iconPath} />
+                                        </svg>
+                                        <span>{link.label} ↗</span>
+                                    </a>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
             </header>
 
+            <!-- ── Hero Cover Banner ── -->
+            {coverImage && (
+                <div class="hero-cover-banner reveal">
+                    <img
+                        src={coverImage}
+                        alt={`${project.title} cover`}
+                        class="banner-img"
+                        loading="eager"
+                    />
+                </div>
+            )}
+
+            <!-- ── Screenshots Gallery ── -->
             {images.length > 0 && (
                 <div class="image-gallery reveal">
+                    <div class="gallery-header">
+                        <h2 class="gallery-title font-mono text-muted">// screenshots & preview</h2>
+                        {images.length > 1 && (
+                            <span class="gallery-hint font-mono text-muted">scroll &rarr; to see more</span>
+                        )}
+                    </div>
                     <div class="gallery-scroll">
                         {images.map((src, i) => (
                             <div class="gallery-item">
@@ -124,16 +155,15 @@ const jsonLd = {
                                     src={src}
                                     alt={`${project.title} screenshot ${i + 1}`}
                                     loading={i === 0 ? "eager" : "lazy"}
+                                    class="gallery-img"
                                 />
                             </div>
                         ))}
                     </div>
-                    {images.length > 1 && (
-                        <p class="gallery-hint font-mono text-muted">scroll &rarr; to see more</p>
-                    )}
                 </div>
             )}
 
+            <!-- ── Case Study Article ── -->
             {htmlContent && (
                 <article class="project-content reveal" set:html={htmlContent} />
             )}
@@ -152,7 +182,7 @@ const jsonLd = {
     }
 
     .breadcrumb {
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
     }
 
     .back-link {
@@ -169,142 +199,194 @@ const jsonLd = {
         color: var(--green);
     }
 
+    /* ── Unified Header ────────────────────────────── */
     .project-header {
-        display: grid;
-        grid-template-columns: 1fr 260px;
-        gap: 3rem;
-        margin-bottom: 3rem;
-        align-items: start;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        margin-bottom: 2.75rem;
+    }
+
+    .header-main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
     .project-slug {
-        font-size: 0.75rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
     }
 
     .project-title {
-        font-size: clamp(2rem, 5vw, 3.5rem);
-        font-weight: 700;
+        font-size: clamp(2.25rem, 5vw, 3.5rem);
+        font-weight: 800;
         color: var(--text);
         line-height: 1.1;
-        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
     }
 
     .project-description {
-        font-size: 1rem;
+        font-size: 1.05rem;
         color: var(--text-muted);
         line-height: 1.7;
-        max-width: 65ch;
+        max-width: 75ch;
     }
 
-    .sidebar-block {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-    }
-
-    .sidebar-label {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        letter-spacing: 0.1em;
-        margin-bottom: 0.75rem;
-        font-weight: 400;
+    .project-header-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
     }
 
     .tag-list {
         display: flex;
         flex-wrap: wrap;
         gap: 0.4rem;
+        align-items: center;
     }
 
     .tag {
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
+        font-size: 0.725rem;
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 4px;
-        padding: 0.2rem 0.625rem;
+        padding: 0.25rem 0.625rem;
     }
 
     .links-list {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 0.5rem;
+        align-items: center;
     }
 
     .link-item {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 0.625rem;
-        padding: 0.6rem 0.875rem;
-        border-radius: 8px;
+        gap: 0.45rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 6px;
         border: 1px solid var(--border);
-        font-size: 0.8rem;
-        color: var(--text-muted);
+        background: var(--surface);
+        font-size: 0.75rem;
+        color: var(--text);
         text-decoration: none;
-        text-transform: capitalize;
         transition: all var(--duration) var(--ease);
     }
 
     .link-item:hover {
         color: var(--accent);
         border-color: var(--accent);
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 16px rgba(var(--accent-rgb, 0, 255, 136), 0.15);
+        transform: translateY(-1px);
     }
 
+    /* ── Hero Cover Banner ─────────────────────────── */
+    .hero-cover-banner {
+        width: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(var(--accent-rgb, 0, 255, 136), 0.08);
+        margin-bottom: 3.5rem;
+        background: var(--surface);
+    }
+
+    .banner-img {
+        width: 100%;
+        max-height: 480px;
+        object-fit: cover;
+        display: block;
+        cursor: zoom-in;
+        transition: transform 0.3s var(--ease);
+    }
+
+    .banner-img:hover {
+        transform: scale(1.01);
+    }
+
+    /* ── Screenshots Gallery ───────────────────────── */
     .image-gallery {
-        margin-bottom: 3rem;
+        margin-bottom: 3.5rem;
+    }
+
+    .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .gallery-title {
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+
+    .gallery-hint {
+        font-size: 0.75rem;
     }
 
     .gallery-scroll {
         display: flex;
-        gap: 1rem;
+        gap: 1.25rem;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: 0.75rem;
+        padding-bottom: 1rem;
         scrollbar-width: thin;
         scrollbar-color: var(--surface-border) transparent;
     }
 
     .gallery-scroll::-webkit-scrollbar {
-        height: 4px;
+        height: 6px;
     }
 
     .gallery-scroll::-webkit-scrollbar-thumb {
         background: var(--surface-border);
-        border-radius: 2px;
+        border-radius: 3px;
     }
 
     .gallery-item {
         flex: 0 0 auto;
         scroll-snap-align: start;
-        border-radius: 10px;
-        overflow: hidden;
+        height: 460px;
+        background: var(--surface);
+        border-radius: 12px;
         border: 1px solid var(--border);
-        max-height: 480px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.85rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     }
 
-    .gallery-item img {
+    .gallery-img {
         height: 100%;
         width: auto;
-        max-width: 800px;
-        display: block;
-        object-fit: cover;
+        max-width: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        cursor: zoom-in;
+        transition: transform 0.25s var(--ease);
     }
 
-    .gallery-hint {
-        font-size: 0.7rem;
-        margin-top: 0.5rem;
-        text-align: right;
+    .gallery-img:hover {
+        transform: scale(1.02);
     }
 
+    /* ── Case Study Content ────────────────────────── */
     .project-content {
-        max-width: 80ch;
+        max-width: 75ch;
         margin: 0 auto;
-        line-height: 1.8;
+        line-height: 1.85;
+        font-size: 1rem;
         color: var(--text-muted);
     }
 
@@ -313,27 +395,27 @@ const jsonLd = {
     .project-content :global(h3),
     .project-content :global(h4) {
         color: var(--text);
-        margin-top: 2rem;
+        margin-top: 2.25rem;
         margin-bottom: 0.75rem;
     }
 
     .project-content :global(h2) {
-        font-size: 1.375rem;
+        font-size: 1.4rem;
         padding-bottom: 0.5rem;
         border-bottom: 1px solid var(--border);
     }
 
     .project-content :global(h3) {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
     }
 
     .project-content :global(p) {
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
     }
 
     .project-content :global(ul),
     .project-content :global(ol) {
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
         padding-left: 1.5rem;
     }
 
@@ -357,7 +439,7 @@ const jsonLd = {
         border-radius: 8px;
         padding: 1.25rem;
         overflow-x: auto;
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
     }
 
     .project-content :global(pre code) {
@@ -380,7 +462,7 @@ const jsonLd = {
     .project-content :global(blockquote) {
         border-left: 3px solid var(--green);
         padding-left: 1rem;
-        margin: 1rem 0;
+        margin: 1.25rem 0;
         color: var(--text-dim);
         font-style: italic;
     }
@@ -388,17 +470,18 @@ const jsonLd = {
     .project-content :global(hr) {
         border: none;
         border-top: 1px solid var(--border);
-        margin: 2rem 0;
+        margin: 2.5rem 0;
     }
 
     .project-content :global(img) {
         max-width: 100%;
         border-radius: 8px;
         border: 1px solid var(--border);
-        margin: 1rem 0;
+        margin: 1.25rem 0;
         cursor: zoom-in;
     }
 
+    /* ── Lightbox ──────────────────────────────────── */
     .img-lightbox {
         position: fixed;
         inset: 0;
@@ -407,16 +490,20 @@ const jsonLd = {
         align-items: center;
         justify-content: center;
         padding: 2rem;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.2s ease, visibility 0.2s ease;
         cursor: zoom-out;
     }
+
     .img-lightbox.open {
         opacity: 1;
         visibility: visible;
     }
+
     .img-lightbox img {
         max-width: 100%;
         max-height: 100%;
@@ -424,21 +511,19 @@ const jsonLd = {
         transform: scale(0.95);
         transition: transform 0.2s ease;
     }
+
     .img-lightbox.open img {
         transform: scale(1);
     }
 
     @media (max-width: 768px) {
-        .project-header {
-            grid-template-columns: 1fr;
+        .gallery-item {
+            height: 380px;
         }
 
-        .project-sidebar {
-            order: -1;
-        }
-
-        .gallery-item img {
-            max-width: 85vw;
+        .project-header-meta {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 </style>
@@ -448,7 +533,7 @@ const jsonLd = {
     const lightbox = document.getElementById("img-lightbox");
     const lightboxImg = document.getElementById("img-lightbox-img") as HTMLImageElement;
     if (lightbox && lightboxImg) {
-        document.querySelectorAll<HTMLImageElement>(".project-content img").forEach((img) => {
+        document.querySelectorAll<HTMLImageElement>(".banner-img, .gallery-img, .project-content img").forEach((img) => {
             img.addEventListener("click", () => {
                 lightboxImg.src = img.src;
                 lightboxImg.alt = img.alt;
