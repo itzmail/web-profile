@@ -53,21 +53,15 @@ const typeColors: Record<string, string> = {
                             const type = d?.project_type ?? 'side_project';
                             const stack = d?.stack ?? [];
                             const images = d?.images ?? [];
-                            const cardImages = d?.cover_image
-                                ? [d.cover_image, ...images.filter((img) => img !== d.cover_image)]
-                                : images;
+                            const thumb = d?.cover_image ?? images[0] ?? null;
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
                             return (
                                 <article class="project-card project-card--featured reveal-stagger" style={`--accent: ${accent};`}>
                                     <div class="card-accent-bar"></div>
-                                    {cardImages.length > 0 && (
+                                    {thumb && (
                                         <div class="card-cover card-cover--featured">
-                                            <div class="cover-track">
-                                                {cardImages.map((src) => (
-                                                    <img src={src} alt={p.title} loading="lazy" class="cover-img" />
-                                                ))}
-                                            </div>
+                                            <img src={thumb} alt={p.title} loading="lazy" class="cover-img" />
                                             {(liveLink || repoLink) && (
                                                 <div class="cover-overlay">
                                                     {liveLink && (
@@ -80,13 +74,6 @@ const typeColors: Record<string, string> = {
                                                             <GithubIcon />
                                                         </a>
                                                     )}
-                                                </div>
-                                            )}
-                                            {cardImages.length > 1 && (
-                                                <div class="cover-dots">
-                                                    {cardImages.map((_, i) => (
-                                                        <span class="cover-dot" data-dot-index={i}></span>
-                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -140,21 +127,15 @@ const typeColors: Record<string, string> = {
                             const type = d?.project_type ?? 'side_project';
                             const stack = d?.stack ?? [];
                             const images = d?.images ?? [];
-                            const cardImages = d?.cover_image
-                                ? [d.cover_image, ...images.filter((img) => img !== d.cover_image)]
-                                : images;
+                            const thumb = d?.cover_image ?? images[0] ?? null;
                             const liveLink = d?.links?.find(l => l.label === 'live');
                             const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
                             return (
                                 <article class="project-card reveal-stagger" style={`--accent: ${accent};`}>
                                     <div class="card-accent-bar"></div>
-                                    {cardImages.length > 0 && (
+                                    {thumb && (
                                         <div class="card-cover">
-                                            <div class="cover-track">
-                                                {cardImages.map((src) => (
-                                                    <img src={src} alt={p.title} loading="lazy" class="cover-img" />
-                                                ))}
-                                            </div>
+                                            <img src={thumb} alt={p.title} loading="lazy" class="cover-img" />
                                             {(liveLink || repoLink) && (
                                                 <div class="cover-overlay">
                                                     {liveLink && (
@@ -167,13 +148,6 @@ const typeColors: Record<string, string> = {
                                                             <GithubIcon />
                                                         </a>
                                                     )}
-                                                </div>
-                                            )}
-                                            {cardImages.length > 1 && (
-                                                <div class="cover-dots">
-                                                    {cardImages.map((_, i) => (
-                                                        <span class="cover-dot" data-dot-index={i}></span>
-                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -331,26 +305,11 @@ const typeColors: Record<string, string> = {
         height: 220px;
     }
 
-    .cover-track {
-        display: flex;
-        height: 100%;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .cover-track::-webkit-scrollbar {
-        display: none;
-    }
-
     .cover-img {
         width: 100%;
         height: 100%;
-        flex-shrink: 0;
         object-fit: cover;
         object-position: top;
-        scroll-snap-align: start;
         transition: transform 0.35s var(--ease);
     }
 
@@ -388,35 +347,6 @@ const typeColors: Record<string, string> = {
     .overlay-icon :global(svg) {
         width: 16px;
         height: 16px;
-    }
-
-    .cover-dots {
-        position: absolute;
-        bottom: 0.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.3rem 0.5rem;
-        border-radius: 999px;
-        background: rgba(0, 0, 0, 0.35);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        z-index: 2;
-    }
-
-    .cover-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.4);
-        transition: background 0.2s, transform 0.2s;
-    }
-
-    .cover-dot.active {
-        background: #fff;
-        transform: scale(1.3);
     }
 
     .card-body {
@@ -557,21 +487,4 @@ const typeColors: Record<string, string> = {
     }
 </style>
 
-<script>
-    document.querySelectorAll<HTMLElement>(".card-cover").forEach((cover) => {
-        const track = cover.querySelector<HTMLElement>(".cover-track");
-        const dots = cover.querySelectorAll<HTMLElement>(".cover-dot");
-        if (!track || dots.length === 0) return;
 
-        const setActive = (index: number) => {
-            dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
-        };
-
-        setActive(0);
-
-        track.addEventListener("scroll", () => {
-            const index = Math.round(track.scrollLeft / track.clientWidth);
-            setActive(Math.min(index, dots.length - 1));
-        });
-    });
-</script>
