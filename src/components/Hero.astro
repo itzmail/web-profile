@@ -1,8 +1,18 @@
 ---
 import Terminal from "./Terminal.astro";
 import PhoneIcon from "../assets/icons/PhoneIcon.astro";
+import { apiFetch } from "../utils/api";
+import type { ApiStats } from "../types/index";
 
 const cvUrl = `${import.meta.env.PUBLIC_API_URL}/cv`;
+
+const apiStats = await apiFetch<ApiStats>("/stats");
+const stats: ApiStats = apiStats ?? {
+    years_exp: "3+",
+    total_projects: 20,
+    prod_apps: 5,
+    open_source: 5,
+};
 ---
 
 <section class="hero" id="home">
@@ -62,17 +72,17 @@ const cvUrl = `${import.meta.env.PUBLIC_API_URL}/cv`;
 
             <div class="hero-stats">
                 <div class="stat">
-                    <span class="stat-num">3+</span>
+                    <span class="stat-num">{stats.years_exp}</span>
                     <span class="stat-label">Years exp.</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat">
-                    <span class="stat-num">20+</span>
+                    <span class="stat-num">{stats.total_projects}+</span>
                     <span class="stat-label">Projects shipped</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat">
-                    <span class="stat-num">5</span>
+                    <span class="stat-num">{stats.open_source}</span>
                     <span class="stat-label">OSS contributions</span>
                 </div>
             </div>

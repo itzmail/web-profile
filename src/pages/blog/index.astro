@@ -1,10 +1,45 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { apiFetch } from "../../utils/api";
-import type { PostListItem } from "../../types/index";
+import type { PostListItem, PaginatedResponse, PaginationMeta } from "../../types/index";
 
 const q = Astro.url.searchParams.get("q") ?? "";
-const posts = await apiFetch<PostListItem[]>(`/posts${q ? `?q=${encodeURIComponent(q)}` : ""}`) ?? [];
+const pageParam = Astro.url.searchParams.get("page");
+const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+
+const queryParams = new URLSearchParams();
+if (q) queryParams.set("q", q);
+if (currentPage > 1) queryParams.set("page", String(currentPage));
+const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+const rawRes = await apiFetch<PaginatedResponse<PostListItem> | PostListItem[]>(`/posts${queryStr}`);
+
+let posts: PostListItem[] = [];
+let meta: PaginationMeta = {
+    current_page: currentPage,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: null,
+    to: null,
+};
+
+if (rawRes) {
+    if (Array.isArray(rawRes)) {
+        posts = rawRes;
+        meta = {
+            current_page: currentPage,
+            last_page: 1,
+            per_page: rawRes.length,
+            total: rawRes.length,
+            from: rawRes.length > 0 ? 1 : null,
+            to: rawRes.length > 0 ? rawRes.length : null,
+        };
+    } else if (rawRes.data && rawRes.meta) {
+        posts = rawRes.data;
+        meta = rawRes.meta;
+    }
+}
 
 function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString("en-US", {
@@ -13,6 +48,36 @@ function formatDate(iso: string) {
         day: "numeric",
     });
 }
+
+function getPageUrl(p: number) {
+    const pParams = new URLSearchParams();
+    if (q) pParams.set("q", q);
+    if (p > 1) pParams.set("page", String(p));
+    const qs = pParams.toString();
+    return `/blog${qs ? `?${qs}` : ""}`;
+}
+
+function getPageRange(current: number, last: number): (number | string)[] {
+    if (last <= 7) {
+        return Array.from({ length: last }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [1];
+    if (current > 3) {
+        pages.push("...");
+    }
+    const start = Math.max(2, current - 1);
+    const end = Math.min(last - 1, current + 1);
+    for (let i = start; i <= end; i++) {
+        pages.push(i);
+    }
+    if (current < last - 2) {
+        pages.push("...");
+    }
+    pages.push(last);
+    return pages;
+}
+
+const apiBase = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/api";
 ---
 
 <Layout
@@ -21,7 +86,14 @@ function formatDate(iso: string) {
     canonicalURL="https://itsmail.dev/blog"
 >
     <main class="blog-list-page">
-        <div class="container">
+        <div
+            class="container"
+            id="blogContainer"
+            data-current-page={meta.current_page}
+            data-last-page={meta.last_page}
+            data-initial-query={q}
+            data-api-base={apiBase}
+        >
 
             <header class="page-header reveal">
                 <p class="font-mono text-muted page-eyebrow">// blog</p>
@@ -29,11 +101,12 @@ function formatDate(iso: string) {
                 <p class="page-sub text-muted">Thoughts on engineering, architecture, and building things that last.</p>
             </header>
 
-            <form class="search-form reveal" method="get" action="/blog">
+            <form class="search-form reveal" method="get" action="/blog" id="blogSearchForm">
                 <span class="search-prefix font-mono">$</span>
                 <input
                     type="search"
                     name="q"
+                    id="blogSearchInput"
                     class="search-input font-mono"
                     placeholder="grep posts..."
                     value={q}
@@ -42,69 +115,93 @@ function formatDate(iso: string) {
                 <button type="submit" class="search-btn font-mono">→</button>
             </form>
 
-            {q && (
-                <p class="search-result-label font-mono text-muted reveal">
-                    // {posts.length} result{posts.length !== 1 ? "s" : ""} for "{q}"
-                </p>
-            )}
+            <p class="search-result-label font-mono text-muted reveal" id="searchResultLabel" style={q ? "" : "display: none;"}>
+                // <span id="searchResultCount">{meta.total}</span> result<span id="searchResultPlural">{meta.total !== 1 ? "s" : ""}</span> for "<span id="searchResultQuery">{q}</span>"
+            </p>
 
-            {posts.length === 0 ? (
-                <div class="empty-state reveal">
-                    <p class="font-mono text-muted">// no posts yet — check back soon</p>
-                </div>
-            ) : (
-                <div class="posts-list">
-                    {posts.map((post) => (
-                        <article class="post-card reveal">
-                            <div class="post-log-prefix font-mono" aria-hidden="true">&gt;</div>
-                            <div class="post-body">
-                                <div class="post-content">
-                                    <div class="post-meta">
-                                        <time class="font-mono text-muted post-date" datetime={post.published_at}>
-                                            {formatDate(post.published_at)}
-                                        </time>
-                                        {post.reading_time && (
-                                            <span class="font-mono text-muted post-read-time">
-                                                · {post.reading_time} min read
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <h2 class="post-title">
-                                        <a href={`/blog/${post.short_code}`}>{post.title}</a>
-                                    </h2>
-
-                                    {post.excerpt && (
-                                        <p class="post-excerpt text-muted">{post.excerpt}</p>
+            <div class="posts-list" id="postsList">
+                {posts.map((post) => (
+                    <article class="post-card reveal">
+                        <div class="post-log-prefix font-mono" aria-hidden="true">&gt;</div>
+                        <div class="post-body">
+                            <div class="post-content">
+                                <div class="post-meta">
+                                    <time class="font-mono text-muted post-date" datetime={post.published_at}>
+                                        {formatDate(post.published_at)}
+                                    </time>
+                                    {post.reading_time && (
+                                        <span class="font-mono text-muted post-read-time">
+                                            · {post.reading_time} min read
+                                        </span>
                                     )}
-
-                                    {post.tags && post.tags.length > 0 && (
-                                        <div class="post-tags">
-                                            {post.tags.map((tag) => (
-                                                <span class="tag font-mono">{tag}</span>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <a href={`/blog/${post.short_code}`} class="post-read-link font-mono">
-                                        read more →
-                                    </a>
                                 </div>
 
-                                {post.cover_image && (
-                                    <a href={`/blog/${post.short_code}`} class="post-cover-link">
-                                        <img
-                                            src={post.cover_image}
-                                            alt={post.title}
-                                            class="post-cover"
-                                            loading="lazy"
-                                        />
-                                    </a>
+                                <h2 class="post-title">
+                                    <a href={`/blog/${post.short_code}`}>{post.title}</a>
+                                </h2>
+
+                                {post.excerpt && (
+                                    <p class="post-excerpt text-muted">{post.excerpt}</p>
                                 )}
+
+                                {post.tags && post.tags.length > 0 && (
+                                    <div class="post-tags">
+                                        {post.tags.map((tag) => (
+                                            <span class="tag font-mono">{tag}</span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <a href={`/blog/${post.short_code}`} class="post-read-link font-mono">
+                                    read more →
+                                </a>
                             </div>
-                        </article>
-                    ))}
-                </div>
+
+                            {post.cover_image && (
+                                <a href={`/blog/${post.short_code}`} class="post-cover-link">
+                                    <img
+                                        src={post.cover_image}
+                                        alt={post.title}
+                                        class="post-cover"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            )}
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            <div class="empty-state" id="clientEmptyState" style={posts.length === 0 ? "" : "display: none;"}>
+                <p class="font-mono text-muted" id="emptyStateText">
+                    {q ? `// no posts matching "${q}"` : "// no posts yet — check back soon"}
+                </p>
+            </div>
+
+            <div class="infinite-loading font-mono text-muted" id="infiniteLoading" style="display: none;">
+                <span class="loading-dots">// loading more posts</span>
+            </div>
+
+            <div id="scrollSentinel" class="scroll-sentinel" aria-hidden="true"></div>
+
+            {meta.last_page > 1 && (
+                <noscript>
+                    <nav class="pagination font-mono" aria-label="Blog Pagination">
+                        {meta.current_page > 1 && (
+                            <a href={getPageUrl(meta.current_page - 1)} class="pagination-btn">
+                                &larr; prev
+                            </a>
+                        )}
+                        <span class="pagination-info text-muted">
+                            [page {meta.current_page}/{meta.last_page}]
+                        </span>
+                        {meta.current_page < meta.last_page && (
+                            <a href={getPageUrl(meta.current_page + 1)} class="pagination-btn">
+                                next &rarr;
+                            </a>
+                        )}
+                    </nav>
+                </noscript>
             )}
         </div>
     </main>
@@ -275,5 +372,392 @@ function formatDate(iso: string) {
         margin-bottom: 1rem;
         margin-top: -1rem;
     }
+
+    /* ── Pagination ─────────────────────────────────── */
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 3.5rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination-btn,
+    .pagination-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.25rem;
+        padding: 0 0.85rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--surface);
+        transition: color var(--duration) var(--ease),
+                    border-color var(--duration) var(--ease),
+                    background var(--duration) var(--ease),
+                    box-shadow var(--duration) var(--ease);
+    }
+
+    .pagination-num {
+        min-width: 2.25rem;
+        padding: 0 0.5rem;
+    }
+
+    .pagination-btn:hover:not(.pagination-disabled),
+    .pagination-num:hover:not(.is-active) {
+        color: var(--text);
+        border-color: var(--green);
+        background: rgba(0, 255, 136, 0.05);
+    }
+
+    .pagination-num.is-active {
+        color: var(--green);
+        border-color: var(--green);
+        background: rgba(0, 255, 136, 0.12);
+        box-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
+        font-weight: 700;
+    }
+
+    .pagination-btn.pagination-disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .pagination-pages {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .pagination-ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        user-select: none;
+    }
+
+    .pagination-info {
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 640px) {
+        .pagination {
+            gap: 0.35rem;
+        }
+        .pagination-info {
+            width: 100%;
+            text-align: center;
+            margin-left: 0;
+            margin-top: 0.5rem;
+        }
+    }
+
+    /* ── Infinite Scroll Loading ───────────────────── */
+    .infinite-loading {
+        text-align: center;
+        padding: 2.5rem 0;
+        font-size: 0.85rem;
+        color: var(--green);
+        letter-spacing: 0.05em;
+    }
+
+    .loading-dots::after {
+        content: "...";
+        animation: dots-pulse 1.4s infinite;
+    }
+
+    @keyframes dots-pulse {
+        0%, 20% { content: "."; }
+        40%, 60% { content: ".."; }
+        80%, 100% { content: "..."; }
+    }
+
+    .scroll-sentinel {
+        height: 20px;
+        margin-top: 1rem;
+        pointer-events: none;
+    }
 </style>
+
+<script>
+    function setupBlogInfiniteScrollAndSearch() {
+        const container = document.getElementById("blogContainer");
+        const input = document.getElementById("blogSearchInput") as HTMLInputElement | null;
+        const form = document.getElementById("blogSearchForm") as HTMLFormElement | null;
+        const postsList = document.getElementById("postsList");
+        const label = document.getElementById("searchResultLabel");
+        const countSpan = document.getElementById("searchResultCount");
+        const pluralSpan = document.getElementById("searchResultPlural");
+        const querySpan = document.getElementById("searchResultQuery");
+        const clientEmpty = document.getElementById("clientEmptyState");
+        const emptyStateText = document.getElementById("emptyStateText");
+        const loadingEl = document.getElementById("infiniteLoading");
+        const sentinel = document.getElementById("scrollSentinel");
+
+        if (!container || !postsList) return;
+
+        const apiBase = container.dataset.apiBase ?? "https://my-data.itsmail.dev/api";
+        let currentPage = parseInt(container.dataset.currentPage ?? "1", 10) || 1;
+        let lastPage = parseInt(container.dataset.lastPage ?? "1", 10) || 1;
+        let currentQuery = container.dataset.initialQuery ?? "";
+        let isLoading = false;
+        let hasMore = currentPage < lastPage;
+
+        function formatDate(iso: string): string {
+            try {
+                return new Date(iso).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                });
+            } catch {
+                return iso;
+            }
+        }
+
+        function escapeHtml(str: string | null | undefined): string {
+            if (!str) return "";
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function createPostCardElement(post: any): HTMLElement {
+            const article = document.createElement("article");
+            article.className = "post-card reveal visible";
+            const dateFormatted = post.published_at ? formatDate(post.published_at) : "";
+            const tags = Array.isArray(post.tags) ? post.tags : [];
+            const tagsHtml = tags
+                .map((tag: string) => `<span class="tag font-mono">${escapeHtml(tag)}</span>`)
+                .join("");
+            const readTimeHtml = post.reading_time
+                ? `<span class="font-mono text-muted post-read-time"> · ${post.reading_time} min read</span>`
+                : "";
+            const excerptHtml = post.excerpt
+                ? `<p class="post-excerpt text-muted">${escapeHtml(post.excerpt)}</p>`
+                : "";
+            const coverHtml = post.cover_image
+                ? `<a href="/blog/${encodeURIComponent(post.short_code)}" class="post-cover-link">
+                     <img src="${escapeHtml(post.cover_image)}" alt="${escapeHtml(post.title)}" class="post-cover" loading="lazy" />
+                   </a>`
+                : "";
+
+            article.innerHTML = `
+                <div class="post-log-prefix font-mono" aria-hidden="true">&gt;</div>
+                <div class="post-body">
+                    <div class="post-content">
+                        <div class="post-meta">
+                            <time class="font-mono text-muted post-date" datetime="${escapeHtml(post.published_at)}">
+                                ${dateFormatted}
+                            </time>
+                            ${readTimeHtml}
+                        </div>
+
+                        <h2 class="post-title">
+                            <a href="/blog/${encodeURIComponent(post.short_code)}">${escapeHtml(post.title)}</a>
+                        </h2>
+
+                        ${excerptHtml}
+
+                        ${tagsHtml ? `<div class="post-tags">${tagsHtml}</div>` : ""}
+
+                        <a href="/blog/${encodeURIComponent(post.short_code)}" class="post-read-link font-mono">
+                            read more &rarr;
+                        </a>
+                    </div>
+
+                    ${coverHtml}
+                </div>
+            `;
+            return article;
+        }
+
+        function updateUrl(query: string) {
+            const url = new URL(window.location.href);
+            if (query) {
+                url.searchParams.set("q", query);
+            } else {
+                url.searchParams.delete("q");
+            }
+            url.searchParams.delete("page");
+            window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+        }
+
+        async function fetchPosts(page: number, query: string) {
+            const params = new URLSearchParams();
+            if (query) params.set("q", query);
+            params.set("page", String(page));
+
+            const res = await fetch(`${apiBase}/posts?${params.toString()}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+        }
+
+        async function loadMorePosts() {
+            if (isLoading || !hasMore) return;
+            isLoading = true;
+            if (loadingEl) loadingEl.style.display = "block";
+
+            const nextPage = currentPage + 1;
+            try {
+                const data = await fetchPosts(nextPage, currentQuery);
+                let newPosts: any[] = [];
+                if (Array.isArray(data)) {
+                    newPosts = data;
+                    hasMore = false;
+                } else if (data && data.data) {
+                    newPosts = data.data;
+                    lastPage = data.meta?.last_page ?? lastPage;
+                    currentPage = nextPage;
+                    hasMore = currentPage < lastPage;
+                }
+
+                if (newPosts.length > 0) {
+                    const fragment = document.createDocumentFragment();
+                    for (const post of newPosts) {
+                        fragment.appendChild(createPostCardElement(post));
+                    }
+                    postsList?.appendChild(fragment);
+                } else {
+                    hasMore = false;
+                }
+            } catch (err) {
+                console.error("Failed to load more posts:", err);
+                hasMore = false;
+            } finally {
+                isLoading = false;
+                if (loadingEl) loadingEl.style.display = "none";
+            }
+        }
+
+        async function executeSearch(query: string) {
+            isLoading = true;
+            currentQuery = query;
+            updateUrl(query);
+
+            if (loadingEl) loadingEl.style.display = "block";
+
+            try {
+                const data = await fetchPosts(1, query);
+                let posts: any[] = [];
+                let total = 0;
+
+                if (Array.isArray(data)) {
+                    posts = data;
+                    total = data.length;
+                    currentPage = 1;
+                    lastPage = 1;
+                    hasMore = false;
+                } else if (data && data.data) {
+                    posts = data.data;
+                    currentPage = 1;
+                    lastPage = data.meta?.last_page ?? 1;
+                    total = data.meta?.total ?? posts.length;
+                    hasMore = currentPage < lastPage;
+                }
+
+                // Replace list items
+                if (postsList) {
+                    postsList.innerHTML = "";
+                    const fragment = document.createDocumentFragment();
+                    for (const post of posts) {
+                        fragment.appendChild(createPostCardElement(post));
+                    }
+                    postsList.appendChild(fragment);
+                }
+
+                // Update search result label
+                if (label) {
+                    if (query) {
+                        label.style.display = "";
+                        if (countSpan) countSpan.textContent = String(total);
+                        if (pluralSpan) pluralSpan.textContent = total !== 1 ? "s" : "";
+                        if (querySpan) querySpan.textContent = query;
+                    } else {
+                        label.style.display = "none";
+                    }
+                }
+
+                // Update empty state
+                if (clientEmpty) {
+                    if (posts.length === 0) {
+                        clientEmpty.style.display = "block";
+                        if (emptyStateText) {
+                            emptyStateText.textContent = query
+                                ? `// no posts matching "${query}"`
+                                : "// no posts yet — check back soon";
+                        }
+                    } else {
+                        clientEmpty.style.display = "none";
+                    }
+                }
+            } catch (err) {
+                console.error("Search failed:", err);
+            } finally {
+                isLoading = false;
+                if (loadingEl) loadingEl.style.display = "none";
+            }
+        }
+
+        // Debounced search on input
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+        if (input) {
+            input.addEventListener("input", () => {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const qVal = input.value.trim();
+                    if (qVal === currentQuery) return;
+                    executeSearch(qVal);
+                }, 350);
+            });
+        }
+
+        if (form) {
+            form.addEventListener("submit", (e) => {
+                e.preventDefault();
+                if (debounceTimer) clearTimeout(debounceTimer);
+                if (input) {
+                    const qVal = input.value.trim();
+                    if (qVal !== currentQuery) {
+                        executeSearch(qVal);
+                    }
+                }
+            });
+        }
+
+        // IntersectionObserver for infinite scroll sentinel
+        if (sentinel && "IntersectionObserver" in window) {
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    const entry = entries[0];
+                    if (entry && entry.isIntersecting && hasMore && !isLoading) {
+                        loadMorePosts();
+                    }
+                },
+                {
+                    root: null,
+                    rootMargin: "200px 0px",
+                    threshold: 0,
+                }
+            );
+            observer.observe(sentinel);
+        }
+    }
+
+    setupBlogInfiniteScrollAndSearch();
+    document.addEventListener("astro:page-load", setupBlogInfiniteScrollAndSearch);
+</script>
 

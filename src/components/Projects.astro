@@ -25,7 +25,6 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
                     const accent = p.web_profile?.data?.accent ?? "var(--green)";
                     const stack = p.web_profile?.data?.stack ?? [];
                     const images = p.web_profile?.data?.images ?? [];
-                    const links = p.web_profile?.data?.links ?? [];
                     const pType = p.web_profile?.data?.project_type ?? 'side_project';
                     const thumb = images[0] ?? null;
 
@@ -85,20 +84,31 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
         content: "";
         position: absolute;
         top: 0;
-        bottom: 1rem;
-        width: clamp(2rem, 6vw, 4rem);
+        bottom: 1.25rem;
+        width: clamp(1.5rem, 5vw, 3rem);
         z-index: 2;
         pointer-events: none;
+        transition: opacity 0.3s var(--ease);
     }
 
     .carousel-wrapper::before {
         left: 0;
         background: linear-gradient(to right, var(--bg), transparent);
+        opacity: 0;
+    }
+
+    .carousel-wrapper.has-scroll-left::before {
+        opacity: 1;
     }
 
     .carousel-wrapper::after {
         right: 0;
         background: linear-gradient(to left, var(--bg), transparent);
+        opacity: 1;
+    }
+
+    .carousel-wrapper.is-scroll-end::after {
+        opacity: 0;
     }
 
     .projects-carousel {
@@ -108,7 +118,7 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
         overflow-y: visible;
         scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
-        padding: 10px clamp(1.5rem, 5vw, 3rem) 1rem;
+        padding: 12px clamp(1.5rem, 5vw, 3rem) 1.25rem;
         scrollbar-width: none;
     }
 
@@ -327,7 +337,32 @@ const typeLabel: Record<string, string> = { production: 'Prod App', client_work:
 
         .carousel-wrapper::before,
         .carousel-wrapper::after {
-            width: 2.5rem;
+            width: clamp(1.5rem, 5vw, 2.5rem);
         }
     }
 </style>
+
+<script>
+    function initProjectsCarousel() {
+        const wrapper = document.querySelector(".carousel-wrapper");
+        const carousel = document.querySelector(".projects-carousel");
+        if (!wrapper || !carousel) return;
+
+        const updateScroll = () => {
+            const hasScrollLeft = carousel.scrollLeft > 10;
+            const isScrollEnd =
+                Math.ceil(carousel.scrollLeft + carousel.clientWidth) >=
+                carousel.scrollWidth - 10;
+
+            wrapper.classList.toggle("has-scroll-left", hasScrollLeft);
+            wrapper.classList.toggle("is-scroll-end", isScrollEnd);
+        };
+
+        carousel.addEventListener("scroll", updateScroll, { passive: true });
+        window.addEventListener("resize", updateScroll, { passive: true });
+        updateScroll();
+    }
+
+    initProjectsCarousel();
+    document.addEventListener("astro:page-load", initProjectsCarousel);
+</script>
