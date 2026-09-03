@@ -236,7 +236,7 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/a
         gap: 1rem;
     }
 
-    .post-card {
+    :global(.post-card) {
         display: grid;
         grid-template-columns: 1.5rem 1fr;
         gap: 0.75rem;
@@ -245,50 +245,50 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/a
         padding: 1.25rem 1.5rem;
         transition: border-color var(--duration) var(--ease);
     }
-    .post-card:hover { border-color: var(--green); }
+    :global(.post-card:hover) { border-color: var(--green); }
 
-    .post-log-prefix {
+    :global(.post-log-prefix) {
         font-size: 0.85rem;
         color: var(--green);
         padding-top: 0.15rem;
         user-select: none;
     }
 
-    .post-body {
+    :global(.post-body) {
         display: grid;
         grid-template-columns: 1fr 220px;
         gap: 1.25rem;
         align-items: start;
     }
 
-    .post-content { display: flex; flex-direction: column; gap: 0.6rem; }
+    :global(.post-content) { display: flex; flex-direction: column; gap: 0.6rem; }
 
-    .post-meta {
+    :global(.post-meta) {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         font-size: 0.75rem;
     }
 
-    .post-title {
+    :global(.post-title) {
         font-size: 1.15rem;
         font-weight: 600;
         line-height: 1.3;
     }
-    .post-title a {
+    :global(.post-title a) {
         color: var(--text);
         text-decoration: none;
         transition: color var(--duration) var(--ease);
     }
-    .post-title a:hover { color: var(--green); }
+    :global(.post-title a:hover) { color: var(--green); }
 
-    .post-excerpt {
+    :global(.post-excerpt) {
         font-size: 0.875rem;
         line-height: 1.7;
     }
 
-    .post-cover-link { display: block; }
-    .post-cover {
+    :global(.post-cover-link) { display: block; }
+    :global(.post-cover) {
         width: 100%;
         height: 130px;
         object-fit: cover;
@@ -297,19 +297,19 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/a
     }
 
     @media (max-width: 640px) {
-        .post-log-prefix { display: none; }
-        .post-card { grid-template-columns: 1fr; }
-        .post-body { grid-template-columns: 1fr; }
-        .post-cover-link { order: -1; }
-        .post-cover { height: 180px; }
+        :global(.post-log-prefix) { display: none; }
+        :global(.post-card) { grid-template-columns: 1fr; }
+        :global(.post-body) { grid-template-columns: 1fr; }
+        :global(.post-cover-link) { order: -1; }
+        :global(.post-cover) { height: 180px; }
     }
 
-    .post-tags {
+    :global(.post-tags) {
         display: flex;
         flex-wrap: wrap;
         gap: 0.35rem;
     }
-    .tag {
+    :global(.tag) {
         font-size: 0.7rem;
         background: var(--surface);
         border: 1px solid var(--border);
@@ -318,14 +318,14 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/a
         color: var(--text-muted);
     }
 
-    .post-read-link {
+    :global(.post-read-link) {
         font-size: 0.8rem;
         color: var(--green);
         text-decoration: none;
         margin-top: 0.25rem;
         transition: opacity var(--duration) var(--ease);
     }
-    .post-read-link:hover { opacity: 0.75; }
+    :global(.post-read-link:hover) { opacity: 0.75; }
 
     .search-form {
         display: flex;
