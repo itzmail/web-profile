@@ -127,7 +127,7 @@ const jsonLd = {
                     {stack.length > 0 && (
                         <div class="tag-list">
                             {stack.map((tag) => (
-                                <span class="tag font-mono" style={`border-color: ${accent}33; color: ${accent}`}>
+                                <span class="tag font-mono">
                                     {tag}
                                 </span>
                             ))}
@@ -284,11 +284,20 @@ const jsonLd = {
     }
 
     .tag {
-        font-size: 0.725rem;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        background: var(--badge-bg);
+        border: 1px solid var(--badge-border);
         border-radius: 4px;
-        padding: 0.25rem 0.625rem;
+        padding: 0.2rem 0.55rem;
+        color: var(--badge-text);
+        transition: all var(--duration) var(--ease);
+    }
+
+    .tag:hover {
+        color: var(--badge-text-hover);
+        background: var(--badge-bg-hover);
+        border-color: var(--badge-border-hover);
     }
 
     .links-list {

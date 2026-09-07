@@ -141,9 +141,9 @@ const totalSkills = skillGroups.reduce((acc, g) => acc + g.items.length, 0);
         gap: 0.25rem;
         font-family: var(--font-mono);
         font-size: 0.62rem;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border);
+        color: var(--badge-text);
+        background: var(--badge-bg);
+        border: 1px solid var(--badge-border);
         border-radius: 99px;
         padding: 0.18rem 0.45rem 0.18rem 0.35rem;
         white-space: nowrap;
@@ -151,8 +151,9 @@ const totalSkills = skillGroups.reduce((acc, g) => acc + g.items.length, 0);
     }
 
     .bento-card--stack:hover .skill-badge {
-        color: var(--text);
-        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--badge-text-hover);
+        background: var(--badge-bg-hover);
+        border-color: var(--badge-border-hover);
     }
 
     .skill-badge--lg {

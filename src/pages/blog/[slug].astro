@@ -207,12 +207,19 @@ const jsonLd = {
         gap: 0.35rem;
     }
     .tag {
-        font-size: 0.7rem;
-        background: var(--surface);
-        border: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        background: var(--badge-bg);
+        border: 1px solid var(--badge-border);
         border-radius: 4px;
-        padding: 0.15rem 0.5rem;
-        color: var(--text-muted);
+        padding: 0.2rem 0.55rem;
+        color: var(--badge-text);
+        transition: all var(--duration) var(--ease);
+    }
+    .tag:hover {
+        color: var(--badge-text-hover);
+        background: var(--badge-bg-hover);
+        border-color: var(--badge-border-hover);
     }
 
     .cover-wrap {

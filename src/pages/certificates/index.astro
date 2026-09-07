@@ -441,8 +441,9 @@ import Layout from "../../layouts/Layout.astro";
     }
 
     .cert-badge {
+        font-family: var(--font-mono);
         font-size: 0.6rem;
-        padding: 0.15rem 0.5rem;
+        padding: 0.18rem 0.5rem;
         border-radius: 4px;
         letter-spacing: 0.05em;
         border: 1px solid;
@@ -454,16 +455,32 @@ import Layout from "../../layouts/Layout.astro";
         background: rgba(0, 255, 136, 0.06);
     }
 
+    :global([data-theme="light"]) .cert-badge--valid {
+        border-color: rgba(0, 170, 85, 0.3);
+        background: rgba(0, 170, 85, 0.08);
+    }
+
     .cert-badge--lifetime {
         color: var(--cyan, #00d4ff);
         border-color: rgba(0, 212, 255, 0.3);
         background: rgba(0, 212, 255, 0.06);
     }
 
+    :global([data-theme="light"]) .cert-badge--lifetime {
+        border-color: rgba(0, 153, 187, 0.3);
+        background: rgba(0, 153, 187, 0.08);
+    }
+
     .cert-badge--expired {
         color: rgba(255, 140, 100, 0.9);
         border-color: rgba(255, 100, 80, 0.25);
         background: rgba(255, 100, 80, 0.06);
+    }
+
+    :global([data-theme="light"]) .cert-badge--expired {
+        color: #c2410c;
+        border-color: rgba(194, 65, 12, 0.25);
+        background: rgba(194, 65, 12, 0.08);
     }
 
     .cert-title {
@@ -620,17 +637,18 @@ import Layout from "../../layouts/Layout.astro";
     }
 
     .modal-badge {
+        font-family: var(--font-mono);
         font-size: 0.6rem;
-        padding: 0.15rem 0.5rem;
+        padding: 0.18rem 0.5rem;
         border-radius: 4px;
         letter-spacing: 0.05em;
         border: 1px solid;
     }
 
     .modal-badge--category {
-        color: var(--text-muted);
-        border-color: var(--border);
-        background: rgba(255, 255, 255, 0.04);
+        color: var(--badge-text);
+        border-color: var(--badge-border);
+        background: var(--badge-bg);
     }
 
     .modal-badge--valid {
@@ -639,16 +657,32 @@ import Layout from "../../layouts/Layout.astro";
         background: rgba(0, 255, 136, 0.06);
     }
 
+    :global([data-theme="light"]) .modal-badge--valid {
+        border-color: rgba(0, 170, 85, 0.3);
+        background: rgba(0, 170, 85, 0.08);
+    }
+
     .modal-badge--lifetime {
         color: var(--cyan, #00d4ff);
         border-color: rgba(0, 212, 255, 0.3);
         background: rgba(0, 212, 255, 0.06);
     }
 
+    :global([data-theme="light"]) .modal-badge--lifetime {
+        border-color: rgba(0, 153, 187, 0.3);
+        background: rgba(0, 153, 187, 0.08);
+    }
+
     .modal-badge--expired {
         color: rgba(255, 140, 100, 0.9);
         border-color: rgba(255, 100, 80, 0.25);
         background: rgba(255, 100, 80, 0.06);
+    }
+
+    :global([data-theme="light"]) .modal-badge--expired {
+        color: #c2410c;
+        border-color: rgba(194, 65, 12, 0.25);
+        background: rgba(194, 65, 12, 0.08);
     }
 
     .modal-title {

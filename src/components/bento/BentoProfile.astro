@@ -141,6 +141,11 @@ const isAvailable = settings.available_for_work === 'true';
         width: fit-content;
     }
 
+    :global([data-theme="light"]) .available-badge {
+        border-color: rgba(0, 170, 85, 0.3);
+        background: rgba(0, 170, 85, 0.08);
+    }
+
     .available-dot {
         width: 6px;
         height: 6px;

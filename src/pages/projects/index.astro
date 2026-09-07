@@ -373,10 +373,12 @@ const typeColors: Record<string, string> = {
     .badge {
         font-family: var(--font-mono);
         font-size: 0.6rem;
-        padding: 0.2rem 0.5rem;
+        padding: 0.18rem 0.45rem;
         border-radius: 4px;
         font-weight: 600;
         letter-spacing: 0.05em;
+        background: var(--badge-type-bg);
+        border: 1px solid var(--badge-type-border);
     }
 
     .badge--featured {
@@ -385,15 +387,27 @@ const typeColors: Record<string, string> = {
         border: 1px solid rgba(245, 158, 11, 0.25);
     }
 
+    :global([data-theme="light"]) .badge--featured {
+        background: rgba(217, 119, 6, 0.1);
+        color: #b45309;
+        border-color: rgba(217, 119, 6, 0.25);
+    }
+
     .badge--oss {
         background: rgba(0, 255, 136, 0.08);
         color: var(--green);
         border: 1px solid rgba(0, 255, 136, 0.2);
     }
 
+    :global([data-theme="light"]) .badge--oss {
+        background: rgba(0, 170, 85, 0.1);
+        color: var(--green);
+        border-color: rgba(0, 170, 85, 0.25);
+    }
+
     .badge--type {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid var(--border);
+        background: var(--badge-type-bg);
+        border: 1px solid var(--badge-type-border);
         font-size: 0.6rem;
     }
 
@@ -421,12 +435,19 @@ const typeColors: Record<string, string> = {
     }
 
     .stack-tag {
-        font-size: 0.65rem;
-        padding: 0.2rem 0.5rem;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid var(--border);
+        font-size: 0.6875rem;
+        padding: 0.2rem 0.55rem;
+        background: var(--badge-bg);
+        border: 1px solid var(--badge-border);
         border-radius: 4px;
-        color: var(--text-muted);
+        color: var(--badge-text);
+        transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+    }
+
+    .project-card:hover .stack-tag {
+        color: var(--badge-text-hover);
+        background: var(--badge-bg-hover);
+        border-color: var(--badge-border-hover);
     }
 
     .card-links {
