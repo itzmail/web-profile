@@ -1,0 +1,9 @@
+---
+const { app } = Astro.params;
+
+if (!app) {
+    return Astro.redirect("/404");
+}
+
+return Astro.redirect(`/legal/${app}/privacy-policy`);
+---

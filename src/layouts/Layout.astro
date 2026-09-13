@@ -18,6 +18,8 @@ interface Props {
 	type?: "website" | "article";
 	jsonLd?: Record<string, unknown>;
 	chatPageContext?: ChatPageContext;
+	hideNav?: boolean;
+	hideChat?: boolean;
 }
 const {
 	title = "Ismail Alam — Fullstack Architect",
@@ -27,6 +29,8 @@ const {
 	type = "website",
 	jsonLd,
 	chatPageContext,
+	hideNav = false,
+	hideChat = false,
 } = Astro.props;
 const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 ---
@@ -69,10 +73,10 @@ const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	</head>
 	<body>
-		<Navbar />
+		{!hideNav && <Navbar />}
 		<slot />
 		<Modal />
-		<ChatWidget pageContext={chatPageContext} />
+		{!hideChat && <ChatWidget pageContext={chatPageContext} />}
 		<!-- Scroll Reveal Script -->
 		<script>
 			const observer = new IntersectionObserver(

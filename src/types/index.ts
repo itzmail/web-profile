@@ -171,3 +171,17 @@ export interface ApiCertificate {
         };
     };
 }
+
+export type LegalDocType = "privacy-policy" | "terms-of-service" | "data-deletion" | "support" | string;
+
+export interface AppLegal {
+    id: number;
+    app_name: string;
+    app_slug: string;
+    type: LegalDocType;
+    title: string;
+    content: string;
+    effective_date: string | null;
+    updated_at: string;
+}
+

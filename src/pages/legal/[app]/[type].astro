@@ -1,0 +1,522 @@
+---
+import { marked } from "marked";
+import { apiFetch } from "../../../utils/api";
+import { sanitizeHtml } from "../../../utils/sanitize";
+import Layout from "../../../layouts/Layout.astro";
+import SunIcon from "../../../assets/icons/SunIcon.astro";
+import MoonIcon from "../../../assets/icons/MoonIcon.astro";
+import type { AppLegal } from "../../../types/index";
+
+const { app, type } = Astro.params;
+
+if (!app || !type) {
+    return Astro.redirect("/404");
+}
+
+const doc = await apiFetch<AppLegal>(`/legals/${app}/${type}`);
+
+if (!doc) {
+    return Astro.redirect("/404");
+}
+
+const siblingsRaw = await apiFetch<AppLegal[] | { data: AppLegal[] }>(`/legals/${app}`);
+const siblings: AppLegal[] = Array.isArray(siblingsRaw)
+    ? siblingsRaw
+    : Array.isArray(siblingsRaw?.data)
+      ? siblingsRaw.data
+      : [];
+
+const TYPE_LABELS: Record<string, string> = {
+    "privacy-policy": "Privacy Policy",
+    "terms-of-service": "Terms of Service",
+    "data-deletion": "Data Deletion",
+    support: "Support",
+};
+
+function formatTypeLabel(t: string): string {
+    if (TYPE_LABELS[t]) return TYPE_LABELS[t];
+    return t
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+}
+
+const allDocs = siblings.some((s) => s.type === doc.type)
+    ? siblings
+    : [doc, ...siblings];
+
+const uniqueDocs = Array.from(
+    new Map(allDocs.map((item) => [item.type, item])).values()
+);
+
+const tabs = uniqueDocs.map((item) => ({
+    type: item.type,
+    label: formatTypeLabel(item.type),
+}));
+
+function formatDate(iso: string | null): string {
+    if (!iso) return "";
+    try {
+        return new Date(iso).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    } catch {
+        return iso;
+    }
+}
+
+const rawHtml = doc.content ? await marked(doc.content) : "";
+const htmlContent = sanitizeHtml(rawHtml);
+
+const pageTitle = `${doc.title} — ${doc.app_name}`;
+const pageDesc = `${doc.title} for ${doc.app_name}. Effective ${doc.effective_date ? formatDate(doc.effective_date) : formatDate(doc.updated_at)}.`;
+const canonicalURL = `https://itsmail.dev/legal/${doc.app_slug}/${doc.type}`;
+const currentYear = new Date().getFullYear();
+---
+
+<Layout
+    title={pageTitle}
+    description={pageDesc}
+    canonicalURL={canonicalURL}
+    hideNav={true}
+    hideChat={true}
+>
+    <div class="legal-wrapper">
+        <header class="legal-topbar">
+            <div class="container topbar-inner">
+                <a href="https://itsmail.dev/" class="topbar-brand font-mono">
+                    <span class="brand-bracket">[</span>itsmail<span class="brand-dot">.</span>dev<span class="brand-bracket">]</span>
+                </a>
+                <div class="topbar-actions">
+                    <button
+                        type="button"
+                        class="print-btn font-mono"
+                        onclick="window.print()"
+                        title="Print document or save as PDF"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        <span>Print / PDF</span>
+                    </button>
+                    <button class="theme-toggle" id="legalThemeToggle" aria-label="Toggle theme">
+                        <SunIcon class="theme-icon theme-icon-sun" width="18" height="18" />
+                        <MoonIcon class="theme-icon theme-icon-moon" width="18" height="18" />
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="legal-main">
+            <div class="container">
+                <header class="legal-header reveal">
+                    <div class="legal-badge font-mono">{doc.app_name}</div>
+                    <h1 class="legal-title">{doc.title}</h1>
+                    <div class="legal-meta font-mono text-muted">
+                        {doc.effective_date && (
+                            <span class="meta-item">
+                                <span class="meta-label">Effective:</span>
+                                <time datetime={doc.effective_date}>{formatDate(doc.effective_date)}</time>
+                            </span>
+                        )}
+                        {doc.updated_at && (
+                            <span class="meta-item">
+                                <span class="meta-label">Updated:</span>
+                                <time datetime={doc.updated_at}>{formatDate(doc.updated_at)}</time>
+                            </span>
+                        )}
+                    </div>
+
+                    {tabs.length > 1 && (
+                        <nav class="legal-tabs" aria-label="Legal document tabs">
+                            {tabs.map((tab) => (
+                                <a
+                                    href={`/legal/${doc.app_slug}/${tab.type}`}
+                                    class={`tab-pill font-mono ${tab.type === doc.type ? "active" : ""}`}
+                                    aria-current={tab.type === doc.type ? "page" : undefined}
+                                >
+                                    {tab.label}
+                                </a>
+                            ))}
+                        </nav>
+                    )}
+                </header>
+
+                <article class="legal-content reveal" set:html={htmlContent} />
+            </div>
+        </main>
+
+        <footer class="legal-footer font-mono text-muted">
+            <div class="container footer-inner">
+                <span>&copy; {currentYear} itsmail.dev &bull; {doc.app_name} Legal Documentation</span>
+            </div>
+        </footer>
+    </div>
+</Layout>
+
+<script>
+    const themeToggle = document.getElementById("legalThemeToggle");
+    themeToggle?.addEventListener("click", () => {
+        const html = document.documentElement;
+        const isLight = html.getAttribute("data-theme") === "light";
+        const next = isLight ? "dark" : "light";
+        html.setAttribute("data-theme", next);
+        localStorage.setItem("theme", next);
+    });
+</script>
+
+<style>
+    .legal-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .legal-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        height: 60px;
+        background: var(--nav-scrolled-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+    }
+
+    .topbar-brand {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--text);
+        text-decoration: none;
+        letter-spacing: -0.02em;
+    }
+
+    .brand-bracket {
+        color: var(--green);
+    }
+    .brand-dot {
+        color: var(--cyan);
+    }
+
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .print-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.75rem;
+        padding: 0.4rem 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all var(--duration) var(--ease);
+    }
+    .print-btn:hover {
+        color: var(--text);
+        border-color: var(--green);
+        background: var(--surface-hover);
+    }
+
+    .theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all var(--duration) var(--ease);
+    }
+    .theme-toggle:hover {
+        color: var(--green);
+        border-color: var(--green);
+        background: var(--surface-hover);
+    }
+
+    :global(.theme-icon) {
+        display: block;
+        transition: transform var(--duration) var(--ease);
+    }
+
+    :global(.theme-icon-moon) {
+        display: none;
+    }
+
+    :global([data-theme="light"] .theme-icon-sun) {
+        display: none;
+    }
+
+    :global([data-theme="light"] .theme-icon-moon) {
+        display: block;
+    }
+
+    .legal-main {
+        flex: 1;
+        padding-top: 3.5rem;
+        padding-bottom: 5rem;
+    }
+
+    .legal-header {
+        max-width: 80ch;
+        margin: 0 auto 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .legal-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        background: var(--badge-bg);
+        border: 1px solid var(--badge-border);
+        color: var(--badge-text);
+        padding: 0.25rem 0.65rem;
+        border-radius: 4px;
+        margin-bottom: 1.25rem;
+    }
+
+    .legal-title {
+        font-size: clamp(1.875rem, 4vw, 2.75rem);
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--text);
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+    }
+
+    .legal-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 1.25rem;
+        font-size: 0.8125rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .meta-label {
+        opacity: 0.75;
+    }
+
+    .legal-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding-top: 0.5rem;
+    }
+
+    .tab-pill {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.85rem;
+        border-radius: 6px;
+        text-decoration: none;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        transition: all var(--duration) var(--ease);
+    }
+    .tab-pill:hover {
+        color: var(--text);
+        border-color: var(--border-hover);
+        background: var(--surface-hover);
+    }
+    .tab-pill.active {
+        color: var(--green);
+        border-color: var(--green);
+        background: rgba(0, 255, 136, 0.08);
+        font-weight: 600;
+    }
+
+    .legal-content {
+        max-width: 80ch;
+        margin: 0 auto;
+        line-height: 1.85;
+        color: var(--text-muted);
+        font-size: 0.96875rem;
+    }
+
+    .legal-content :global(h1),
+    .legal-content :global(h2),
+    .legal-content :global(h3),
+    .legal-content :global(h4) {
+        color: var(--text);
+        margin-top: 2.25rem;
+        margin-bottom: 0.85rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .legal-content :global(h1) {
+        font-size: 1.75rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.5rem;
+    }
+    .legal-content :global(h2) {
+        font-size: 1.375rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.45rem;
+        margin-top: 2.5rem;
+    }
+    .legal-content :global(h3) {
+        font-size: 1.15rem;
+    }
+    .legal-content :global(h4) {
+        font-size: 1rem;
+    }
+
+    .legal-content :global(p) {
+        margin-bottom: 1.25rem;
+    }
+
+    .legal-content :global(ul),
+    .legal-content :global(ol) {
+        margin-bottom: 1.25rem;
+        padding-left: 1.6rem;
+    }
+    .legal-content :global(li) {
+        margin-bottom: 0.45rem;
+    }
+
+    .legal-content :global(code) {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.15em 0.4em;
+        color: var(--green);
+    }
+
+    .legal-content :global(pre) {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.25rem;
+        overflow-x: auto;
+        margin-bottom: 1.5rem;
+    }
+    .legal-content :global(pre code) {
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--text);
+    }
+
+    .legal-content :global(a) {
+        color: var(--green);
+        text-decoration: underline;
+        text-decoration-color: rgba(0, 255, 136, 0.35);
+        transition: text-decoration-color var(--duration) var(--ease);
+    }
+    .legal-content :global(a:hover) {
+        text-decoration-color: var(--green);
+    }
+
+    .legal-content :global(blockquote) {
+        border-left: 3px solid var(--green);
+        padding-left: 1.25rem;
+        margin: 1.5rem 0;
+        color: var(--text);
+        font-style: italic;
+        background: var(--surface);
+        border-radius: 0 6px 6px 0;
+        padding-block: 0.65rem;
+    }
+
+    .legal-content :global(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        font-size: 0.9rem;
+    }
+    .legal-content :global(th),
+    .legal-content :global(td) {
+        border: 1px solid var(--border);
+        padding: 0.65rem 0.9rem;
+        text-align: left;
+    }
+    .legal-content :global(th) {
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    .legal-content :global(hr) {
+        border: 0;
+        border-top: 1px solid var(--border);
+        margin: 2.5rem 0;
+    }
+
+    .legal-footer {
+        border-top: 1px solid var(--border);
+        padding: 2rem 0;
+        font-size: 0.8125rem;
+        margin-top: auto;
+    }
+
+    .footer-inner {
+        text-align: center;
+        opacity: 0.8;
+    }
+
+    @media print {
+        .legal-topbar,
+        .legal-tabs,
+        .legal-footer {
+            display: none !important;
+        }
+
+        .legal-main {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .legal-header {
+            border-bottom: 1px solid #ddd !important;
+            margin-bottom: 1.5rem !important;
+            padding-bottom: 1rem !important;
+        }
+
+        .legal-title {
+            color: #000 !important;
+        }
+
+        .legal-content,
+        .legal-content :global(*) {
+            color: #111 !important;
+            background: transparent !important;
+            border-color: #ddd !important;
+            box-shadow: none !important;
+        }
+
+        .legal-content :global(a) {
+            color: #000 !important;
+            text-decoration: underline !important;
+        }
+    }
+</style>
