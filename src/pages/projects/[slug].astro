@@ -89,6 +89,7 @@ const jsonLd = {
     description={project.description}
     canonicalURL={`https://itsmail.dev/projects/${slug}`}
     image={mainImage}
+    preloadImage={coverImage}
     jsonLd={jsonLd}
     chatPageContext={{
         type: "project",
@@ -168,6 +169,8 @@ const jsonLd = {
                         alt={`${project.title} cover`}
                         class="banner-img"
                         loading="eager"
+                        fetchpriority="high"
+                        decoding="async"
                     />
                 </div>
             )}
@@ -188,6 +191,7 @@ const jsonLd = {
                                     src={src}
                                     alt={`${project.title} screenshot ${i + 1}`}
                                     loading={i === 0 ? "eager" : "lazy"}
+                                    decoding="async"
                                     class="gallery-img"
                                 />
                             </div>
@@ -218,7 +222,7 @@ const jsonLd = {
         </button>
 
         <div class="lightbox-content">
-            <img id="img-lightbox-img" src="" alt="" />
+            <img id="img-lightbox-img" src="" alt="" decoding="async" />
         </div>
 
         <button type="button" class="lightbox-btn lightbox-next" id="lightbox-next" aria-label="Next image">

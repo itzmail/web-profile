@@ -14,6 +14,7 @@ interface Props {
 	title?: string;
 	description?: string;
 	image?: string;
+	preloadImage?: string;
 	canonicalURL?: string;
 	type?: "website" | "article";
 	jsonLd?: Record<string, unknown>;
@@ -25,6 +26,7 @@ const {
 	title = "Ismail Alam — Fullstack Architect",
 	description = "Fullstack developer & architect. Building scalable systems, beautiful interfaces, and everything in between.",
 	image = "/favicon.svg",
+	preloadImage,
 	canonicalURL = new URL(Astro.url.pathname, "https://itsmail.dev").toString(),
 	type = "website",
 	jsonLd,
@@ -68,9 +70,24 @@ const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 		{jsonLd && (
 			<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 		)}
+		{preloadImage && (
+			<link rel="preload" as="image" href={preloadImage} fetchpriority="high" />
+		)}
 		<!-- Preload fonts -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;500;600;700&display=swap"
+			media="print"
+			onload="this.media='all'"
+		/>
+		<noscript>
+			<link
+				rel="stylesheet"
+				href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;500;600;700&display=swap"
+			/>
+		</noscript>
 	</head>
 	<body>
 		{!hideNav && <Navbar />}

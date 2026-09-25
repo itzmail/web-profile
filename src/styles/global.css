@@ -3,8 +3,6 @@
    Terminal-themed developer portfolio design system
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;500;600;700&display=swap');
-
 /* ── Custom Properties ─────────────────────────────────────── */
 :root {
   /* Colors */
@@ -27,7 +25,7 @@
   --border-glow: rgba(0, 255, 136, 0.25);
 
   --text: #e2e8f0;
-  --text-muted: #6b7280;
+  --text-muted: #94a3b8;
   --text-dim: #4b5563;
   --text-code: #00ff88;
 
