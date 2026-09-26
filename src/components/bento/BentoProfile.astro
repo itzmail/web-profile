@@ -156,6 +156,12 @@ const isAvailable = settings.available_for_work === 'true';
     }
 
 
+    @media (max-width: 1024px) {
+        .bento-card--featured {
+            grid-column: 1 / -1;
+        }
+    }
+
     @media (max-width: 768px) {
         .bento-card--featured {
             grid-column: 1 / -1;
