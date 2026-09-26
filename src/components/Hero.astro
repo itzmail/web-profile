@@ -4,7 +4,8 @@ import PhoneIcon from "../assets/icons/PhoneIcon.astro";
 import { apiFetch } from "../utils/api";
 import type { ApiStats } from "../types/index";
 
-const cvUrl = `${import.meta.env.PUBLIC_API_URL}/cv`;
+const apiBase = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/api";
+const cvUrl = `${apiBase}/cv`;
 
 const apiStats = await apiFetch<ApiStats>("/stats");
 const stats: ApiStats = apiStats ?? {
