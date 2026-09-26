@@ -1,0 +1,277 @@
+---
+import Layout from "../layouts/Layout.astro";
+import HomeIcon from "../assets/icons/HomeIcon.astro";
+---
+
+<Layout
+    title="404: Page Not Found — Ismail Alam"
+    description="The requested route does not exist or has been relocated."
+    canonicalURL="https://itsmail.dev/404"
+>
+    <main class="not-found-page">
+        <div class="container not-found-container">
+            <div class="not-found-content reveal">
+                <!-- Status Badge -->
+                <div class="status-badge font-mono">
+                    <span class="badge-dot"></span>
+                    <span>404 // NOT_FOUND</span>
+                </div>
+
+                <!-- Glitch 404 Headline -->
+                <div class="glitch-wrapper" aria-label="404">
+                    <h1 class="glitch-title" data-text="404">404</h1>
+                    <span class="glitch-title glitch-layer-1" aria-hidden="true">404</span>
+                    <span class="glitch-title glitch-layer-2" aria-hidden="true">404</span>
+                </div>
+
+                <h2 class="headline">Lost in the Void</h2>
+
+                <!-- Terminal Mockup -->
+                <div class="terminal-card">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                        <span class="terminal-title font-mono">bash // error-handler</span>
+                    </div>
+                    <div class="terminal-body font-mono">
+                        <div class="terminal-line">
+                            <p>
+                                <span class="prompt">~/$</span>
+                                <span class="command">curl -I "$REQUEST_URI"</span>
+                            </p>
+                        </div>
+                        <div class="terminal-line error-text">
+                            <span class="error-prefix">HTTP/2 404 NOT FOUND</span>
+                            <span class="error-desc">The requested route does not exist or has been relocated.</span>
+                        </div>
+                        <div class="terminal-line suggestion-text">
+                            <span class="comment-prefix"># recommended action: return to active routing cluster</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="cta-group">
+                    <a href="/" class="btn btn-primary">
+                        <HomeIcon width="14" height="14" />
+                        cd /home
+                    </a>
+                    <a href="/projects" class="btn btn-ghost">
+                        Explore Projects &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .not-found-page {
+        min-height: calc(100vh - var(--nav-h));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: var(--nav-h);
+        padding-bottom: 4rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .not-found-container {
+        display: flex;
+        justify-content: center;
+    }
+
+    .not-found-content {
+        max-width: 600px;
+        width: 100%;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--red);
+        background: rgba(255, 77, 109, 0.1);
+        border: 1px solid rgba(255, 77, 109, 0.25);
+        border-radius: 99px;
+        padding: 0.375rem 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .badge-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--red);
+        border-radius: 50%;
+        animation: glow-pulse-red 2s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes glow-pulse-red {
+        0%, 100% {
+            box-shadow: 0 0 4px var(--red);
+            opacity: 1;
+        }
+        50% {
+            box-shadow: 0 0 12px var(--red);
+            opacity: 0.6;
+        }
+    }
+
+    /* Glitch 404 */
+    .glitch-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+
+    .glitch-title {
+        font-family: var(--font-mono);
+        font-size: clamp(5rem, 15vw, 8rem);
+        font-weight: 900;
+        line-height: 1;
+        color: var(--text);
+        letter-spacing: -0.04em;
+        margin: 0;
+    }
+
+    .glitch-layer-1 {
+        position: absolute;
+        top: 0;
+        left: 3px;
+        color: var(--cyan);
+        opacity: 0.75;
+        animation: glitch 3.5s infinite step-start;
+        clip-path: inset(0);
+        pointer-events: none;
+    }
+
+    .glitch-layer-2 {
+        position: absolute;
+        top: 0;
+        left: -3px;
+        color: var(--red);
+        opacity: 0.75;
+        animation: glitch2 3.5s 0.3s infinite step-start;
+        clip-path: inset(0);
+        pointer-events: none;
+    }
+
+    .headline {
+        font-size: clamp(1.5rem, 3vw, 2rem);
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 2rem;
+    }
+
+    /* Terminal Window */
+    .terminal-card {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 2.5rem;
+        text-align: left;
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .terminal-header {
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid var(--border);
+        padding: 0.65rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .terminal-dots {
+        display: flex;
+        gap: 0.4rem;
+    }
+
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .terminal-title {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .terminal-body {
+        padding: 1.25rem 1.25rem;
+        font-size: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        line-height: 1.5;
+    }
+
+    .terminal-line {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .prompt {
+        color: var(--green);
+        margin-right: 0.5rem;
+    }
+
+    .command {
+        color: var(--text);
+    }
+
+    .error-text {
+        color: var(--red);
+    }
+
+    .error-prefix {
+        font-weight: 700;
+    }
+
+    .error-desc {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .suggestion-text {
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        font-style: italic;
+    }
+
+    /* CTA buttons */
+    .cta-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 480px) {
+        .cta-group {
+            flex-direction: column;
+            width: 100%;
+        }
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
