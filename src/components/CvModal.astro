@@ -1,0 +1,324 @@
+---
+import CloseIcon from "../assets/icons/CloseIcon.astro";
+---
+
+<dialog id="cvModal" class="cv-modal" aria-modal="true" aria-labelledby="cvModalTitle">
+    <div class="cv-modal-content">
+        <!-- Header -->
+        <div class="cv-modal-header">
+            <div class="cv-modal-heading">
+                <span class="cv-modal-subtitle font-mono">
+                    // curriculum vitae
+                </span>
+                <h3 id="cvModalTitle" class="cv-modal-title">
+                    Curriculum Vitae — Ismail Nur Alam
+                </h3>
+                <span class="cv-badge font-mono">PDF</span>
+            </div>
+            <div class="cv-modal-actions">
+                <a
+                    href="/api/cv/pdf?download=1"
+                    download="Ismail_Nur_Alam_CV.pdf"
+                    class="btn btn-sm btn-primary"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download
+                </a>
+                <a
+                    href="/api/cv/pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-sm btn-ghost"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15,3 21,3 21,9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    Open New Tab
+                </a>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-ghost cv-modal-close"
+                    id="closeCvModal"
+                    aria-label="Close modal"
+                >
+                    <CloseIcon width="16" height="16" />
+                </button>
+            </div>
+        </div>
+
+        <!-- Body: PDF Viewer -->
+        <div class="cv-modal-body">
+            <div class="cv-viewer">
+                <iframe
+                    src="/api/cv/pdf"
+                    title="Ismail Nur Alam CV Preview"
+                    class="cv-iframe"
+                    loading="lazy"
+                ></iframe>
+            </div>
+            <p class="cv-fallback font-mono">
+                Preview not rendering?
+                <a href="/api/cv/pdf?download=1" download="Ismail_Nur_Alam_CV.pdf">Download the CV directly</a>
+                or <a href="/api/cv/pdf" target="_blank" rel="noopener noreferrer">open it in a new tab</a>.
+            </p>
+        </div>
+    </div>
+</dialog>
+
+<style>
+    /* ── CV Modal ────────────────────────────────────── */
+    .cv-modal {
+        margin: auto;
+        padding: 0;
+        border: 1px solid var(--border-glow);
+        border-radius: 16px;
+        background: var(--surface);
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            0 0 48px rgba(0, 255, 136, 0.06);
+        color: var(--text);
+        width: min(1200px, 96vw);
+        max-height: 92vh;
+        transform: translateY(20px) scale(0.98);
+        opacity: 0;
+        transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+    }
+
+    .cv-modal[open] {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    .cv-modal::backdrop {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        opacity: 0;
+        transition: opacity 0.3s var(--ease);
+    }
+
+    .cv-modal[open]::backdrop {
+        opacity: 1;
+    }
+
+    :global([data-theme="light"]) .cv-modal {
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+    }
+
+    .cv-modal-content {
+        display: flex;
+        flex-direction: column;
+        max-height: 92vh;
+        overflow: hidden;
+    }
+
+    .cv-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .cv-modal-heading {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .cv-modal-subtitle {
+        display: none;
+    }
+
+    .cv-modal-title {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cv-badge {
+        font-size: 0.65rem;
+        letter-spacing: 0.08em;
+        color: var(--green);
+        background: var(--green-glow);
+        border: 1px solid rgba(0, 255, 136, 0.2);
+        border-radius: 4px;
+        padding: 0.15rem 0.4rem;
+        flex-shrink: 0;
+    }
+
+    :global([data-theme="light"]) .cv-badge {
+        border-color: rgba(0, 170, 85, 0.25);
+    }
+
+    .cv-modal-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .cv-modal-actions .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Local btn-sm sizing (no global .btn-sm token) */
+    .cv-modal-actions .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .cv-modal-close {
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all var(--duration) var(--ease);
+    }
+
+    .cv-modal-close:hover {
+        background: rgba(255, 77, 109, 0.12);
+        border-color: rgba(255, 77, 109, 0.4);
+        color: var(--red);
+    }
+
+    .cv-modal-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        padding: 0.75rem;
+    }
+
+    .cv-viewer {
+        flex: 1;
+        position: relative;
+        min-height: 82vh;
+        height: calc(100vh - 120px);
+        max-height: 88vh;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--surface-hover);
+    }
+
+    .cv-iframe {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .cv-fallback {
+        display: none;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        text-align: center;
+        margin-top: 0.75rem;
+    }
+
+    .cv-fallback a {
+        color: var(--green);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    @media (max-width: 640px) {
+        .cv-modal {
+            width: 96vw;
+            max-height: 88vh;
+        }
+
+        .cv-modal-content {
+            max-height: 88vh;
+        }
+
+        .cv-modal-body {
+            overflow-y: auto;
+        }
+
+        .cv-viewer {
+            flex: 0 0 auto;
+            min-height: 0;
+            height: 72vh;
+            max-height: none;
+        }
+
+        /* Mobile browsers often block inline PDF rendering — surface fallback links */
+        .cv-fallback {
+            display: block;
+        }
+    }
+</style>
+
+<script>
+    const modal = document.getElementById(
+        "cvModal"
+    ) as HTMLDialogElement | null;
+    const closeBtn = document.getElementById("closeCvModal");
+
+    if (modal) {
+        const prevOverflow = document.body.style.overflow;
+
+        function openCvModal() {
+            modal?.showModal();
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeCvModal() {
+            modal?.close();
+            document.body.style.overflow = prevOverflow;
+        }
+
+        // Trigger: #openCvModalBtn or any [data-open-cv] element
+        document
+            .querySelectorAll("#openCvModalBtn, [data-open-cv]")
+            .forEach((el) => {
+                el.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    openCvModal();
+                });
+            });
+
+        closeBtn?.addEventListener("click", closeCvModal);
+
+        // Close on backdrop click (outside content)
+        modal.addEventListener("click", (e) => {
+            const rect = modal.getBoundingClientRect();
+            if (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                closeCvModal();
+            }
+        });
+
+        // Close on Esc (native 'cancel' event on <dialog>)
+        modal.addEventListener("cancel", (e) => {
+            e.preventDefault();
+            closeCvModal();
+        });
+
+        // Safety: always restore scroll when dialog closes any way
+        modal.addEventListener("close", () => {
+            document.body.style.overflow = prevOverflow;
+        });
+    }
+</script>
