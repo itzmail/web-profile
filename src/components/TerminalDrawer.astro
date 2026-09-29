@@ -186,6 +186,7 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
         visibility: hidden;
         pointer-events: none;
         font-family: var(--font-mono);
+        --term-btn-hover: rgba(255, 255, 255, 0.08);
     }
 
     .terminal-drawer.is-open {
@@ -272,8 +273,8 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
     .shortcut-badge {
         font-size: 0.65rem;
         color: var(--text-dim);
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid var(--border);
+        background: var(--badge-bg);
+        border: 1px solid var(--badge-border);
         border-radius: 4px;
         padding: 0.15rem 0.45rem;
         margin-right: 0.5rem;
@@ -301,11 +302,11 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
 
     .term-action-btn:hover {
         color: var(--text);
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--term-btn-hover);
     }
 
     .term-action-close:hover {
-        color: #ffffff;
+        color: var(--term-btn-close-text, #ffffff);
         background: var(--red);
     }
 
@@ -443,6 +444,31 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
             font-size: 16px;
         }
     }
+
+    /* ── Light Theme Overrides ───────────────────────────────── */
+    :global([data-theme="light"]) .terminal-drawer {
+        background: rgba(240, 240, 245, 0.96);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+        --term-btn-hover: rgba(0, 0, 0, 0.06);
+    }
+
+    :global([data-theme="light"]) .terminal-drawer.is-minimized {
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    :global([data-theme="light"]) .terminal-titlebar {
+        background: var(--surface);
+    }
+
+    :global([data-theme="light"]) .shortcut-badge {
+        background: rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--badge-border);
+    }
+
+    :global([data-theme="light"]) .term-action-close:hover {
+        color: #ffffff;
+    }
 </style>
 
 <script type="application/json" id="termDrawerData" set:html={termData}></script>
@@ -578,6 +604,19 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
                 ["experience", "Work history & what I delivered"],
                 ["availability", "Current status & response time"],
                 ["contact", "Get in touch"],
+            ];
+            cmds.forEach(([c, d]) => {
+                appendLine(
+                    `<div class="t-line t-block"><span class="t-success" style="min-width:110px;display:inline-block">${c}</span><span class="t-dim">— ${d}</span></div>`
+                );
+            });
+            appendLine('<div class="t-separator"></div>');
+            appendLine(`<span class="t-info t-bold">── sandbox ──</span>`);
+            const sandboxCmds = [
+                ["curl <path>", "Read-only REST API explorer (whitelisted)"],
+                ["ping api", "Latency probe — 3x GET, rtt min/avg/max"],
+                ["inspect client", "Your browser & device fingerprint"],
+                ["scope", "Show whitelisted API endpoints"],
                 ["clear", "Clear terminal"],
                 ["motto", "My engineering philosophy"],
                 ["secret", "?"],
@@ -697,6 +736,166 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
         },
     };
 
+    // ── Sandbox: zero-trust helpers ───────────────────────────────
+    // Client-side base URL (Vite inlines import.meta.env PUBLIC_API_URL at client bundle build)
+    const API_BASE = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/api";
+    const WHITELIST = new Set([
+        "/experiences",
+        "/projects",
+        "/socials",
+        "/master/skills",
+        "/stats",
+        "/cv",
+    ]);
+
+    // Raw shell metacharacters — always rejected, no exceptions
+    const DANGEROUS_RE = /[|;&<>$`]/;
+
+    // Literal destructive commands rejected even without metacharacters
+    const DENIED_CMDS = new Set(["rm", "sudo", "kill", "shutdown", "reboot", "dd", "chmod", "chown"]);
+
+    function colorizeJSON(json: string): string {
+        return escHTML(json)
+            .replace(/"([^"]+)":/g, '<span class="t-info">"$1"</span>:')
+            .replace(/: ("(?:[^"\\]|\\.)*")/g, ': <span class="t-success">$1</span>')
+            .replace(/: (-?\d+(?:\.\d+)?)/g, ': <span class="t-purple">$1</span>');
+    }
+
+    function sandboxDenied(): void {
+        appendLine(
+            `<span class="t-error">permission denied: isolated sandbox — raw shell execution disabled.</span>`
+        );
+        spacer();
+    }
+
+    interface CurlResult {
+        ok: boolean;
+        status: string;
+        ms: number;
+        body?: string;
+    }
+
+    async function runCurl(path: string): Promise<CurlResult> {
+        const start = Date.now();
+        try {
+            const res = await fetch(`${API_BASE}${path}`, { method: "GET" });
+            const ms = Date.now() - start;
+            const text = await res.text();
+            let pretty = text;
+            try {
+                pretty = JSON.stringify(JSON.parse(text), null, 2);
+            } catch {
+                // not JSON — print raw text (escaped)
+            }
+            const lines = pretty.split("\n");
+            if (lines.length > 40) {
+                pretty = lines.slice(0, 40).join("\n") + "\n... (truncated)";
+            }
+            return {
+                ok: res.ok,
+                status: `${res.status} ${res.statusText}`.trim(),
+                ms,
+                body: pretty,
+            };
+        } catch (e) {
+            console.warn("[term] curl failed:", e);
+            return { ok: false, status: "network error", ms: Date.now() - start };
+        }
+    }
+
+    const sandboxCommands: Record<string, (args: string[]) => void | Promise<void>> = {
+        curl(args) {
+            const path = (args[0] ?? "").replace(/\/$/, "");
+            if (!path) {
+                appendLine(`<span class="t-error">usage: curl <path> — try 'scope' for whitelisted endpoints.</span>`);
+                spacer();
+                return;
+            }
+            // Normalize: /api/projects -> /projects
+            const normalized = path.replace(/^\/api(?=\/)/, "");
+            if (!/^\//.test(normalized) || !WHITELIST.has(normalized)) {
+                appendLine(
+                    `<span class="t-error">error: path not whitelisted (read-only public API only).</span>`
+                );
+                appendLine(`<span class="t-dim">type 'scope' to list allowed endpoints.</span>`);
+                spacer();
+                return;
+            }
+            return runCurl(normalized).then((r) => {
+                appendLine(
+                    `<span class="${r.ok ? "t-success" : "t-error"}">HTTP ${escHTML(r.status)}</span>` +
+                        `<span class="t-dim"> — ~${r.ms}ms</span>`
+                );
+                if (r.body) {
+                    r.body.split("\n").forEach((l) =>
+                        appendLine(`<span class="t-block t-output">${colorizeJSON(l)}</span>`)
+                    );
+                }
+                spacer();
+            });
+        },
+
+        async ping(_args) {
+            const rtts: number[] = [];
+            for (let i = 0; i < 3; i++) {
+                const start = Date.now();
+                try {
+                    await fetch(`${API_BASE}/stats`, { method: "GET" });
+                    rtts.push(Date.now() - start);
+                } catch {
+                    rtts.push(-1);
+                }
+            }
+            const okRtts = rtts.filter((r) => r >= 0);
+            if (okRtts.length === 0) {
+                appendLine(`<span class="t-error">ping: api unreachable.</span>`);
+                spacer();
+                return;
+            }
+            const min = Math.min(...okRtts);
+            const max = Math.max(...okRtts);
+            const avg = Math.round(okRtts.reduce((a, b) => a + b, 0) / okRtts.length);
+            appendLine(
+                `<span class="t-success">PING api</span> <span class="t-dim">(${escHTML(API_BASE)}) 3 probes</span>`
+            );
+            appendLine(
+                `<span class="t-output">rtt min/avg/max = ${min}/${avg}/${max} ms</span>` +
+                    (okRtts.length < 3 ? ` <span class="t-error">(${3 - okRtts.length} packet loss)</span>` : "")
+            );
+            appendLine(`<span class="t-dim">whitelisted domain — CORS-safe, browser-side only.</span>`);
+            spacer();
+        },
+
+        inspect(_args) {
+            const rows: [string, string][] = [
+                ["User Agent", navigator.userAgent],
+                ["Language", navigator.language],
+                ["Viewport", `${window.innerWidth}x${window.innerHeight}`],
+                ["DPR", String(window.devicePixelRatio)],
+                ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone ?? "unknown"],
+                ["Online", navigator.onLine ? "yes" : "no"],
+                ["DOM Nodes", String(document.getElementsByTagName("*").length)],
+            ];
+            appendLine(`<span class="t-info t-bold">// Client Inspection</span>`);
+            spacer();
+            rows.forEach(([k, v]) => {
+                appendLine(
+                    `<div><span class="t-dim">${escHTML(k.padEnd(12))}</span><span class="t-output">${escHTML(v)}</span></div>`
+                );
+            });
+            spacer();
+        },
+
+        scope(_args) {
+            appendLine(`<span class="t-info t-bold">// Whitelisted Public API (read-only)</span>`);
+            WHITELIST.forEach((p) => {
+                appendLine(`<div class="t-block"><span class="t-success">→</span> <span class="t-output">${escHTML(p)}</span></div>`);
+            });
+            appendLine(`<span class="t-dim">sandbox: browser-side parsing only — no eval, no shell exec, server never receives raw commands.</span>`);
+            spacer();
+        },
+    };
+
     // ── Boot message ──────────────────────────────────────────────
     function boot() {
         appendLine(
@@ -710,16 +909,36 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
 
     // ── Execute command ───────────────────────────────────────────
     function execute(raw: string) {
-        const cmd = raw.trim().toLowerCase();
-        if (!cmd) return;
+        const trimmed = raw.trim();
+        if (!trimmed) return;
 
-        printCmd(raw.trim());
+        printCmd(trimmed);
 
-        if (commands[cmd]) {
-            commands[cmd]();
+        const lower = trimmed.toLowerCase();
+        const parts = lower.split(/\s+/);
+
+        // Zero-trust guard: reject raw shell metacharacters first
+        if (DANGEROUS_RE.test(trimmed) || DENIED_CMDS.has(parts[0] ?? "")) {
+            sandboxDenied();
+            return;
+        }
+
+        const name = parts[0];
+        const args = parts.slice(1);
+
+        const sandboxCmd = sandboxCommands[name];
+        if (sandboxCmd) {
+            const result = sandboxCmd(args);
+            if (result instanceof Promise) result.catch(() => {});
+            return;
+        }
+
+        const builtin = commands[name];
+        if (builtin) {
+            builtin();
         } else {
             appendLine(
-                `<span class="t-error">bash: ${escHTML(cmd)}: command not found. Try 'help'.</span>`
+                `<span class="t-error">bash: ${escHTML(name)}: command not found. Try 'help'.</span>`
             );
             spacer();
         }
@@ -747,9 +966,8 @@ const termData = JSON.stringify({ termProjects, termExperiences, termSocials, te
             } else if (e.key === "Tab") {
                 e.preventDefault();
                 const partial = input.value.toLowerCase();
-                const match = Object.keys(commands).find((c) =>
-                    c.startsWith(partial)
-                );
+                const all = [...Object.keys(commands), ...Object.keys(sandboxCommands)];
+                const match = all.find((c) => c.startsWith(partial));
                 if (match) input.value = match;
             }
         });
