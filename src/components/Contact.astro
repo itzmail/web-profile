@@ -1,7 +1,9 @@
 ---
 import MailIcon from "../assets/icons/MailIcon.astro";
 import ExternalLinkIcon from "../assets/icons/ExternalLinkIcon.astro";
-import { siteInfo, contactData, footerData } from "../data/site";
+import ArrowRightIcon from "../assets/icons/ArrowRightIcon.astro";
+import ProjectScopeModal from "./ProjectScopeModal.astro";
+import { contactData, footerData } from "../data/site";
 import { apiFetch } from "../utils/api";
 import type { ApiSocial, Social } from "../types/index";
 
@@ -34,13 +36,21 @@ const socials: Social[] = apiSocials
                     <p class="contact-desc">
                         {contactData.description}
                     </p>
-                    <a
-                        href={`mailto:${siteInfo.email}`}
+
+                    <button
+                        type="button"
                         class="btn btn-primary contact-cta"
+                        id="openScopeModalBtn"
+                        data-open-scope-modal
                     >
                         <MailIcon width="16" height="16" />
-                        {contactData.ctaText}
-                    </a>
+                        Start a Project
+                        <ArrowRightIcon
+                            class="cta-arrow"
+                            width="14"
+                            height="14"
+                        />
+                    </button>
                 </div>
 
                 <div class="contact-right">
@@ -85,6 +95,8 @@ const socials: Social[] = apiSocials
         </div>
     </div>
 </section>
+
+<ProjectScopeModal />
 
 <footer class="footer">
     <div class="container footer-inner">
@@ -150,6 +162,14 @@ const socials: Social[] = apiSocials
 
     .contact-cta {
         font-size: 0.875rem;
+    }
+
+    :global(.contact-cta .cta-arrow) {
+        transition: transform var(--duration) var(--ease);
+    }
+
+    :global(.contact-cta:hover .cta-arrow) {
+        transform: translateX(3px);
     }
 
     /* ── Socials ──────────────────────────────────────── */
@@ -272,3 +292,10 @@ const socials: Social[] = apiSocials
         }
     }
 </style>
+
+<script>
+    const openBtn = document.getElementById("openScopeModalBtn");
+    openBtn?.addEventListener("click", () => {
+        window.dispatchEvent(new CustomEvent("open-scope-modal"));
+    });
+</script>
