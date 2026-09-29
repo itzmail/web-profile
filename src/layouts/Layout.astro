@@ -3,6 +3,7 @@ import "../styles/global.css";
 import Navbar from "../components/Navbar.astro";
 import Modal from "../components/Modal.astro";
 import ChatWidget from "../components/ChatWidget.astro";
+import TerminalDrawer from "../components/TerminalDrawer.astro";
 interface ChatPageContext {
 	type: "project" | "blog";
 	title: string;
@@ -21,6 +22,7 @@ interface Props {
 	chatPageContext?: ChatPageContext;
 	hideNav?: boolean;
 	hideChat?: boolean;
+	hideTerminal?: boolean;
 }
 const {
 	title = "Ismail Alam — Fullstack Architect",
@@ -33,6 +35,7 @@ const {
 	chatPageContext,
 	hideNav = false,
 	hideChat = false,
+	hideTerminal = false,
 } = Astro.props;
 const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 ---
@@ -96,6 +99,7 @@ const absoluteImage = new URL(image, "https://itsmail.dev").toString();
 		<slot />
 		<Modal />
 		{!hideChat && <ChatWidget pageContext={chatPageContext} />}
+		{!hideTerminal && <TerminalDrawer />}
 		<!-- Scroll Reveal Script -->
 		<script>
 			const observer = new IntersectionObserver(
