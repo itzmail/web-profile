@@ -3,6 +3,21 @@ export interface ApiProjectLink {
     label: string;
 }
 
+export interface DemoAccount {
+    role?: string;
+    identifier: string;
+    secret?: string;
+    note?: string;
+}
+
+export interface DemoAccess {
+    enabled: boolean;
+    type?: 'credentials' | 'sso' | 'wallet' | 'pin' | 'direct' | 'custom' | 'other' | (string & {});
+    url?: string;
+    accounts?: DemoAccount[];
+    notice?: string;
+}
+
 export interface ApiProject {
     id: string;
     title: string;
@@ -18,6 +33,7 @@ export interface ApiProject {
             links: ApiProjectLink[];
             cover_image?: string;
             project_type: 'production' | 'client_work' | 'side_project' | 'open_source';
+            demo_access?: DemoAccess;
         };
     };
 }
@@ -35,6 +51,7 @@ export interface Project {
     is_highlighted: boolean;
     cover_image?: string;
     project_type: 'production' | 'client_work' | 'side_project' | 'open_source';
+    demo_access?: DemoAccess;
 }
 
 export interface ApiSettings {
