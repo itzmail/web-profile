@@ -1,0 +1,394 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import ProtobufComparator from "../../components/lab/ProtobufComparator.astro";
+---
+
+<Layout
+    title="Protobuf vs JSON Wire-Format Comparator — Lab #02"
+    description="Under the hood of gRPC binary serialization, Varint Base-128 encoding, and real-world bandwidth compression benchmarks."
+    canonicalURL="https://itsmail.dev/lab/protobuf-wire-inspector"
+>
+    <main class="lab-detail-page">
+        <div class="container">
+            <!-- Breadcrumbs & Meta -->
+            <div class="lab-top-meta font-mono reveal">
+                <a href="/lab" class="back-link" data-i18n="protobufLab.backLink">← // return to lab directory</a>
+                <div class="meta-badges">
+                    <span class="difficulty-badge badge-medium">● Medium</span>
+                    <span class="rfc-badge">Protocol Buffers v3 / gRPC</span>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <header class="lab-header reveal">
+                <p class="font-mono text-muted page-eyebrow" data-i18n="protobufLab.eyebrow">// LAB #02 • PROTOCOLS & NETWORK</p>
+                <h1 class="page-title" data-i18n="protobufLab.title">Protobuf vs JSON Wire-Format Comparator</h1>
+                <p class="page-lead" data-i18n="protobufLab.subtitle">
+                    Under the hood of gRPC binary serialization, Varint Base-128 encoding, Tag-WireType packing, and real-world bandwidth compression benchmarks.
+                </p>
+            </header>
+
+            <!-- Interactive Playground Widget -->
+            <section class="playground-section reveal">
+                <div class="section-label font-mono">
+                    <span class="live-pulse"></span> <span data-i18n="protobufLab.livePlaygroundTitle">LIVE BINARY WIRE PLAYGROUND</span>
+                </div>
+                <ProtobufComparator />
+            </section>
+
+            <!-- Comprehensive Educational Notes & Dissection -->
+            <article class="lab-notes reveal">
+                <h2 data-i18n="protobufLab.section1Title">1. Why is gRPC/Protobuf Dramatically Faster than JSON REST?</h2>
+                <p data-i18n="protobufLab.section1P1">
+                    While REST APIs transmit data as ASCII/UTF-8 formatted string text (JSON), Protocol Buffers serialize structured data directly into packed binary bytes. The performance gain comes not only from smaller payload sizes over the wire, but from massive CPU deserialization efficiency.
+                </p>
+                <p data-i18n="protobufLab.section1P2">
+                    Key architectural advantages include:
+                </p>
+
+                <div class="takeaways-grid">
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">⚡</span>
+                        <h3 data-i18n="protobufLab.section1Benefit1Title">Zero String Tokenization</h3>
+                        <p data-i18n="protobufLab.section1Benefit1Desc">JSON parsers must scan every byte for delimiters, quotes, colons, and escape sequences (O(N) character inspection). Protobuf decoders jump directly across memory offsets using explicit byte lengths.</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🏷️</span>
+                        <h3 data-i18n="protobufLab.section1Benefit2Title">No Field Names on the Wire</h3>
+                        <p data-i18n="protobufLab.section1Benefit2Desc">JSON repeats verbose field keys in every single message (e.g. 'transaction_timestamp_utc': 1715000000). Protobuf strips all string keys, replacing them with a single packed integer tag (e.g. 1 byte).</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🧠</span>
+                        <h3 data-i18n="protobufLab.section1Benefit3Title">Memory & CPU Cache Friendly</h3>
+                        <p data-i18n="protobufLab.section1Benefit3Desc">Binary fields decode straight into native struct memory representations (integers and floats don't require string-to-number radix conversions).</p>
+                    </div>
+                </div>
+
+                <h2 data-i18n="protobufLab.section2Title">2. Varint Base-128 Encoding & The MSB Continuation Bit</h2>
+                <p data-i18n="protobufLab.section2P1">
+                    Variable-Length Quantities (Varints) allow small integers to occupy only a single byte instead of fixed 4 or 8 bytes. Integers are sliced into 7-bit payloads.
+                </p>
+                <p data-i18n="protobufLab.section2P2">
+                    The Most Significant Bit (MSB, 8th bit) acts as a continuation flag: if MSB = 1, more bytes follow; if MSB = 0, this is the terminal byte.
+                </p>
+
+                <div class="token-breakdown-card font-mono">
+                    <div class="part-row">
+                        <span class="part-tag tag-h">Value: 1</span>
+                        <code>0000 0001 (0x01)</code>
+                        <span class="part-desc">MSB=0 $\rightarrow$ Terminal byte. Takes only 1 byte!</span>
+                    </div>
+                    <div class="part-row">
+                        <span class="part-tag tag-p">Value: 150</span>
+                        <code>1001 0110 0000 0001 (0x96 0x01)</code>
+                        <span class="part-desc">Byte 1: MSB=1 (0x96), Byte 2: MSB=0 (0x01) $\rightarrow$ (1 &lt;&lt; 7) | 22 = 150</span>
+                    </div>
+                </div>
+
+                <h2 data-i18n="protobufLab.section3Title">3. Field Tag Packing & The Magic of Tags 1 to 15</h2>
+                <p data-i18n="protobufLab.section3P1">
+                    Protobuf binds field number and wire type into a single integer: <code>key = (field_number &lt;&lt; 3) | wire_type</code>. Because the lowest 3 bits represent the Wire Type (0 to 7), tag numbers 1 through 15 fit in a single 8-bit byte!
+                </p>
+
+                <div class="defense-box">
+                    <div class="defense-title font-mono" data-i18n="protobufLab.tagRangeTableTitle">Tag Number Allocation Guide (Protobuf Best Practices):</div>
+                    <ul>
+                        <li data-i18n="protobufLab.tag1To15Desc"><strong>Tags 1 to 15:</strong> Require only 1 byte for both field tag and wire type. Reserve these exclusively for high-frequency fields.</li>
+                        <li data-i18n="protobufLab.tag16PlusDesc"><strong>Tags 16 through 2047:</strong> Require 2 bytes. Use these for optional or low-frequency fields.</li>
+                    </ul>
+                </div>
+
+                <h2 data-i18n="protobufLab.section4Title">4. ZigZag Encoding: Solving the Two's Complement Dilemma</h2>
+                <p data-i18n="protobufLab.section4P1">
+                    In standard binary two's complement, negative numbers like -1 have their highest bits set to 1 (e.g. 0xFFFFFFFF). In standard varint, -1 would blow up to 10 bytes on the wire!
+                </p>
+                <p data-i18n="protobufLab.section4P2">
+                    ZigZag encoding solves this by mapping signed integers onto unsigned integers such that small negative numbers become small positive integers: -1 -> 1, 1 -> 2, -2 -> 3, 2 -> 4. For sint32 and sint64, -1 takes only 1 byte!
+                </p>
+
+                <h2 data-i18n="protobufLab.section5Title">5. Schema Evolution & Unknown Fields Handling</h2>
+                <p data-i18n="protobufLab.section5P1">
+                    Protobuf decoders use the Wire Type metadata inside the tag byte to determine how many bytes to skip if a field tag is not recognized in the local schema. This enables backward and forward compatibility: older services can safely pass through newer fields without breaking.
+                </p>
+            </article>
+
+            <!-- Bottom Navigation -->
+            <div class="lab-footer-nav font-mono reveal">
+                <a href="/lab/jwt-inspector" class="lab-nav-btn" data-i18n="protobufLab.footerPrevLab">← Lab #01: JWT Inspector</a>
+                <a href="/lab" class="lab-nav-btn" data-i18n="protobufLab.footerBackBtn">← Back to Lab Directory</a>
+                <span class="next-hint" data-i18n="protobufLab.footerNextHint">Next Lab: Distributed Rate Limiter (Sprint 3) →</span>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .lab-detail-page {
+        padding-top: calc(var(--nav-h) + 2.5rem);
+        padding-bottom: 6rem;
+        min-height: 100vh;
+    }
+
+    .lab-top-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        font-size: 0.8125rem;
+    }
+
+    .back-link {
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover {
+        color: var(--text, #fff);
+    }
+
+    .meta-badges {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .difficulty-badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-medium {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .rfc-badge {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted, #8b949e);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+    }
+
+    .lab-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .page-eyebrow {
+        font-size: 0.8125rem;
+        color: var(--cyan, #06b6d4);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .page-title {
+        font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+        color: var(--text, #fff);
+    }
+
+    .page-lead {
+        font-size: 1.05rem;
+        color: var(--text-muted, #8b949e);
+        max-width: 48rem;
+        line-height: 1.6;
+    }
+
+    .playground-section {
+        margin-bottom: 3.5rem;
+    }
+
+    .section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--cyan, #06b6d4);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-bottom: 1rem;
+    }
+
+    .live-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green, #00ff88);
+        box-shadow: 0 0 8px var(--green, #00ff88);
+    }
+
+    /* Article Styles */
+    .lab-notes {
+        max-width: 52rem;
+        margin: 0 auto;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        padding-top: 3rem;
+        color: var(--text-muted, #8b949e);
+        line-height: 1.7;
+    }
+
+    .lab-notes h2 {
+        color: var(--text, #fff);
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .lab-notes p {
+        margin-bottom: 1.25rem;
+    }
+
+    .takeaways-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.25rem;
+        margin: 1.75rem 0;
+    }
+
+    .takeaway-card {
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem;
+    }
+
+    .takeaway-icon {
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .takeaway-card h3 {
+        color: var(--text, #fff);
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .takeaway-card p {
+        font-size: 0.82rem;
+        color: var(--text-muted, #8b949e);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .token-breakdown-card {
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+
+    .part-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .part-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .part-tag {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .tag-h { color: var(--cyan, #06b6d4); }
+    .tag-p { color: #c084fc; }
+
+    .token-breakdown-card code {
+        background: rgba(0, 0, 0, 0.35);
+        padding: 0.4rem 0.6rem;
+        border-radius: 4px;
+        color: var(--text, #fff);
+        font-size: 0.78rem;
+    }
+
+    .part-desc {
+        font-size: 0.76rem;
+        color: var(--text-muted, #8b949e);
+    }
+
+    .defense-box {
+        background: rgba(6, 182, 212, 0.05);
+        border: 1px solid rgba(6, 182, 212, 0.25);
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem;
+        margin: 1.75rem 0;
+    }
+
+    .defense-title {
+        color: var(--cyan, #06b6d4);
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .defense-box ul {
+        margin: 0;
+        padding-left: 1.25rem;
+    }
+
+    .defense-box li {
+        font-size: 0.82rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+
+    .defense-box li:last-child {
+        margin-bottom: 0;
+    }
+
+    .defense-box strong {
+        color: var(--text, #fff);
+    }
+
+    /* Footer Nav */
+    .lab-footer-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        margin-top: 4rem;
+        padding-top: 2rem;
+    }
+
+    .lab-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+        font-size: 0.82rem;
+        transition: color 0.2s;
+    }
+
+    .lab-nav-btn:hover {
+        color: var(--text, #fff);
+    }
+
+    .next-hint {
+        font-size: 0.8rem;
+        color: var(--text-muted, #8b949e);
+    }
+</style>

@@ -38,9 +38,9 @@ export const LAB_ITEMS: LabItem[] = [
         rfcRef: "Protocol Buffers v3",
         description: "Analyze byte-level binary encoding, ZigZag signed integer packing, and benchmark payload compression against gzip JSON.",
         tags: ["gRPC", "Protobuf", "Binary Encoding", "Network"],
-        featured: false,
-        available: false,
-        date: "Coming Soon",
+        featured: true,
+        available: true,
+        date: "2025-05-15",
     },
     {
         slug: "rate-limiter-visualizer",

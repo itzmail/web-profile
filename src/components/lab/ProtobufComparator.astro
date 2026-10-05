@@ -1,0 +1,1080 @@
+---
+// ProtobufComparator.astro - Pure TypeScript Binary Wire-Format Comparator
+---
+
+<div class="proto-lab" id="protoLab">
+    <!-- Lab Control Bar -->
+    <div class="lab-status-bar">
+        <div class="status-indicator valid" id="protoStatusBadge">
+            <span class="status-dot"></span>
+            <span class="status-text" id="protoStatusText">PROTOBUF ENCODED</span>
+        </div>
+
+        <div class="presets-wrap font-mono">
+            <span class="presets-label" data-i18n="protobufLab.presetsLabel">Presets:</span>
+            <div class="preset-btn-group">
+                <button type="button" class="preset-btn active" data-preset="user" data-i18n="protobufLab.presetUserProfile">User Profile</button>
+                <button type="button" class="preset-btn" data-preset="iot" data-i18n="protobufLab.presetIotTelemetry">IoT Sensor Telemetry</button>
+                <button type="button" class="preset-btn" data-preset="finance" data-i18n="protobufLab.presetFinancialOrder">Financial Order</button>
+                <button type="button" class="preset-btn" data-preset="zigzag" data-i18n="protobufLab.presetZigzag">ZigZag & Varint</button>
+            </div>
+        </div>
+
+        <div class="lab-actions">
+            <button class="lab-btn lab-btn-reset font-mono" id="btnResetSchema" title="Reset schema fields">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span data-i18n="protobufLab.resetBtn">Reset Schema</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 4-Quadrant Main Grid -->
+    <div class="quadrant-grid">
+        <!-- Quadrant 1: Schema Editor -->
+        <div class="lab-panel panel-schema">
+            <div class="panel-header font-mono">
+                <span class="panel-title" data-i18n="protobufLab.schemaTitle">1. Schema & Field Definitions</span>
+                <span class="panel-hint" data-i18n="protobufLab.schemaSubtitle">Proto3 Fields</span>
+            </div>
+
+            <div class="schema-table-wrap font-mono">
+                <table class="schema-table" id="schemaTable">
+                    <thead>
+                        <tr>
+                            <th class="col-tag" data-i18n="protobufLab.fieldTagHeader">Tag #</th>
+                            <th class="col-name" data-i18n="protobufLab.fieldNameHeader">Field Name</th>
+                            <th class="col-type" data-i18n="protobufLab.fieldTypeHeader">Type</th>
+                            <th class="col-val" data-i18n="protobufLab.fieldValueHeader">Value</th>
+                            <th class="col-del"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="schemaTableBody">
+                        <!-- Dynamic Field Rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="schema-footer">
+                <button type="button" class="add-field-btn font-mono" id="btnAddField">
+                    <span data-i18n="protobufLab.addFieldBtn">+ Add Field</span>
+                </button>
+                <span class="tag-warning-note font-mono" id="tagWarningNote" style="display: none;" data-i18n="protobufLab.tagWarning">
+                    ⚠️ Tag ≥ 16 requires 2+ key bytes
+                </span>
+            </div>
+        </div>
+
+        <!-- Quadrant 2: Live Hex Visualizer & Bit Inspector -->
+        <div class="lab-panel panel-visualizer">
+            <div class="panel-header font-mono">
+                <span class="panel-title" data-i18n="protobufLab.visualizerTitle">2. Live Binary Byte Visualizer</span>
+                <span class="panel-hint" data-i18n="protobufLab.visualizerSubtitle">16-Byte Canonical Hex Dump</span>
+            </div>
+
+            <div class="legend-row font-mono">
+                <span class="legend-item tag-tag"><span class="swatch swatch-tag"></span> <span data-i18n="protobufLab.tagLegend">Tag & WireType</span></span>
+                <span class="legend-item tag-len"><span class="swatch swatch-len"></span> <span data-i18n="protobufLab.lengthLegend">Length Prefix</span></span>
+                <span class="legend-item tag-val"><span class="swatch swatch-val"></span> <span data-i18n="protobufLab.valueLegend">Data / Value</span></span>
+            </div>
+
+            <div class="hex-dump-box font-mono" id="hexDumpContainer">
+                <pre class="hex-pre" id="hexDumpContent">00000000: (computing...)</pre>
+            </div>
+
+            <!-- Hover Inspector Detail Card -->
+            <div class="byte-hover-card font-mono" id="byteHoverCard">
+                <div class="hover-card-header">
+                    <span class="hover-title" id="hoverFieldTitle">Hover Byte Inspector</span>
+                    <span class="hover-offset" id="hoverOffset">0x00</span>
+                </div>
+                <div class="hover-grid">
+                    <div class="hover-item">
+                        <span class="h-label">Hex / Dec</span>
+                        <span class="h-val" id="hoverHexVal">0x08 (8)</span>
+                    </div>
+                    <div class="hover-item">
+                        <span class="h-label">Binary (8-bit)</span>
+                        <span class="h-val binary-font" id="hoverBinVal">0000 1000</span>
+                    </div>
+                    <div class="hover-item">
+                        <span class="h-label">Wire Type</span>
+                        <span class="h-val" id="hoverWireType">0 (VARINT)</span>
+                    </div>
+                    <div class="hover-item">
+                        <span class="h-label">Continuation</span>
+                        <span class="h-val" id="hoverMsb">MSB=0 (Terminal)</span>
+                    </div>
+                </div>
+                <div class="hover-desc" id="hoverExplanation">
+                    Hover any byte above to dissect its bit-level role in the wire format.
+                </div>
+            </div>
+        </div>
+
+        <!-- Quadrant 3: Comparison Matrix & Cloud Egress Savings -->
+        <div class="lab-panel panel-comparison">
+            <div class="panel-header font-mono">
+                <span class="panel-title" data-i18n="protobufLab.comparisonTitle">3. Wire Size Comparison & Cloud Egress Savings</span>
+            </div>
+
+            <div class="metric-cards font-mono">
+                <div class="metric-card card-proto">
+                    <span class="metric-title" data-i18n="protobufLab.protoSizeLabel">Protobuf Binary</span>
+                    <div class="metric-val" id="valProtoBytes">0 B</div>
+                    <span class="metric-sub">Pure Wire Bytes</span>
+                </div>
+                <div class="metric-card card-json">
+                    <span class="metric-title" data-i18n="protobufLab.jsonSizeLabel">Raw Minified JSON</span>
+                    <div class="metric-val" id="valJsonBytes">0 B</div>
+                    <span class="metric-sub">UTF-8 String</span>
+                </div>
+                <div class="metric-card card-gzip">
+                    <span class="metric-title" data-i18n="protobufLab.jsonGzipSizeLabel">Gzip Compressed JSON</span>
+                    <div class="metric-val" id="valGzipBytes">0 B</div>
+                    <span class="metric-sub">Deflate Stream</span>
+                </div>
+            </div>
+
+            <!-- Savings Bar -->
+            <div class="savings-meter-wrap font-mono">
+                <div class="savings-label-row">
+                    <span data-i18n="protobufLab.savingsMeterLabel">Payload Size Reduction vs Raw JSON</span>
+                    <span class="savings-pct" id="savingsPctText">0% Smaller</span>
+                </div>
+                <div class="meter-track">
+                    <div class="meter-bar" id="savingsBar" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Scale Traffic Calculator -->
+            <div class="traffic-calc-box font-mono">
+                <div class="calc-header">
+                    <span class="calc-title" data-i18n="protobufLab.trafficVolumeLabel">Simulated Monthly Traffic Scale:</span>
+                    <span class="calc-scale-value" id="calcScaleLabel">10 Million Requests/mo</span>
+                </div>
+                <input type="range" min="1" max="4" step="1" value="2" class="scale-slider" id="scaleSlider" />
+
+                <div class="calc-results-grid">
+                    <div class="calc-res-item">
+                        <span class="res-label" data-i18n="protobufLab.bandwidthSavedLabel">Bandwidth Saved per Month</span>
+                        <span class="res-val" id="calcBandwidthSaved">0 GB</span>
+                    </div>
+                    <div class="calc-res-item">
+                        <span class="res-label" data-i18n="protobufLab.egressCostSavingsLabel">Estimated Cloud Egress Savings (AWS/GCP @ $0.09/GB)</span>
+                        <span class="res-val green-text" id="calcCostSaved">$0.00 / month</span>
+                    </div>
+                </div>
+                <span class="calc-footnote" data-i18n="protobufLab.costPerGbNote">*Based on standard public cloud internet egress pricing tiers.</span>
+            </div>
+        </div>
+
+        <!-- Quadrant 4: Packet Dissector -->
+        <div class="lab-panel panel-dissector">
+            <div class="panel-header font-mono">
+                <span class="panel-title" data-i18n="protobufLab.dissectorTitle">4. Protocol Packet Dissector</span>
+                <span class="panel-hint" data-i18n="protobufLab.dissectorSubtitle">Bit-by-Bit Decoder Stream Trace</span>
+            </div>
+
+            <div class="dissector-stream font-mono" id="dissectorStream">
+                <!-- Dynamic Dissection Steps -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .proto-lab {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    /* Status Bar */
+    .lab-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: var(--radius, 12px);
+        padding: 0.75rem 1.25rem;
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--font-mono, monospace);
+        font-size: 0.8125rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--green, #00ff88);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green, #00ff88);
+        box-shadow: 0 0 8px var(--green, #00ff88);
+    }
+
+    /* Presets */
+    .presets-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+    }
+
+    .presets-label {
+        color: var(--text-muted, #8b949e);
+    }
+
+    .preset-btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .preset-btn {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: 6px;
+        color: var(--text-muted, #8b949e);
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .preset-btn:hover {
+        color: var(--text, #ffffff);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .preset-btn.active {
+        color: var(--cyan, #06b6d4);
+        border-color: var(--cyan, #06b6d4);
+        background: rgba(6, 182, 212, 0.1);
+        font-weight: 600;
+    }
+
+    .lab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: 6px;
+        color: var(--text-muted, #8b949e);
+        font-size: 0.78rem;
+        padding: 0.35rem 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .lab-btn:hover {
+        color: var(--text, #fff);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Quadrant Grid */
+    .quadrant-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+        .quadrant-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .lab-panel {
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        padding-bottom: 0.6rem;
+    }
+
+    .panel-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text, #ffffff);
+    }
+
+    .panel-hint {
+        font-size: 0.72rem;
+        color: var(--text-muted, #8b949e);
+    }
+
+    /* Schema Table */
+    .schema-table-wrap {
+        overflow-x: auto;
+    }
+
+    .schema-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.78rem;
+    }
+
+    .schema-table th {
+        text-align: left;
+        color: var(--text-muted, #8b949e);
+        font-weight: 500;
+        padding: 0.4rem 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .schema-table td {
+        padding: 0.35rem 0.4rem;
+    }
+
+    .col-tag { width: 65px; }
+    .col-name { width: 28%; }
+    .col-type { width: 24%; }
+    .col-val { width: 35%; }
+    .col-del { width: 30px; }
+
+    :global(.tbl-input), :global(.tbl-select) {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.45) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 4px;
+        color: #ffffff !important;
+        padding: 0.35rem 0.5rem;
+        font-family: inherit;
+        font-size: 0.78rem;
+    }
+
+    :global(.tbl-select option) {
+        background: #161b22;
+        color: #ffffff;
+    }
+
+    :global(.tbl-input:focus), :global(.tbl-select:focus) {
+        outline: none;
+        border-color: var(--cyan, #06b6d4) !important;
+        box-shadow: 0 0 8px rgba(6, 182, 212, 0.2);
+    }
+
+    :global(.btn-del-row) {
+        background: transparent;
+        border: none;
+        color: var(--text-muted, #8b949e);
+        cursor: pointer;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        transition: color 0.15s;
+    }
+
+    :global(.btn-del-row:hover) {
+        color: #ef4444;
+    }
+
+    :global(.dissector-row) {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        background: rgba(0, 0, 0, 0.25);
+        border-left: 2px solid rgba(255, 255, 255, 0.15);
+        border-radius: 0 4px 4px 0;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.74rem;
+    }
+
+    :global(.dissector-row.type-tag) { border-left-color: #38bdf8; }
+    :global(.dissector-row.type-len) { border-left-color: #c084fc; }
+    :global(.dissector-row.type-data) { border-left-color: #4ade80; }
+
+    :global(.d-offset) { color: var(--text-muted, #8b949e); font-size: 0.68rem; min-width: 45px; }
+    :global(.d-hex) { font-weight: 700; min-width: 60px; }
+    :global(.d-hex.type-tag) { color: #38bdf8; }
+    :global(.d-hex.type-len) { color: #c084fc; }
+    :global(.d-hex.type-data) { color: #4ade80; }
+    :global(.d-desc) { color: var(--text, #fff); flex: 1; line-height: 1.35; }
+
+    .schema-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 0.4rem;
+    }
+
+    .add-field-btn {
+        background: rgba(6, 182, 212, 0.1);
+        border: 1px dashed rgba(6, 182, 212, 0.4);
+        border-radius: 6px;
+        color: var(--cyan, #06b6d4);
+        padding: 0.35rem 0.8rem;
+        font-size: 0.76rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .add-field-btn:hover {
+        background: rgba(6, 182, 212, 0.2);
+    }
+
+    .tag-warning-note {
+        color: #f59e0b;
+        font-size: 0.72rem;
+    }
+
+    /* Quadrant 2: Hex Visualizer */
+    .legend-row {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.72rem;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+    }
+
+    .swatch-tag { background: #38bdf8; }
+    .swatch-len { background: #c084fc; }
+    .swatch-val { background: #4ade80; }
+
+    .hex-dump-box {
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 0.75rem;
+        overflow-x: auto;
+        max-height: 180px;
+    }
+
+    .hex-pre {
+        margin: 0;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: var(--text-muted, #8b949e);
+        white-space: pre;
+    }
+
+    :global(.byte-tag) { color: #38bdf8 !important; font-weight: 700; cursor: pointer; border-radius: 2px; }
+    :global(.byte-len) { color: #c084fc !important; font-weight: 700; cursor: pointer; border-radius: 2px; }
+    :global(.byte-val) { color: #4ade80 !important; font-weight: 700; cursor: pointer; border-radius: 2px; }
+    :global(.byte-hover-active) { background: rgba(255, 255, 255, 0.25) !important; outline: 1px solid #fff; }
+    :global(.byte-cell) { display: inline-block; padding: 0 1px; transition: background 0.1s; }
+
+    /* Hover Inspector Card */
+    .byte-hover-card {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .hover-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--cyan, #06b6d4);
+    }
+
+    .hover-offset {
+        color: var(--text-muted, #8b949e);
+        font-size: 0.74rem;
+    }
+
+    .hover-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+
+    .hover-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .h-label {
+        font-size: 0.65rem;
+        color: var(--text-muted, #8b949e);
+        text-transform: uppercase;
+    }
+
+    .h-val {
+        font-size: 0.75rem;
+        color: var(--text, #fff);
+        font-weight: 600;
+    }
+
+    .binary-font {
+        font-family: var(--font-mono, monospace);
+        letter-spacing: 0.05em;
+        color: var(--green, #00ff88);
+    }
+
+    .hover-desc {
+        font-size: 0.74rem;
+        color: var(--text-muted, #8b949e);
+        line-height: 1.35;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding-top: 0.4rem;
+    }
+
+    /* Quadrant 3: Comparison Matrix */
+    .metric-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.6rem;
+    }
+
+    .metric-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .card-proto { border-color: rgba(0, 255, 136, 0.3); background: rgba(0, 255, 136, 0.04); }
+    .card-proto .metric-val { color: var(--green, #00ff88); }
+
+    .metric-title {
+        font-size: 0.7rem;
+        color: var(--text-muted, #8b949e);
+    }
+
+    .metric-val {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text, #fff);
+    }
+
+    .metric-sub {
+        font-size: 0.65rem;
+        color: var(--text-muted, #8b949e);
+    }
+
+    .savings-meter-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .savings-label-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.74rem;
+        color: var(--text-muted, #8b949e);
+    }
+
+    .savings-pct {
+        color: var(--green, #00ff88);
+        font-weight: 700;
+    }
+
+    .meter-track {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .meter-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #06b6d4, #00ff88);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    /* Traffic Scale Calculator */
+    .traffic-calc-box {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .calc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.74rem;
+    }
+
+    .calc-title { color: var(--text-muted, #8b949e); }
+    .calc-scale-value { color: var(--cyan, #06b6d4); font-weight: 700; }
+
+    .scale-slider {
+        width: 100%;
+        accent-color: var(--cyan, #06b6d4);
+        cursor: pointer;
+    }
+
+    .calc-results-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding-top: 0.5rem;
+    }
+
+    .calc-res-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .res-label { font-size: 0.68rem; color: var(--text-muted, #8b949e); }
+    .res-val { font-size: 0.95rem; font-weight: 700; color: var(--text, #fff); }
+    .green-text { color: var(--green, #00ff88); }
+    .calc-footnote { font-size: 0.62rem; color: var(--text-muted, #8b949e); opacity: 0.7; }
+
+    /* Quadrant 4: Packet Dissector */
+    .dissector-stream {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        max-height: 280px;
+        overflow-y: auto;
+        padding-right: 0.35rem;
+    }
+
+    .dissector-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        background: rgba(0, 0, 0, 0.25);
+        border-left: 2px solid rgba(255, 255, 255, 0.15);
+        border-radius: 0 4px 4px 0;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.74rem;
+    }
+
+    .dissector-row.type-tag { border-left-color: #38bdf8; }
+    .dissector-row.type-len { border-left-color: #c084fc; }
+    .dissector-row.type-data { border-left-color: #4ade80; }
+
+    .d-offset { color: var(--text-muted, #8b949e); font-size: 0.68rem; min-width: 45px; }
+    .d-hex { font-weight: 700; min-width: 60px; }
+    .d-hex.type-tag { color: #38bdf8; }
+    .d-hex.type-len { color: #c084fc; }
+    .d-hex.type-data { color: #4ade80; }
+    .d-desc { color: var(--text, #fff); flex: 1; line-height: 1.35; }
+</style>
+
+<script>
+    import {
+        type SchemaField,
+        type ProtoFieldType,
+        encodeSchemaToProtobuf,
+        calculateGzipSize,
+        type EncodingResult
+    } from "../../utils/protobuf";
+    import { translations, type Language } from "../../i18n/translations";
+
+    let currentLang: Language = (typeof localStorage !== "undefined" && (localStorage.getItem("itsmail_lang") as Language)) || "en";
+
+    // Presets definitions
+    const PRESETS: Record<string, SchemaField[]> = {
+        user: [
+            { id: "f1", name: "id", tag: 1, type: "int32", value: 1 },
+            { id: "f2", name: "name", tag: 2, type: "string", value: "Alice Freeman" },
+            { id: "f3", name: "email", tag: 3, type: "string", value: "alice@example.com" },
+            { id: "f4", name: "is_active", tag: 4, type: "bool", value: true },
+            { id: "f5", name: "role_id", tag: 5, type: "uint32", value: 2 }
+        ],
+        iot: [
+            { id: "f1", name: "device_id", tag: 1, type: "int32", value: 1042 },
+            { id: "f2", name: "temperature", tag: 2, type: "float", value: 24.8 },
+            { id: "f3", name: "humidity", tag: 3, type: "uint32", value: 62 },
+            { id: "f4", name: "battery", tag: 4, type: "uint32", value: 95 },
+            { id: "f5", name: "error_code", tag: 5, type: "int32", value: 0 }
+        ],
+        finance: [
+            { id: "f1", name: "order_id", tag: 1, type: "string", value: "ORD-98214" },
+            { id: "f2", name: "symbol", tag: 2, type: "string", value: "AAPL" },
+            { id: "f3", name: "quantity", tag: 3, type: "uint32", value: 500 },
+            { id: "f4", name: "price_cents", tag: 4, type: "uint32", value: 18950 },
+            { id: "f5", name: "is_buy", tag: 5, type: "bool", value: true }
+        ],
+        zigzag: [
+            { id: "f1", name: "standard_neg", tag: 1, type: "int32", value: -1 },
+            { id: "f2", name: "zigzag_neg", tag: 2, type: "sint32", value: -1 },
+            { id: "f3", name: "small_tag", tag: 1, type: "uint32", value: 100 },
+            { id: "f4", name: "large_tag_16", tag: 16, type: "uint32", value: 100 }
+        ]
+    };
+
+    let fields: SchemaField[] = JSON.parse(JSON.stringify(PRESETS.user));
+    let latestResult: EncodingResult | null = null;
+    let selectedScaleMultiplier = 10_000_000; // 10M requests
+
+    // DOM Elements
+    const tableBody = document.getElementById("schemaTableBody");
+    const hexDumpContent = document.getElementById("hexDumpContent");
+    const dissectorStream = document.getElementById("dissectorStream");
+    const tagWarningNote = document.getElementById("tagWarningNote");
+    const protoStatusText = document.getElementById("protoStatusText");
+
+    const valProtoBytes = document.getElementById("valProtoBytes");
+    const valJsonBytes = document.getElementById("valJsonBytes");
+    const valGzipBytes = document.getElementById("valGzipBytes");
+    const savingsPctText = document.getElementById("savingsPctText");
+    const savingsBar = document.getElementById("savingsBar");
+
+    const scaleSlider = document.getElementById("scaleSlider") as HTMLInputElement;
+    const calcScaleLabel = document.getElementById("calcScaleLabel");
+    const calcBandwidthSaved = document.getElementById("calcBandwidthSaved");
+    const calcCostSaved = document.getElementById("calcCostSaved");
+
+    // Hover Card DOM
+    const hoverFieldTitle = document.getElementById("hoverFieldTitle");
+    const hoverOffset = document.getElementById("hoverOffset");
+    const hoverHexVal = document.getElementById("hoverHexVal");
+    const hoverBinVal = document.getElementById("hoverBinVal");
+    const hoverWireType = document.getElementById("hoverWireType");
+    const hoverMsb = document.getElementById("hoverMsb");
+    const hoverExplanation = document.getElementById("hoverExplanation");
+
+    function renderSchemaRows() {
+        if (!tableBody) return;
+        tableBody.innerHTML = "";
+
+        let hasLargeTag = false;
+
+        fields.forEach((f, idx) => {
+            if (f.tag >= 16) hasLargeTag = true;
+
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>
+                    <input type="number" min="1" max="536870911" class="tbl-input input-tag" data-idx="${idx}" value="${f.tag}" />
+                </td>
+                <td>
+                    <input type="text" class="tbl-input input-name" data-idx="${idx}" value="${f.name}" />
+                </td>
+                <td>
+                    <select class="tbl-select input-type" data-idx="${idx}">
+                        <option value="int32" ${f.type === "int32" ? "selected" : ""}>int32</option>
+                        <option value="sint32" ${f.type === "sint32" ? "selected" : ""}>sint32 (ZigZag)</option>
+                        <option value="uint32" ${f.type === "uint32" ? "selected" : ""}>uint32</option>
+                        <option value="int64" ${f.type === "int64" ? "selected" : ""}>int64</option>
+                        <option value="sint64" ${f.type === "sint64" ? "selected" : ""}>sint64 (ZigZag)</option>
+                        <option value="bool" ${f.type === "bool" ? "selected" : ""}>bool</option>
+                        <option value="string" ${f.type === "string" ? "selected" : ""}>string</option>
+                        <option value="float" ${f.type === "float" ? "selected" : ""}>float (32-bit)</option>
+                        <option value="double" ${f.type === "double" ? "selected" : ""}>double (64-bit)</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="tbl-input input-val" data-idx="${idx}" value="${f.value}" />
+                </td>
+                <td>
+                    <button type="button" class="btn-del-row" data-idx="${idx}" title="Delete field">✕</button>
+                </td>
+            `;
+
+            tableBody.appendChild(tr);
+        });
+
+        if (tagWarningNote) {
+            tagWarningNote.style.display = hasLargeTag ? "inline" : "none";
+        }
+
+        attachRowListeners();
+    }
+
+    function attachRowListeners() {
+        if (!tableBody) return;
+
+        tableBody.querySelectorAll(".input-tag").forEach((input) => {
+            input.addEventListener("change", (e) => {
+                const idx = Number((e.target as HTMLElement).getAttribute("data-idx"));
+                fields[idx].tag = Math.max(1, Number((e.target as HTMLInputElement).value) || 1);
+                recompute();
+            });
+        });
+
+        tableBody.querySelectorAll(".input-name").forEach((input) => {
+            input.addEventListener("input", (e) => {
+                const idx = Number((e.target as HTMLElement).getAttribute("data-idx"));
+                fields[idx].name = (e.target as HTMLInputElement).value || "field";
+                recompute();
+            });
+        });
+
+        tableBody.querySelectorAll(".input-type").forEach((select) => {
+            select.addEventListener("change", (e) => {
+                const idx = Number((e.target as HTMLElement).getAttribute("data-idx"));
+                fields[idx].type = (e.target as HTMLSelectElement).value as ProtoFieldType;
+                recompute();
+            });
+        });
+
+        tableBody.querySelectorAll(".input-val").forEach((input) => {
+            input.addEventListener("input", (e) => {
+                const idx = Number((e.target as HTMLElement).getAttribute("data-idx"));
+                fields[idx].value = (e.target as HTMLInputElement).value;
+                recompute();
+            });
+        });
+
+        tableBody.querySelectorAll(".btn-del-row").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const idx = Number((e.currentTarget as HTMLElement).getAttribute("data-idx"));
+                fields.splice(idx, 1);
+                renderSchemaRows();
+                recompute();
+            });
+        });
+    }
+
+    async function recompute() {
+        const res = encodeSchemaToProtobuf(fields);
+        latestResult = res;
+
+        if (protoStatusText) {
+            protoStatusText.textContent = `PROTOBUF ENCODED (${res.totalBytes} BYTES)`;
+        }
+
+        // Render Hex Dump with Span Annotations
+        renderAnnotatedHexDump(res);
+
+        // Update Matrix Metrics
+        if (valProtoBytes) valProtoBytes.textContent = `${res.totalBytes} B`;
+        if (valJsonBytes) valJsonBytes.textContent = `${res.jsonRawBytes} B`;
+
+        const gzipBytes = await calculateGzipSize(res.rawBytes);
+        const jsonGzipBytes = await calculateGzipSize(new TextEncoder().encode(res.jsonString));
+        if (valGzipBytes) valGzipBytes.textContent = `${jsonGzipBytes} B`;
+
+        // Savings percentage vs Raw JSON
+        const rawJson = Math.max(1, res.jsonRawBytes);
+        const diff = rawJson - res.totalBytes;
+        const pct = Math.max(0, Math.round((diff / rawJson) * 100));
+
+        if (savingsPctText) savingsPctText.textContent = `${pct}% Smaller`;
+        if (savingsBar) savingsBar.style.width = `${pct}%`;
+
+        // Update Traffic Scale Calculations
+        updateTrafficCalculations(res.totalBytes, res.jsonRawBytes);
+
+        // Render Dissector Steps
+        renderDissector(res);
+    }
+
+    function renderAnnotatedHexDump(res: EncodingResult) {
+        if (!hexDumpContent) return;
+
+        const bytes = res.rawBytes;
+        if (bytes.length === 0) {
+            hexDumpContent.textContent = "00000000: (empty payload)";
+            return;
+        }
+
+        // Build segment lookup by byte offset
+        const byteMap = new Map<number, { cat: string; segIndex: number }>();
+        res.segments.forEach((seg, segIdx) => {
+            for (let i = seg.offset; i < seg.offset + seg.length; i++) {
+                byteMap.set(i, { cat: seg.category, segIndex: segIdx });
+            }
+        });
+
+        let html = "";
+        const chunkSize = 16;
+
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const offsetHex = i.toString(16).padStart(8, "0");
+            let lineHex = "";
+            let asciiPart = "";
+
+            for (let j = 0; j < chunkSize; j++) {
+                const byteIdx = i + j;
+                if (byteIdx < bytes.length) {
+                    const b = bytes[byteIdx];
+                    const hexStr = b.toString(16).padStart(2, "0").toUpperCase();
+                    const info = byteMap.get(byteIdx);
+                    const catClass = info ? `byte-${info.cat}` : "";
+                    const segAttr = info ? `data-seg="${info.segIndex}" data-byte="${byteIdx}"` : "";
+
+                    lineHex += `<span class="${catClass} byte-cell" ${segAttr}>${hexStr}</span> `;
+                    asciiPart += (b >= 32 && b <= 126) ? String.fromCharCode(b) : ".";
+                } else {
+                    lineHex += "   ";
+                }
+
+                if (j === 7) lineHex += " "; // Middle split
+            }
+
+            html += `${offsetHex}:  ${lineHex} |${asciiPart}|\n`;
+        }
+
+        hexDumpContent.innerHTML = html;
+        attachByteHoverListeners(res);
+    }
+
+    function attachByteHoverListeners(res: EncodingResult) {
+        if (!hexDumpContent) return;
+
+        hexDumpContent.querySelectorAll<HTMLElement>(".byte-cell").forEach((el) => {
+            el.addEventListener("mouseenter", () => {
+                const segIdx = Number(el.getAttribute("data-seg"));
+                const byteIdx = Number(el.getAttribute("data-byte"));
+                const seg = res.segments[segIdx];
+                if (!seg) return;
+
+                // Highlight all matching cells in this segment
+                hexDumpContent?.querySelectorAll(".byte-cell").forEach(c => c.classList.remove("byte-hover-active"));
+                hexDumpContent?.querySelectorAll(`.byte-cell[data-seg="${segIdx}"]`).forEach(c => c.classList.add("byte-hover-active"));
+
+                const b = res.rawBytes[byteIdx];
+                const hexVal = "0x" + b.toString(16).padStart(2, "0").toUpperCase();
+                const binVal = b.toString(2).padStart(8, "0");
+                const msb = (b & 0x80) !== 0;
+
+                if (hoverFieldTitle) hoverFieldTitle.textContent = `${seg.category.toUpperCase()}: Field #${seg.tagNumber} "${seg.fieldName}"`;
+                if (hoverOffset) hoverOffset.textContent = `Offset: 0x${byteIdx.toString(16).padStart(2, "0")}`;
+                if (hoverHexVal) hoverHexVal.textContent = `${hexVal} (${b})`;
+                if (hoverBinVal) hoverBinVal.textContent = `${binVal.slice(0, 4)} ${binVal.slice(4)}`;
+                if (hoverWireType) hoverWireType.textContent = seg.wireTypeName;
+                if (hoverMsb) hoverMsb.textContent = msb ? "MSB=1 (Continue)" : "MSB=0 (Terminal)";
+                if (hoverExplanation) hoverExplanation.textContent = seg.explanation;
+            });
+        });
+    }
+
+    function renderDissector(res: EncodingResult) {
+        if (!dissectorStream) return;
+        dissectorStream.innerHTML = "";
+
+        res.dissectorSteps.forEach((step) => {
+            const row = document.createElement("div");
+            row.className = `dissector-row type-${step.type}`;
+            row.innerHTML = `
+                <span class="d-offset font-mono">+0x${step.offset.toString(16).padStart(2, "0")}</span>
+                <span class="d-hex type-${step.type} font-mono">${step.rawHex}</span>
+                <span class="d-desc font-mono"><strong>${step.title}</strong> — ${step.description}</span>
+            `;
+            dissectorStream.appendChild(row);
+        });
+    }
+
+    function updateTrafficCalculations(protoBytes: number, jsonBytes: number) {
+        const scaleMap: Record<number, { count: number; label: string }> = {
+            1: { count: 1_000_000, label: "1 Million Requests/mo" },
+            2: { count: 10_000_000, label: "10 Million Requests/mo" },
+            3: { count: 100_000_000, label: "100 Million Requests/mo" },
+            4: { count: 1_000_000_000, label: "1 Billion Requests/mo" },
+        };
+
+        const sliderVal = Number(scaleSlider?.value) || 2;
+        const scale = scaleMap[sliderVal] || scaleMap[2];
+
+        if (calcScaleLabel) calcScaleLabel.textContent = scale.label;
+
+        const totalProtoBytes = protoBytes * scale.count;
+        const totalJsonBytes = jsonBytes * scale.count;
+        const savedBytes = Math.max(0, totalJsonBytes - totalProtoBytes);
+
+        const savedGB = savedBytes / (1024 * 1024 * 1024);
+        const costSavings = savedGB * 0.09; // AWS standard internet egress ~$0.09/GB
+
+        if (calcBandwidthSaved) {
+            calcBandwidthSaved.textContent = savedGB >= 1000 
+                ? `${(savedGB / 1024).toFixed(2)} TB / mo`
+                : `${savedGB.toFixed(2)} GB / mo`;
+        }
+
+        if (calcCostSaved) {
+            calcCostSaved.textContent = `$${costSavings.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month`;
+        }
+    }
+
+    // Event Listeners
+    document.getElementById("btnAddField")?.addEventListener("click", () => {
+        const nextTag = fields.length > 0 ? Math.max(...fields.map(f => f.tag)) + 1 : 1;
+        fields.push({
+            id: `f_${Date.now()}`,
+            name: `field_${nextTag}`,
+            tag: nextTag,
+            type: "string",
+            value: "hello"
+        });
+        renderSchemaRows();
+        recompute();
+    });
+
+    document.getElementById("btnResetSchema")?.addEventListener("click", () => {
+        fields = JSON.parse(JSON.stringify(PRESETS.user));
+        document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+        document.querySelector('.preset-btn[data-preset="user"]')?.classList.add("active");
+        renderSchemaRows();
+        recompute();
+    });
+
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const pKey = btn.getAttribute("data-preset");
+            if (pKey && PRESETS[pKey]) {
+                fields = JSON.parse(JSON.stringify(PRESETS[pKey]));
+                document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                renderSchemaRows();
+                recompute();
+            }
+        });
+    });
+
+    scaleSlider?.addEventListener("input", () => {
+        if (latestResult) {
+            updateTrafficCalculations(latestResult.totalBytes, latestResult.jsonRawBytes);
+        }
+    });
+
+    // Handle Language Toggle
+    window.addEventListener("langchange", (e: any) => {
+        if (e.detail?.lang) {
+            currentLang = e.detail.lang;
+            if (latestResult) {
+                updateTrafficCalculations(latestResult.totalBytes, latestResult.jsonRawBytes);
+            }
+        }
+    });
+
+    // Initialize
+    renderSchemaRows();
+    recompute();
+</script>
