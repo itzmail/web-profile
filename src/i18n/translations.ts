@@ -6,6 +6,7 @@ export interface TranslationDict {
         projects: string;
         certificates: string;
         lab: string;
+        tools: string;
         blog: string;
         toggleTheme: string;
         toggleTerminal: string;
@@ -265,6 +266,7 @@ export const translations: Record<Language, TranslationDict> = {
             projects: "Projects",
             certificates: "Certificates",
             lab: "Lab",
+            tools: "Tools",
             blog: "Blog",
             toggleTheme: "Toggle theme",
             toggleTerminal: "Toggle Terminal (Ctrl + `)",
@@ -510,6 +512,7 @@ export const translations: Record<Language, TranslationDict> = {
             projects: "Proyek",
             certificates: "Sertifikasi",
             lab: "Lab",
+            tools: "Tools",
             blog: "Blog",
             toggleTheme: "Ganti tema",
             toggleTerminal: "Buka Terminal (Ctrl + `)",

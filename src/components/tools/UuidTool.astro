@@ -1,0 +1,191 @@
+---
+// UuidTool.astro — UUID v4 / v7 / ULID generator + inspector
+---
+
+<div class="uuid-tool">
+	<div class="tool-toolbar">
+		<div class="toolbar-group">
+			<select class="tool-select" id="uuidType">
+				<option value="v4">UUID v4 (random)</option>
+				<option value="v7">UUID v7 (time-sortable)</option>
+				<option value="ulid">ULID</option>
+			</select>
+			<input type="number" class="tool-input tool-input-sm" id="uuidCount" min="1" max="50" value="5" />
+			<button class="tool-btn" id="uuidGenerate">Generate</button>
+			<button class="tool-btn" id="uuidCopyAll">Copy All</button>
+		</div>
+	</div>
+
+	<ul class="uuid-list font-mono" id="uuidList"></ul>
+
+	<div class="ts-section uuid-inspect">
+		<div class="pane-label font-mono">// ID INSPECTOR</div>
+		<div class="ts-input-row">
+			<input type="text" class="tool-input" id="uuidInspectInput" spellcheck="false"
+				placeholder="Paste a UUID v4/v7 or ULID…" />
+			<button class="tool-btn" id="uuidInspectBtn">Inspect</button>
+		</div>
+		<div class="ts-result-grid" id="uuidInspectResult" hidden>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Format</span><span class="ts-result-val font-mono" id="uuidInspFormat">—</span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Valid</span><span class="ts-result-val font-mono" id="uuidInspValid">—</span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Version</span><span class="ts-result-val font-mono" id="uuidInspVersion">—</span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Variant</span><span class="ts-result-val font-mono" id="uuidInspVariant">—</span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Timestamp</span><span class="ts-result-val font-mono" id="uuidInspTs">—</span></div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.uuid-list {
+		list-style: none;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--surface);
+		max-height: 320px;
+		overflow-y: auto;
+		margin-bottom: 1.25rem;
+	}
+
+	.uuid-list li {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.55rem 1rem;
+		border-bottom: 1px solid var(--border);
+		font-size: 0.8125rem;
+		color: var(--text);
+	}
+
+	.uuid-list li:last-child {
+		border-bottom: none;
+	}
+
+	.uuid-list li .uuid-actions {
+		display: flex;
+		gap: 0.4rem;
+		flex-shrink: 0;
+	}
+
+	.uuid-list li .uuid-tag {
+		font-size: 0.65rem;
+		color: var(--cyan);
+		background: rgba(0, 212, 255, 0.08);
+		padding: 0.15rem 0.4rem;
+		border-radius: 4px;
+		margin-right: 0.5rem;
+	}
+
+	.uuid-list li .uuid-copy {
+		background: none;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		color: var(--text-muted);
+		font-size: 0.65rem;
+		padding: 0.2rem 0.5rem;
+		cursor: pointer;
+		transition: all var(--duration) var(--ease);
+	}
+
+	.uuid-list li .uuid-copy:hover {
+		color: var(--green);
+		border-color: var(--border-glow);
+	}
+
+	.uuid-inspect {
+		margin-bottom: 0;
+	}
+</style>
+
+<script>
+	import { uuidV4, uuidV7, ulid, inspectUuid, ulidTimestamp } from "../../utils/devtools/ids";
+
+	const typeSelect = document.getElementById("uuidType") as unknown as HTMLSelectElement;
+	const countInput = document.getElementById("uuidCount") as HTMLInputElement;
+	const list = document.getElementById("uuidList") as HTMLUListElement;
+
+	function generateOne(): { value: string; tag: string } {
+		switch (typeSelect.value) {
+			case "v7":
+				return { value: uuidV7(), tag: "v7" };
+			case "ulid":
+				return { value: ulid(), tag: "ulid" };
+			default:
+				return { value: uuidV4(), tag: "v4" };
+		}
+	}
+
+	function renderList() {
+		const count = Math.min(Math.max(Number(countInput.value) || 1, 1), 50);
+		list.innerHTML = "";
+		for (let i = 0; i < count; i++) {
+			const { value, tag } = generateOne();
+			const li = document.createElement("li");
+			li.innerHTML = `<span><span class="uuid-tag">${tag}</span>${value}</span>
+				<span class="uuid-actions"><button class="uuid-copy" data-value="${value}">copy</button></span>`;
+			list.appendChild(li);
+		}
+	}
+
+	document.getElementById("uuidGenerate")!.addEventListener("click", renderList);
+
+	list.addEventListener("click", async (e) => {
+		const btn = (e.target as HTMLElement).closest(".uuid-copy") as HTMLButtonElement | null;
+		if (!btn) return;
+		await navigator.clipboard.writeText(btn.dataset.value || "");
+		btn.textContent = "copied!";
+		setTimeout(() => (btn.textContent = "copy"), 1000);
+	});
+
+	document.getElementById("uuidCopyAll")!.addEventListener("click", async () => {
+		const values = [...list.querySelectorAll(".uuid-copy")].map(
+			(b) => (b as HTMLButtonElement).dataset.value
+		);
+		if (values.length) await navigator.clipboard.writeText(values.join("\n"));
+	});
+
+	// ── inspector ────────────────────────────────────────────────
+	const inspectInput = document.getElementById("uuidInspectInput") as HTMLInputElement;
+	const resultGrid = document.getElementById("uuidInspectResult") as HTMLElement;
+
+	function setField(id: string, text: string) {
+		(document.getElementById(id) as HTMLElement).textContent = text;
+	}
+
+	function inspect() {
+		const raw = inspectInput.value.trim();
+		resultGrid.hidden = !raw;
+		if (!raw) return;
+
+		const info = inspectUuid(raw);
+		if (info.isValid) {
+			setField("uuidInspFormat", "UUID");
+			setField("uuidInspValid", info.isValid ? "✓ yes" : "✗ no");
+			setField("uuidInspVersion", info.version !== null ? `v${info.version}` : "—");
+			setField("uuidInspVariant", info.variant);
+			setField("uuidInspTs", info.timestamp ? info.timestamp.toISOString() : "not time-embedded");
+		} else {
+			const ts = ulidTimestamp(raw);
+			if (ts) {
+				setField("uuidInspFormat", "ULID");
+				setField("uuidInspValid", "✓ yes");
+				setField("uuidInspVersion", "—");
+				setField("uuidInspVariant", "Crockford Base32");
+				setField("uuidInspTs", ts.toISOString());
+			} else {
+				setField("uuidInspFormat", "unknown");
+				setField("uuidInspValid", "✗ no");
+				setField("uuidInspVersion", "—");
+				setField("uuidInspVariant", "—");
+				setField("uuidInspTs", "—");
+			}
+		}
+	}
+
+	document.getElementById("uuidInspectBtn")!.addEventListener("click", inspect);
+	inspectInput.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") inspect();
+	});
+
+	renderList();
+</script>

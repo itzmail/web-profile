@@ -1,0 +1,191 @@
+---
+// TimestampTool.astro — Unix epoch converter with live clock
+---
+
+<div class="ts-tool">
+	<div class="ts-live">
+		<div class="ts-live-clock font-mono"><span id="tsLiveSec">----------</span> <span style="color: var(--text-muted)">epoch ms</span></div>
+		<div class="ts-live-sub font-mono">epoch seconds: <span id="tsLiveSec2">--</span> · millis: <span id="tsLiveMs">--</span></div>
+	</div>
+
+	<div class="ts-section">
+		<div class="pane-label font-mono">// EPOCH → HUMAN</div>
+		<div class="ts-input-row">
+			<input type="text" id="tsEpochInput" class="tool-input" inputmode="numeric"
+				placeholder="e.g. 1746849600 or 1746849600123" />
+			<button class="tool-btn" id="tsParseBtn">Convert</button>
+			<button class="tool-btn" id="tsNowBtn">Now</button>
+		</div>
+		<div class="ts-result-grid" id="tsResultGrid" hidden>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">ISO 8601 (UTC)</span><span class="ts-result-val font-mono" id="tsIso"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">UTC</span><span class="ts-result-val font-mono" id="tsUtc"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Local</span><span class="ts-result-val font-mono" id="tsLocal"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Relative</span><span class="ts-result-val font-mono" id="tsRelative"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Detected unit</span><span class="ts-result-val font-mono" id="tsUnit"></span></div>
+		</div>
+	</div>
+
+	<div class="ts-section">
+		<div class="pane-label font-mono">// HUMAN → EPOCH</div>
+		<div class="ts-input-row">
+			<input type="datetime-local" id="tsDatePicker" class="tool-input" step="1" />
+			<button class="tool-btn" id="tsToEpochBtn">→ Epoch</button>
+			<button class="tool-btn" id="tsToEpochMsBtn">→ Epoch (ms)</button>
+		</div>
+		<div class="ts-epoch-out font-mono" id="tsEpochOut" hidden>
+			<span id="tsEpochOutVal"></span>
+			<button class="tool-btn" id="tsEpochCopy">Copy</button>
+		</div>
+	</div>
+</div>
+
+<style>
+	.ts-live {
+		background: var(--surface-hover);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.9rem 1.1rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.ts-live-clock {
+		font-size: 1.25rem;
+		color: var(--green);
+	}
+
+	.ts-live-sub {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		margin-top: 0.35rem;
+	}
+
+	.ts-epoch-out {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 0.5rem;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.6rem 1rem;
+		background: var(--surface);
+		color: var(--green);
+		font-size: 0.95rem;
+		word-break: break-all;
+	}
+</style>
+
+<script>
+	const liveSec = document.getElementById("tsLiveSec") as HTMLElement;
+	const liveSec2 = document.getElementById("tsLiveSec2") as HTMLElement;
+	const liveMs = document.getElementById("tsLiveMs") as HTMLElement;
+
+	function tick() {
+		const now = new Date();
+		liveSec.textContent = String(now.getTime());
+		liveSec2.textContent = String(Math.floor(now.getTime() / 1000));
+		liveMs.textContent = String(now.getTime());
+	}
+	tick();
+	setInterval(tick, 1000);
+
+	// ── epoch → human ────────────────────────────────────────────
+	const epochInput = document.getElementById("tsEpochInput") as HTMLInputElement;
+	const resultGrid = document.getElementById("tsResultGrid") as HTMLElement;
+
+	function relative(d: Date): string {
+		const diffMs = d.getTime() - Date.now();
+		const abs = Math.abs(diffMs);
+		const units: [number, string][] = [
+			[1000, "second"],
+			[60_000, "minute"],
+			[3_600_000, "hour"],
+			[86_400_000, "day"],
+			[2_592_000_000, "month"],
+			[31_536_000_000, "year"],
+		];
+		let label = "";
+		for (let i = units.length - 1; i >= 0; i--) {
+			const [ms, name] = units[i];
+			if (abs >= ms) {
+				const n = Math.round(abs / ms);
+				label = `${n} ${name}${n !== 1 ? "s" : ""}`;
+				break;
+			}
+		}
+		if (!label) label = "just now";
+		return diffMs >= 0 ? `in ${label}` : `${label} ago`;
+	}
+
+	function convertEpoch() {
+		const raw = epochInput.value.trim().replace(/[^\d-]/g, "");
+		if (!raw || raw === "-") return;
+		const n = Number(raw);
+		if (!Number.isFinite(n)) return;
+		// Heuristic: > 1e14 => microseconds, > 1e11 => milliseconds, else seconds
+		let unit = "seconds";
+		let ms = n * 1000;
+		if (Math.abs(n) > 1e14) {
+			ms = n / 1000;
+			unit = "microseconds";
+		} else if (Math.abs(n) > 1e11) {
+			ms = n;
+			unit = "milliseconds";
+		}
+		const d = new Date(ms);
+		if (isNaN(d.getTime())) {
+			resultGrid.hidden = true;
+			return;
+		}
+		document.getElementById("tsIso")!.textContent = d.toISOString();
+		document.getElementById("tsUtc")!.textContent = d.toUTCString();
+		document.getElementById("tsLocal")!.textContent = d.toString();
+		document.getElementById("tsRelative")!.textContent = relative(d);
+		document.getElementById("tsUnit")!.textContent = `${unit} → ${unit === "seconds" ? "s" : "ms"}`;
+		resultGrid.hidden = false;
+	}
+
+	document.getElementById("tsParseBtn")!.addEventListener("click", convertEpoch);
+	epochInput.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") convertEpoch();
+	});
+	document.getElementById("tsNowBtn")!.addEventListener("click", () => {
+		epochInput.value = String(Math.floor(Date.now() / 1000));
+		convertEpoch();
+	});
+
+	// ── human → epoch ────────────────────────────────────────────
+	const datePicker = document.getElementById("tsDatePicker") as HTMLInputElement;
+	const epochOut = document.getElementById("tsEpochOut") as HTMLElement;
+	const epochOutVal = document.getElementById("tsEpochOutVal") as HTMLElement;
+
+	// Initialize picker with current local time
+	function toLocalInputValue(d: Date): string {
+		const pad = (x: number) => String(x).padStart(2, "0");
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+	}
+	datePicker.value = toLocalInputValue(new Date());
+
+	function pickDate(): number {
+		return new Date(datePicker.value).getTime();
+	}
+
+	document.getElementById("tsToEpochBtn")!.addEventListener("click", () => {
+		const ms = pickDate();
+		if (isNaN(ms)) return;
+		epochOutVal.textContent = String(Math.floor(ms / 1000));
+		epochOut.hidden = false;
+	});
+
+	document.getElementById("tsToEpochMsBtn")!.addEventListener("click", () => {
+		const ms = pickDate();
+		if (isNaN(ms)) return;
+		epochOutVal.textContent = String(ms);
+		epochOut.hidden = false;
+	});
+
+	document.getElementById("tsEpochCopy")!.addEventListener("click", async () => {
+		await navigator.clipboard.writeText(epochOutVal.textContent || "");
+		epochOutVal.dataset.copied = "1";
+		setTimeout(() => delete epochOutVal.dataset.copied, 1200);
+	});
+</script>

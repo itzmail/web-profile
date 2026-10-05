@@ -4,7 +4,7 @@ import type { PostListItem, ApiProject } from "../types/index";
 
 const SITE = "https://itsmail.dev";
 
-const STATIC_PATHS = ["/", "/projects", "/certificates", "/blog"];
+const STATIC_PATHS = ["/", "/projects", "/certificates", "/blog", "/lab", "/tools"];
 
 export const GET: APIRoute = async () => {
   const [posts, projects] = await Promise.all([

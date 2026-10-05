@@ -1,0 +1,149 @@
+---
+// JsonTool.astro — JSON beautifier / minifier / validator / TS generator
+---
+
+<div class="json-tool">
+	<div class="tool-toolbar">
+		<div class="toolbar-group">
+			<button class="tool-btn" id="jsonBeautify">Beautify</button>
+			<button class="tool-btn" id="jsonMinify">Minify</button>
+			<button class="tool-btn" id="jsonToTs" title="Generate TypeScript interfaces">→ TypeScript</button>
+			<button class="tool-btn" id="jsonSample" title="Load sample JSON">Sample</button>
+		</div>
+		<div class="toolbar-group">
+			<select class="tool-select" id="jsonIndent" title="Indentation">
+				<option value="2">2 spaces</option>
+				<option value="4">4 spaces</option>
+				<option value="tab">Tabs</option>
+			</select>
+			<button class="tool-btn" id="jsonCopy">Copy</button>
+			<button class="tool-btn tool-btn-danger" id="jsonClear">Clear</button>
+		</div>
+	</div>
+
+	<div class="json-panes">
+		<div class="json-pane">
+			<div class="pane-label font-mono">// INPUT <span id="jsonInputSize" class="pane-meta"></span></div>
+			<textarea id="jsonInput" class="tool-textarea" rows="16" spellcheck="false"
+				placeholder='Paste JSON here…'></textarea>
+		</div>
+		<div class="json-pane">
+			<div class="pane-label font-mono">// OUTPUT <span id="jsonOutputSize" class="pane-meta"></span></div>
+			<textarea id="jsonOutput" class="tool-textarea" rows="16" spellcheck="false" readonly
+				placeholder="Result appears here…"></textarea>
+		</div>
+	</div>
+
+	<div class="json-status" id="jsonStatus" data-state="idle">Ready.</div>
+</div>
+
+<script>
+	const input = document.getElementById("jsonInput") as HTMLTextAreaElement;
+	const output = document.getElementById("jsonOutput") as HTMLTextAreaElement;
+	const status = document.getElementById("jsonStatus") as HTMLElement;
+	const indentSelect = document.getElementById("jsonIndent") as unknown as HTMLSelectElement;
+
+	function setStatus(msg: string, state: "idle" | "ok" | "error") {
+		status.textContent = msg;
+		status.dataset.state = state;
+	}
+
+	function getIndent(): string | number {
+		const v = indentSelect.value;
+		return v === "tab" ? "\t" : Number(v);
+	}
+
+	function byteSize(s: string): string {
+		const bytes = new TextEncoder().encode(s).length;
+		return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+	}
+
+	function run(action: "beautify" | "minify" | "ts") {
+		const raw = input.value.trim();
+		if (!raw) {
+			setStatus("Input is empty.", "error");
+			return;
+		}
+		try {
+			const parsed: unknown = JSON.parse(raw);
+			if (action === "minify") {
+				output.value = JSON.stringify(parsed);
+				setStatus("✓ Valid JSON — minified.", "ok");
+			} else if (action === "beautify") {
+				output.value = JSON.stringify(parsed, null, getIndent());
+				setStatus("✓ Valid JSON — beautified.", "ok");
+			} else {
+				output.value = tsGen(raw);
+				setStatus("✓ Valid JSON — TypeScript interfaces generated.", "ok");
+			}
+		} catch (e) {
+			output.value = "";
+			setStatus(`✗ Invalid JSON: ${(e as SyntaxError).message}`, "error");
+		}
+		document.getElementById("jsonInputSize")!.textContent = `(${byteSize(input.value)})`;
+		document.getElementById("jsonOutputSize")!.textContent = output.value ? `(${byteSize(output.value)})` : "";
+	}
+
+	// JSON → TS via shared module (bundled by Astro/Vite)
+	import { jsonToTypes } from "../../utils/devtools/jsonToTypes";
+	function tsGen(raw: string): string {
+		return jsonToTypes(raw, { rootTypeName: "Root" });
+	}
+
+	document.getElementById("jsonBeautify")!.addEventListener("click", () => run("beautify"));
+	document.getElementById("jsonMinify")!.addEventListener("click", () => run("minify"));
+	document.getElementById("jsonToTs")!.addEventListener("click", () => run("ts"));
+
+	document.getElementById("jsonSample")!.addEventListener("click", () => {
+		input.value = JSON.stringify(
+			{
+				id: "usr_9082",
+				name: "Alice Jane",
+				role: "user",
+				active: true,
+				score: 92.5,
+				tags: ["backend", "go"],
+				lastLogin: "2025-05-10T08:30:00Z",
+				settings: { theme: "dark", notifications: { email: true, sms: false } },
+			},
+			null,
+			2
+		);
+		setStatus("Sample loaded. Pick an action.", "idle");
+	});
+
+	document.getElementById("jsonCopy")!.addEventListener("click", async () => {
+		if (!output.value) return;
+		await navigator.clipboard.writeText(output.value);
+		setStatus("✓ Output copied to clipboard.", "ok");
+	});
+
+	document.getElementById("jsonClear")!.addEventListener("click", () => {
+		input.value = "";
+		output.value = "";
+		setStatus("Cleared.", "idle");
+		document.getElementById("jsonInputSize")!.textContent = "";
+		document.getElementById("jsonOutputSize")!.textContent = "";
+	});
+</script>
+
+<style>
+	.json-panes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.json-pane {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	@media (max-width: 768px) {
+		.json-panes {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

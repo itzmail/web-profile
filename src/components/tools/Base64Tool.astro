@@ -1,0 +1,193 @@
+---
+// Base64Tool.astro — Base64 & URL encode/decode, UTF-8 safe
+---
+
+<div class="b64-tool">
+	<div class="tool-toolbar">
+		<div class="toolbar-group">
+			<button class="tool-btn" id="b64Encode">Base64 Encode</button>
+			<button class="tool-btn" id="b64Decode">Base64 Decode</button>
+			<button class="tool-btn" id="urlEncode">URL Encode</button>
+			<button class="tool-btn" id="urlDecode">URL Decode</button>
+		</div>
+		<div class="toolbar-group">
+			<label class="tool-check font-mono">
+				<input type="checkbox" id="b64UrlSafe" />
+				URL-safe (-_ / no padding)
+			</label>
+			<button class="tool-btn" id="b64Swap" title="Move output to input">⇅ Swap</button>
+			<button class="tool-btn" id="b64Copy">Copy</button>
+			<button class="tool-btn tool-btn-danger" id="b64Clear">Clear</button>
+		</div>
+	</div>
+
+	<div class="b64-panes">
+		<div class="b64-pane">
+			<div class="pane-label font-mono">// INPUT <span id="b64InputSize" class="pane-meta"></span></div>
+			<textarea id="b64Input" class="tool-textarea" rows="12" spellcheck="false"
+				placeholder="Type or paste text / Base64…"></textarea>
+		</div>
+		<div class="b64-pane">
+			<div class="pane-label font-mono">// OUTPUT <span id="b64OutputSize" class="pane-meta"></span></div>
+			<textarea id="b64Output" class="tool-textarea" rows="12" spellcheck="false"
+				placeholder="Result appears here…"></textarea>
+			<div class="b64-image-preview" id="b64ImagePreview" hidden>
+				<div class="pane-label font-mono">// IMAGE PREVIEW</div>
+				<img id="b64Image" alt="Decoded data URI preview" />
+			</div>
+		</div>
+	</div>
+
+	<div class="json-status" id="b64Status" data-state="idle">Ready.</div>
+</div>
+
+<style>
+	.b64-panes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.b64-pane {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	.b64-image-preview img {
+		max-width: 100%;
+		max-height: 220px;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.5rem;
+	}
+
+	@media (max-width: 768px) {
+		.b64-panes {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+
+<script>
+	const input = document.getElementById("b64Input") as HTMLTextAreaElement;
+	const output = document.getElementById("b64Output") as HTMLTextAreaElement;
+	const status = document.getElementById("b64Status") as HTMLElement;
+	const urlSafe = document.getElementById("b64UrlSafe") as HTMLInputElement;
+	const previewWrap = document.getElementById("b64ImagePreview") as HTMLElement;
+	const previewImg = document.getElementById("b64Image") as HTMLImageElement;
+
+	function setStatus(msg: string, state: "idle" | "ok" | "error") {
+		status.textContent = msg;
+		status.dataset.state = state;
+	}
+
+	function byteSize(s: string): string {
+		const bytes = new TextEncoder().encode(s).length;
+		return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+	}
+
+	function setPreview(clearOnly: boolean) {
+		if (clearOnly) {
+			previewWrap.hidden = true;
+			return;
+		}
+		const inputVal = input.value.trim();
+		// Show preview when the input was an image data URI (or raw base64 image bytes)
+		const isImageUri = /^data:image\//i.test(inputVal);
+		if (isImageUri && inputVal.length < 500_000) {
+			previewImg.src = inputVal;
+			previewWrap.hidden = false;
+		}
+	}
+
+	function updateMeta() {
+		document.getElementById("b64InputSize")!.textContent = `(${byteSize(input.value)})`;
+		document.getElementById("b64OutputSize")!.textContent = output.value ? `(${byteSize(output.value)})` : "";
+	}
+
+	// UTF-8 safe Base64 via binary string + btoa
+	function encodeB64(text: string): string {
+		const bytes = new TextEncoder().encode(text);
+		let bin = "";
+		bytes.forEach((b) => (bin += String.fromCharCode(b)));
+		let b64 = btoa(bin);
+		if (urlSafe.checked) b64 = b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+		return b64;
+	}
+
+	function decodeB64(b64: string): string {
+		// Accept full data URIs (data:image/png;base64,XXXX) — strip the prefix
+		const prefixMatch = b64.match(/^data:[^;]*;base64,/);
+		if (prefixMatch) b64 = b64.slice(prefixMatch[0].length);
+		let normalized = b64.trim().replace(/[-_]/g, (c) => (c === "-" ? "+" : "/"));
+		while (normalized.length % 4 !== 0) normalized += "=";
+		const bin = atob(normalized);
+		const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+		return new TextDecoder().decode(bytes);
+	}
+
+	document.getElementById("b64Encode")!.addEventListener("click", () => {
+		try {
+			output.value = encodeB64(input.value);
+			previewWrap.hidden = true;
+			setStatus("✓ Encoded to Base64.", "ok");
+		} catch (e) {
+			setStatus(`✗ ${(e as Error).message}`, "error");
+		}
+		updateMeta();
+	});
+
+	document.getElementById("b64Decode")!.addEventListener("click", () => {
+		const inputHadDataUri = /^data:[^;]*;base64,/i.test(input.value.trim());
+		try {
+			output.value = decodeB64(input.value);
+			setPreview(!inputHadDataUri);
+			setStatus("✓ Decoded from Base64.", "ok");
+		} catch {
+			output.value = "";
+			previewWrap.hidden = true;
+			setStatus("✗ Invalid Base64 input.", "error");
+		}
+		updateMeta();
+	});
+
+	document.getElementById("urlEncode")!.addEventListener("click", () => {
+		output.value = encodeURIComponent(input.value);
+		previewWrap.hidden = true;
+		setStatus("✓ URL encoded (encodeURIComponent).", "ok");
+		updateMeta();
+	});
+
+	document.getElementById("urlDecode")!.addEventListener("click", () => {
+		try {
+			output.value = decodeURIComponent(input.value.replace(/\+/g, "%20"));
+			previewWrap.hidden = true;
+			setStatus("✓ URL decoded.", "ok");
+		} catch {
+			setStatus("✗ Invalid URL-encoded input.", "error");
+		}
+		updateMeta();
+	});
+
+	document.getElementById("b64Swap")!.addEventListener("click", () => {
+		[input.value, output.value] = [output.value, input.value];
+		previewWrap.hidden = true;
+		updateMeta();
+	});
+
+	document.getElementById("b64Copy")!.addEventListener("click", async () => {
+		if (!output.value) return;
+		await navigator.clipboard.writeText(output.value);
+		setStatus("✓ Output copied.", "ok");
+	});
+
+	document.getElementById("b64Clear")!.addEventListener("click", () => {
+		input.value = "";
+		output.value = "";
+		previewWrap.hidden = true;
+		setStatus("Cleared.", "idle");
+		updateMeta();
+	});
+</script>
