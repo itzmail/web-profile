@@ -1,0 +1,834 @@
+---
+// JwtPlayground.astro - Pure Web Crypto API Interactive JWT & Security Lab
+---
+
+<div class="jwt-lab" id="jwtLab">
+    <!-- Lab Header Controls / Status -->
+    <div class="lab-status-bar">
+        <div class="status-indicator" id="jwtStatusBadge">
+            <span class="status-dot"></span>
+            <span class="status-text">SIGNATURE VALID (200 OK)</span>
+        </div>
+        <div class="lab-actions">
+            <button class="lab-btn lab-btn-reset" id="btnResetJwt" title="Reset to standard valid token">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span data-i18n="jwtLab.resetBtn">Reset</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Encoded Token Visualizer -->
+    <div class="token-viewer-box">
+        <div class="token-viewer-header">
+            <span class="token-viewer-title font-mono" data-i18n="jwtLab.encodedTokenLabel">// ENCODED COMPACT TOKEN (Base64URL)</span>
+            <span class="token-size" id="tokenByteSize">0 bytes</span>
+        </div>
+        <div class="token-colored-display font-mono" id="tokenDisplay">
+            <span class="token-part token-header" id="dispHeader">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span><span class="token-dot">.</span><span class="token-part token-payload" id="dispPayload">eyJzdWIiOiJ1c3JfOTA4MiIsIm5hbWUiOiJBbGljZSBKYW5lIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MTUzNjAwMDAsImV4cCI6MTcxNTM5NjAwMH0</span><span class="token-dot">.</span><span class="token-part token-signature" id="dispSignature">signature</span>
+        </div>
+        <div class="token-legend font-mono">
+            <span class="legend-item"><span class="legend-swatch legend-header"></span> <span data-i18n="jwtLab.tokenHeaderLabel">Header</span></span>
+            <span class="legend-item"><span class="legend-swatch legend-payload"></span> <span data-i18n="jwtLab.tokenPayloadLabel">Payload</span></span>
+            <span class="legend-item"><span class="legend-swatch legend-sig"></span> <span data-i18n="jwtLab.tokenSignatureLabel">Signature</span></span>
+        </div>
+    </div>
+
+    <!-- Main Workspace: Left (Secret & Editors) vs Right (Decoded & Inspector) -->
+    <div class="lab-grid">
+        <!-- Panel 1: Secret & Attack Simulator -->
+        <div class="lab-panel">
+            <div class="panel-header font-mono">
+                <span class="panel-title" data-i18n="jwtLab.secretKeyLabel">1. Secret Key (HMAC-SHA256)</span>
+            </div>
+            <div class="secret-input-wrap">
+                <input 
+                    type="text" 
+                    id="jwtSecret" 
+                    class="jwt-input font-mono" 
+                    value="super-secret-production-key-change-me" 
+                    placeholder="Enter HMAC Secret..."
+                />
+                <button class="lab-btn" id="btnGenSecret" title="Generate random 256-bit secret" data-i18n="jwtLab.randomizeBtn">Randomize</button>
+            </div>
+
+            <!-- Attack Injection Section -->
+            <div class="attack-box">
+                <div class="attack-title font-mono">
+                    <span class="attack-icon">⚡</span> <span data-i18n="jwtLab.attackSimulatorTitle">SECURITY ATTACK SIMULATOR</span>
+                </div>
+                <p class="attack-desc" data-i18n="jwtLab.attackSimulatorDesc">Inject known vulnerabilities to test parser defenses:</p>
+                <div class="attack-btn-group">
+                    <button class="attack-btn attack-btn-none" id="btnAttackAlgNone">
+                        <span class="attack-name" data-i18n="jwtLab.btnAlgNoneTitle">💣 "alg": "none" Exploit</span>
+                        <span class="attack-sub" data-i18n="jwtLab.btnAlgNoneDesc">Bypass signature verification by stripping alg</span>
+                    </button>
+                    <button class="attack-btn attack-btn-tamper" id="btnAttackTamperRole">
+                        <span class="attack-name" data-i18n="jwtLab.btnTamperTitle">🎭 Privilege Escalation</span>
+                        <span class="attack-sub" data-i18n="jwtLab.btnTamperDesc">Tamper payload claim (role: "user" → "admin")</span>
+                    </button>
+                    <button class="attack-btn attack-btn-expire" id="btnAttackExpire">
+                        <span class="attack-name" data-i18n="jwtLab.btnExpiredTitle">⏰ Expired Token Test</span>
+                        <span class="attack-sub" data-i18n="jwtLab.btnExpiredDesc">Set exp claim 1 hour in the past</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Exploit Explanation Notice (Dynamic) -->
+            <div class="exploit-alert" id="exploitAlert" style="display: none;">
+                <div class="alert-title font-mono" id="exploitAlertTitle">⚠️ Exploit Injected</div>
+                <div class="alert-body" id="exploitAlertBody">Details...</div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Decoded JSON Editors -->
+        <div class="lab-panel">
+            <div class="panel-header font-mono">
+                <span class="panel-title" data-i18n="jwtLab.decodedHeaderLabel">2. Decoded Header & Claims</span>
+                <span class="panel-hint" data-i18n="jwtLab.liveEditableBadge">Live Editable</span>
+            </div>
+
+            <div class="editor-section">
+                <div class="editor-label font-mono">
+                    <span class="color-dot color-header"></span> <span data-i18n="jwtLab.decodedHeaderLabel">HEADER (Algorithm & Type)</span>
+                </div>
+                <textarea id="jwtHeaderInput" class="jwt-textarea font-mono" rows="3"></textarea>
+            </div>
+
+            <div class="editor-section">
+                <div class="editor-label font-mono">
+                    <span class="color-dot color-payload"></span> <span data-i18n="jwtLab.decodedPayloadLabel">PAYLOAD (Claims / Identity)</span>
+                </div>
+                <textarea id="jwtPayloadInput" class="jwt-textarea font-mono" rows="7"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 3: Low-Level Crypto & Binary Inspector -->
+    <div class="crypto-inspector">
+        <div class="panel-header font-mono">
+            <span class="panel-title">3. Web Crypto Verification Trace</span>
+            <span class="crypto-timing font-mono" id="cryptoTiming">calc: ~0.4ms</span>
+        </div>
+        <div class="inspector-grid font-mono">
+            <div class="inspector-block">
+                <div class="block-label">// SIGNATURE INPUT STRING</div>
+                <div class="block-content code-box" id="rawSignInput">Base64(Header) + "." + Base64(Payload)</div>
+            </div>
+            <div class="inspector-block">
+                <div class="block-label">// COMPUTED HMAC-SHA256 RAW BYTES (HEX)</div>
+                <div class="block-content code-box" id="rawHexSig">00 00 00...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .jwt-lab {
+        background: var(--bg-card, rgba(20, 24, 33, 0.75));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .lab-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 20px;
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        transition: all 0.3s ease;
+    }
+
+    .status-indicator.valid {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-indicator.valid .status-dot {
+        background: #10b981;
+        box-shadow: 0 0 10px #10b981;
+    }
+
+    .status-indicator.invalid {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .status-indicator.invalid .status-dot {
+        background: #ef4444;
+        box-shadow: 0 0 10px #ef4444;
+    }
+
+    .status-indicator.warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .status-indicator.warning .status-dot {
+        background: #f59e0b;
+        box-shadow: 0 0 10px #f59e0b;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .lab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: var(--bg-surface, rgba(255, 255, 255, 0.05));
+        color: var(--text, #f1f5f9);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        padding: 0.45rem 0.85rem;
+        border-radius: 6px;
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .lab-btn:hover {
+        background: var(--bg-hover, rgba(255, 255, 255, 0.1));
+        border-color: var(--border-hover, rgba(255, 255, 255, 0.25));
+    }
+
+    /* Token Visualizer Box */
+    .token-viewer-box {
+        background: var(--bg-input, rgba(10, 14, 20, 0.9));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .token-viewer-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--text-muted, #94a3b8);
+        margin-bottom: 0.6rem;
+    }
+
+    .token-colored-display {
+        font-size: 0.9375rem;
+        line-height: 1.6;
+        word-break: break-all;
+        padding: 0.75rem;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .token-header {
+        color: #fb923c; /* Orange / Amber */
+        background: rgba(251, 146, 60, 0.12);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    .token-payload {
+        color: #c084fc; /* Purple / Magenta */
+        background: rgba(192, 132, 252, 0.12);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    .token-signature {
+        color: #38bdf8; /* Cyan */
+        background: rgba(56, 189, 248, 0.12);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    .token-signature.invalid {
+        color: #f87171;
+        background: rgba(248, 113, 113, 0.2);
+        text-decoration: line-through;
+    }
+    .token-signature.none {
+        color: #94a3b8;
+        font-style: italic;
+        background: transparent;
+    }
+    .token-dot {
+        color: var(--text-muted, #64748b);
+        font-weight: bold;
+    }
+
+    .token-legend {
+        display: flex;
+        gap: 1.25rem;
+        margin-top: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--text-muted, #94a3b8);
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .legend-swatch {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+    }
+    .legend-header { background: #fb923c; }
+    .legend-payload { background: #c084fc; }
+    .legend-sig { background: #38bdf8; }
+
+    /* Main Grid */
+    .lab-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+        .lab-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .lab-panel {
+        background: var(--bg-surface, rgba(255, 255, 255, 0.02));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        border-radius: 8px;
+        padding: 1.25rem;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--text-heading, #f8fafc);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+    }
+    .panel-hint {
+        font-size: 0.75rem;
+        font-weight: normal;
+        color: var(--cyan, #06b6d4);
+    }
+
+    .secret-input-wrap {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .jwt-input {
+        flex: 1;
+        background: var(--bg-input, rgba(10, 14, 20, 0.8));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        color: var(--text, #f1f5f9);
+        font-size: 0.8125rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .jwt-input:focus {
+        border-color: var(--cyan, #06b6d4);
+    }
+
+    /* Attack Box */
+    .attack-box {
+        background: rgba(239, 68, 68, 0.04);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    .attack-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #f87171;
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .attack-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted, #94a3b8);
+        margin-bottom: 0.75rem;
+        margin-top: 0;
+    }
+    .attack-btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .attack-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 0.55rem 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .attack-btn:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.4);
+        transform: translateX(2px);
+    }
+    .attack-name {
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #fca5a5;
+    }
+    .attack-sub {
+        font-size: 0.71875rem;
+        color: var(--text-muted, #94a3b8);
+    }
+
+    /* Exploit Alert */
+    .exploit-alert {
+        margin-top: 1rem;
+        padding: 0.85rem;
+        border-radius: 6px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        animation: fadeIn 0.3s ease;
+    }
+    .alert-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #ef4444;
+        margin-bottom: 0.25rem;
+    }
+    .alert-body {
+        font-size: 0.75rem;
+        color: var(--text, #e2e8f0);
+        line-height: 1.5;
+    }
+
+    /* Editors */
+    .editor-section {
+        margin-bottom: 1rem;
+    }
+    .editor-label {
+        font-size: 0.75rem;
+        color: var(--text-muted, #94a3b8);
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .color-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    .color-header { background: #fb923c; }
+    .color-payload { background: #c084fc; }
+
+    .jwt-textarea {
+        width: 100%;
+        background: var(--bg-input, rgba(10, 14, 20, 0.8));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        color: var(--text, #f1f5f9);
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        resize: vertical;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .jwt-textarea:focus {
+        border-color: var(--cyan, #06b6d4);
+    }
+
+    /* Crypto Inspector */
+    .crypto-inspector {
+        background: var(--bg-surface, rgba(255, 255, 255, 0.02));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        border-radius: 8px;
+        padding: 1.25rem;
+    }
+    .crypto-timing {
+        font-size: 0.75rem;
+        color: #10b981;
+    }
+    .inspector-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    @media (max-width: 768px) {
+        .inspector-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .block-label {
+        font-size: 0.6875rem;
+        color: var(--text-muted, #94a3b8);
+        margin-bottom: 0.35rem;
+    }
+    .code-box {
+        background: var(--bg-input, rgba(10, 14, 20, 0.8));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.75rem;
+        color: var(--text, #e2e8f0);
+        word-break: break-all;
+        min-height: 48px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    import { translations, type Language } from "../../i18n/translations";
+
+    let currentLang: Language = (typeof localStorage !== "undefined" && (localStorage.getItem("itsmail_lang") as Language)) || "en";
+
+    // Pure Web Crypto API Client-Side Engine for JWT
+    interface JwtState {
+        header: Record<string, unknown>;
+        payload: Record<string, unknown>;
+        secret: string;
+        isExploitNone: boolean;
+        isTampered: boolean;
+        originalSignature: string;
+    }
+
+    const defaultHeader = {
+        alg: "HS256",
+        typ: "JWT"
+    };
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const defaultPayload = {
+        sub: "usr_9082",
+        name: "Alice Jane",
+        role: "user",
+        iat: nowSec,
+        exp: nowSec + 3600
+    };
+
+    const defaultSecret = "super-secret-production-key-change-me";
+
+    let state: JwtState = {
+        header: { ...defaultHeader },
+        payload: { ...defaultPayload },
+        secret: defaultSecret,
+        isExploitNone: false,
+        isTampered: false,
+        originalSignature: ""
+    };
+
+    // Race-condition guard counter
+    let activeCallCounter = 0;
+
+    // DOM Elements
+    const dispHeader = document.getElementById("dispHeader");
+    const dispPayload = document.getElementById("dispPayload");
+    const dispSignature = document.getElementById("dispSignature");
+    const tokenByteSize = document.getElementById("tokenByteSize");
+    const statusBadge = document.getElementById("jwtStatusBadge");
+    const statusText = statusBadge?.querySelector(".status-text");
+
+    const headerInput = document.getElementById("jwtHeaderInput") as HTMLTextAreaElement;
+    const payloadInput = document.getElementById("jwtPayloadInput") as HTMLTextAreaElement;
+    const secretInput = document.getElementById("jwtSecret") as HTMLInputElement;
+
+    const rawSignInput = document.getElementById("rawSignInput");
+    const rawHexSig = document.getElementById("rawHexSig");
+    const cryptoTiming = document.getElementById("cryptoTiming");
+
+    const exploitAlert = document.getElementById("exploitAlert");
+    const exploitAlertTitle = document.getElementById("exploitAlertTitle");
+    const exploitAlertBody = document.getElementById("exploitAlertBody");
+
+    // Check Web Crypto API Availability
+    const isCryptoSupported = typeof window !== "undefined" && "crypto" in window && !!window.crypto?.subtle;
+
+    function getDict() {
+        return translations[currentLang]?.jwtLab || translations.en.jwtLab;
+    }
+
+    // Base64URL Helpers
+    function base64UrlEncode(str: string): string {
+        const utf8Bytes = new TextEncoder().encode(str);
+        let binary = "";
+        for (let i = 0; i < utf8Bytes.length; i++) {
+            binary += String.fromCharCode(utf8Bytes[i]);
+        }
+        return btoa(binary)
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+    }
+
+    function bufferToBase64Url(buffer: ArrayBuffer): string {
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary)
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/, "");
+    }
+
+    function bufferToHex(buffer: ArrayBuffer): string {
+        return Array.from(new Uint8Array(buffer))
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join(" ");
+    }
+
+    // Web Crypto HMAC-SHA256 Sign
+    async function signHmacSha256(dataStr: string, secretStr: string): Promise<{ base64url: string; hex: string }> {
+        const enc = new TextEncoder();
+        const keyData = enc.encode(secretStr);
+        const key = await crypto.subtle.importKey(
+            "raw",
+            keyData,
+            { name: "HMAC", hash: { name: "SHA-256" } },
+            false,
+            ["sign"]
+        );
+
+        const signatureBuffer = await crypto.subtle.sign(
+            "HMAC",
+            key,
+            enc.encode(dataStr)
+        );
+
+        return {
+            base64url: bufferToBase64Url(signatureBuffer),
+            hex: bufferToHex(signatureBuffer)
+        };
+    }
+
+    // Core Recompute & Render Flow
+    async function updateJwt() {
+        const callId = ++activeCallCounter;
+        const dict = getDict();
+
+        if (!isCryptoSupported) {
+            setStatus("invalid", dict.cryptoUnavailableStatus);
+            showExploit(dict.alertInsecureTitle, dict.alertInsecureBody);
+            return;
+        }
+
+        const t0 = performance.now();
+
+        const headerStr = JSON.stringify(state.header);
+        const payloadStr = JSON.stringify(state.payload);
+
+        const b64Header = base64UrlEncode(headerStr);
+        const b64Payload = base64UrlEncode(payloadStr);
+        const signInput = `${b64Header}.${b64Payload}`;
+
+        if (dispHeader) dispHeader.textContent = b64Header;
+        if (dispPayload) dispPayload.textContent = b64Payload;
+        if (rawSignInput) rawSignInput.textContent = signInput;
+
+        // Check Alg None
+        if (state.header.alg === "none" || state.isExploitNone) {
+            if (dispSignature) {
+                dispSignature.textContent = "";
+                dispSignature.className = "token-part token-signature none";
+            }
+            if (rawHexSig) rawHexSig.textContent = "(None algorithm - no signature generated)";
+            if (tokenByteSize) tokenByteSize.textContent = `${signInput.length + 1} ${dict.charsBytes.replace("{bytes}", String(signInput.length + 1))}`;
+
+            setStatus("warning", dict.unsecuredNoneStatus);
+            showExploit(dict.alertNoneTitle, dict.alertNoneBody);
+            return;
+        }
+
+        // Calculate Signature
+        const sigResult = await signHmacSha256(signInput, state.secret);
+        if (callId !== activeCallCounter) return; // Stale async call, discard
+
+        const t1 = performance.now();
+        if (cryptoTiming) cryptoTiming.textContent = `calc: ${(t1 - t0).toFixed(2)}ms`;
+
+        let activeSignature = sigResult.base64url;
+
+        // If tampered flag is on, we display old signature to demonstrate invalid signature
+        if (state.isTampered && state.originalSignature) {
+            activeSignature = state.originalSignature;
+        }
+
+        if (dispSignature) {
+            dispSignature.textContent = activeSignature;
+            dispSignature.className = "token-part token-signature";
+        }
+        if (rawHexSig) rawHexSig.textContent = sigResult.hex;
+
+        const fullToken = `${signInput}.${activeSignature}`;
+        if (tokenByteSize) {
+            tokenByteSize.textContent = `${fullToken.length} ${dict.charsBytes.replace("{bytes}", String(Math.round(fullToken.length)))}`;
+        }
+
+        // Check Expiration robustly
+        const expRaw = state.payload.exp;
+        const expNum = typeof expRaw === "number" ? expRaw : Number(expRaw);
+        const hasValidExp = typeof expNum === "number" && isFinite(expNum);
+        const isExpired = hasValidExp && expNum < Math.floor(Date.now() / 1000);
+
+        if (state.isTampered) {
+            dispSignature?.classList.add("invalid");
+            setStatus("invalid", dict.signatureMismatchStatus);
+            showExploit(dict.alertTamperTitle, dict.alertTamperBody);
+        } else if (isExpired) {
+            setStatus("warning", dict.tokenExpiredStatus);
+            showExploit(dict.alertExpiredTitle, dict.alertExpiredBody.replace("{exp}", String(expNum)));
+        } else {
+            setStatus("valid", dict.signatureValidStatus);
+            hideExploit();
+        }
+    }
+
+    function setStatus(type: "valid" | "invalid" | "warning", text: string) {
+        if (!statusBadge || !statusText) return;
+        statusBadge.className = `status-indicator ${type}`;
+        statusText.textContent = text;
+    }
+
+    function showExploit(title: string, body: string) {
+        if (!exploitAlert || !exploitAlertTitle || !exploitAlertBody) return;
+        exploitAlert.style.display = "block";
+        exploitAlertTitle.textContent = title;
+        exploitAlertBody.textContent = body;
+    }
+
+    function hideExploit() {
+        if (!exploitAlert) return;
+        exploitAlert.style.display = "none";
+    }
+
+    function syncInputsFromState() {
+        if (headerInput) headerInput.value = JSON.stringify(state.header, null, 2);
+        if (payloadInput) payloadInput.value = JSON.stringify(state.payload, null, 2);
+        if (secretInput) secretInput.value = state.secret;
+    }
+
+    // Listen to Language Toggle
+    window.addEventListener("langchange", (e: any) => {
+        if (e.detail?.lang) {
+            currentLang = e.detail.lang;
+            updateJwt();
+        }
+    });
+
+    // Event Listeners
+    headerInput?.addEventListener("input", () => {
+        try {
+            state.header = JSON.parse(headerInput.value);
+            state.isTampered = false;
+            updateJwt();
+        } catch {
+            // Wait for valid JSON
+        }
+    });
+
+    payloadInput?.addEventListener("input", () => {
+        try {
+            state.payload = JSON.parse(payloadInput.value);
+            state.isTampered = false;
+            updateJwt();
+        } catch {
+            // Wait for valid JSON
+        }
+    });
+
+    secretInput?.addEventListener("input", () => {
+        state.secret = secretInput.value;
+        state.isTampered = false;
+        updateJwt();
+    });
+
+    // Random Secret Generator (32-byte / 256-bit entropy)
+    document.getElementById("btnGenSecret")?.addEventListener("click", () => {
+        const randBytes = new Uint8Array(32);
+        crypto.getRandomValues(randBytes);
+        const randomHex = Array.from(randBytes).map(b => b.toString(16).padStart(2, "0")).join("");
+        state.secret = `sec_${randomHex}`;
+        syncInputsFromState();
+        updateJwt();
+    });
+
+    // Attack 1: Alg None
+    document.getElementById("btnAttackAlgNone")?.addEventListener("click", () => {
+        state.header = { ...state.header, alg: "none" };
+        state.isExploitNone = true;
+        state.isTampered = false;
+        syncInputsFromState();
+        updateJwt();
+    });
+
+    // Attack 2: Tamper Payload Role
+    document.getElementById("btnAttackTamperRole")?.addEventListener("click", async () => {
+        // Save current valid signature
+        const b64H = base64UrlEncode(JSON.stringify(state.header));
+        const b64P = base64UrlEncode(JSON.stringify(state.payload));
+        const sig = await signHmacSha256(`${b64H}.${b64P}`, state.secret);
+        state.originalSignature = sig.base64url;
+
+        // Alter payload without updating signature
+        state.payload = { ...state.payload, role: "admin", escalated_by: "attacker_script" };
+        state.isTampered = true;
+        syncInputsFromState();
+        updateJwt();
+    });
+
+    // Attack 3: Expired Token
+    document.getElementById("btnAttackExpire")?.addEventListener("click", () => {
+        state.payload = { ...state.payload, exp: Math.floor(Date.now() / 1000) - 3600 };
+        state.isTampered = false;
+        syncInputsFromState();
+        updateJwt();
+    });
+
+    // Reset Button
+    document.getElementById("btnResetJwt")?.addEventListener("click", () => {
+        const now = Math.floor(Date.now() / 1000);
+        state = {
+            header: { ...defaultHeader },
+            payload: { ...defaultPayload, iat: now, exp: now + 3600 },
+            secret: defaultSecret,
+            isExploitNone: false,
+            isTampered: false,
+            originalSignature: ""
+        };
+        syncInputsFromState();
+        updateJwt();
+    });
+
+    // Initial run
+    syncInputsFromState();
+    updateJwt();
+</script>

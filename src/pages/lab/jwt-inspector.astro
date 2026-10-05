@@ -1,0 +1,346 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import JwtPlayground from "../../components/lab/JwtPlayground.astro";
+---
+
+<Layout
+    title="JWT & Algorithm Confusion Attack Inspector — Lab #01"
+    description="Deconstructing Base64URL tokens, Web Crypto HMAC-SHA256, and algorithm confusion exploits."
+    canonicalURL="https://itsmail.dev/lab/jwt-inspector"
+>
+    <main class="lab-detail-page">
+        <div class="container">
+            <!-- Breadcrumbs & Meta -->
+            <div class="lab-top-meta font-mono reveal">
+                <a href="/lab" class="back-link" data-i18n="jwtLab.backLink">← // return to lab directory</a>
+                <div class="meta-badges">
+                    <span class="difficulty-badge badge-easy">● Easy</span>
+                    <span class="rfc-badge">RFC 7519 / RFC 8725</span>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <header class="lab-header reveal">
+                <p class="font-mono text-muted page-eyebrow" data-i18n="jwtLab.eyebrow">// LAB #01 • SECURITY & PROTOCOLS</p>
+                <h1 class="page-title" data-i18n="jwtLab.title">JWT & Algorithm Confusion Attack Inspector</h1>
+                <p class="page-lead" data-i18n="jwtLab.subtitle">
+                    A deep dive into JSON Web Token (RFC 7519) anatomy, client-side Web Crypto signature generation, and how subtle parser flaws allow privilege escalation.
+                </p>
+            </header>
+
+            <!-- Interactive Widget -->
+            <section class="playground-section reveal">
+                <div class="section-label font-mono">
+                    <span class="live-pulse"></span> <span data-i18n="jwtLab.livePlaygroundTitle">LIVE INTERACTIVE PLAYGROUND</span>
+                </div>
+                <JwtPlayground />
+            </section>
+
+            <!-- Learning Notes & Dissection -->
+            <article class="lab-notes reveal">
+                <h2 data-i18n="jwtLab.section1Title">1. The First-Principles: What is a JWT?</h2>
+                <p data-i18n="jwtLab.section1P1">
+                    A JSON Web Token (JWT) is not encrypted by default; it is simply <strong>signed and Base64URL-encoded</strong>. Anyone with the token can inspect its payload. The security guarantees come entirely from the <strong>cryptographic signature</strong>.
+                </p>
+                <p data-i18n="jwtLab.section1P2">
+                    A standard compact token consists of three parts separated by dots (<code>.</code>):
+                </p>
+
+                <div class="token-breakdown-card font-mono">
+                    <div class="part-row">
+                        <span class="part-tag tag-h">1. Header</span>
+                        <code>{'{"alg": "HS256", "typ": "JWT"}'}</code>
+                        <span class="part-desc" data-i18n="jwtLab.partHeaderDesc">Specifies signature algorithm & token type</span>
+                    </div>
+                    <div class="part-row">
+                        <span class="part-tag tag-p">2. Payload</span>
+                        <code>{'{"sub": "usr_9082", "role": "user", "exp": 1715396000}'}</code>
+                        <span class="part-desc" data-i18n="jwtLab.partPayloadDesc">Claims & identity metadata (openly readable)</span>
+                    </div>
+                    <div class="part-row">
+                        <span class="part-tag tag-s">3. Signature</span>
+                        <code>HMACSHA256(Base64URL(Header) + "." + Base64URL(Payload), secret)</code>
+                        <span class="part-desc" data-i18n="jwtLab.partSignatureDesc">Prevents tampering by cryptographically binding header + payload</span>
+                    </div>
+                </div>
+
+                <h2 data-i18n="jwtLab.section2Title">2. The "alg": "none" Exploit Explained</h2>
+                <p data-i18n="jwtLab.section2P1">
+                    According to the original JWA specification (RFC 7518), an algorithm called <code>"none"</code> was permitted for unsecured tokens. If a backend library naively trusts the <code>alg</code> header passed by the client:
+                </p>
+                <ol>
+                    <li data-i18n="jwtLab.section2Step1">An attacker modifies the payload to elevate their role (e.g. <code>"role": "admin"</code>).</li>
+                    <li data-i18n="jwtLab.section2Step2">The attacker updates the header to <code>{'{"alg": "none"}'}</code> and removes the signature part.</li>
+                    <li data-i18n="jwtLab.section2Step3">If the server's verification logic checks <code>if (header.alg === 'none') return true;</code>, the forged token is accepted without any secret key!</li>
+                </ol>
+
+                <div class="defense-box">
+                    <div class="defense-title font-mono" data-i18n="jwtLab.defenseTitle">🛡️ How to Defend (RFC 8725 Best Current Practice):</div>
+                    <ul>
+                        <li data-i18n="jwtLab.defensePoint1"><strong>Enforce Algorithm Whitelisting:</strong> Never allow the token header to dictate which algorithm is used during verification. Hardcode the expected algorithm on the server (e.g., explicitly require <code>HS256</code> or <code>RS256</code>).</li>
+                        <li data-i18n="jwtLab.defensePoint2"><strong>Reject <code>none</code> by Default:</strong> Ensure your JWT verification library has unsecured tokens disabled.</li>
+                        <li data-i18n="jwtLab.defensePoint3"><strong>Sufficient Key Entropy:</strong> For <code>HS256</code>, HMAC secrets must have at least 256 bits (32 bytes) of cryptographically secure randomness to resist brute-force attacks.</li>
+                    </ul>
+                </div>
+
+                <h2 data-i18n="jwtLab.section3Title">3. Key Takeaways from this Lab</h2>
+                <div class="takeaways-grid">
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">⚡</span>
+                        <h3 data-i18n="jwtLab.takeaway1Title">Encoding ≠ Encryption</h3>
+                        <p data-i18n="jwtLab.takeaway1Desc">Base64URL is merely an encoding mechanism to transport JSON safely across HTTP headers. Sensitive PII must never be stored in JWT payloads without JWE (JSON Web Encryption).</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🔒</span>
+                        <h3 data-i18n="jwtLab.takeaway2Title">Web Crypto in the Browser</h3>
+                        <p data-i18n="jwtLab.takeaway2Desc">Modern browsers can compute HMAC-SHA256 and RSA signatures directly using the native <code>window.crypto.subtle</code> API with zero external dependencies in &lt;1ms.</p>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Bottom Navigation -->
+            <div class="lab-footer-nav font-mono reveal">
+                <a href="/lab" class="lab-nav-btn" data-i18n="jwtLab.footerBackBtn">← Back to Lab Directory</a>
+                <span class="next-hint" data-i18n="jwtLab.footerNextHint">Next Lab: Protobuf vs JSON Wire Inspector (Sprint 2) →</span>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .lab-detail-page {
+        padding-top: calc(var(--nav-h) + 2.5rem);
+        padding-bottom: 6rem;
+        min-height: 100vh;
+    }
+
+    .lab-top-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        font-size: 0.8125rem;
+    }
+
+    .back-link {
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .back-link:hover {
+        color: var(--text-heading, #f8fafc);
+    }
+
+    .meta-badges {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .difficulty-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-easy {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+
+    .rfc-badge {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted, #94a3b8);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+    }
+
+    .lab-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .page-eyebrow {
+        font-size: 0.8125rem;
+        color: var(--cyan, #06b6d4);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-title {
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 700;
+        color: var(--text-heading, #f8fafc);
+        letter-spacing: -0.02em;
+        margin-bottom: 1rem;
+        line-height: 1.25;
+    }
+
+    .page-lead {
+        font-size: 1.125rem;
+        color: var(--text, #cbd5e1);
+        max-width: 750px;
+        line-height: 1.6;
+    }
+
+    /* Section Label */
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--cyan, #06b6d4);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: -1rem;
+        letter-spacing: 0.05em;
+    }
+
+    .live-pulse {
+        width: 8px;
+        height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #10b981;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Notes Article */
+    .lab-notes {
+        max-width: 800px;
+        margin: 4rem auto 2rem;
+        line-height: 1.7;
+        color: var(--text, #cbd5e1);
+    }
+
+    .lab-notes h2 {
+        font-size: 1.5rem;
+        color: var(--text-heading, #f8fafc);
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        letter-spacing: -0.01em;
+    }
+
+    .lab-notes p {
+        margin-bottom: 1.25rem;
+    }
+
+    .lab-notes ol, .lab-notes ul {
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+    }
+
+    .lab-notes li {
+        margin-bottom: 0.5rem;
+    }
+
+    .token-breakdown-card {
+        background: var(--bg-card, rgba(20, 24, 33, 0.7));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .part-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .part-tag {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        align-self: flex-start;
+    }
+    .tag-h { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+    .tag-p { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
+    .tag-s { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+
+    .part-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted, #94a3b8);
+        font-family: var(--font-sans);
+    }
+
+    .defense-box {
+        background: rgba(16, 185, 129, 0.05);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+    }
+    .defense-title {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #10b981;
+        margin-bottom: 0.75rem;
+    }
+
+    .takeaways-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin: 1.5rem 0;
+    }
+    @media (max-width: 640px) {
+        .takeaways-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .takeaway-card {
+        background: var(--bg-card, rgba(20, 24, 33, 0.5));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        border-radius: 8px;
+        padding: 1.25rem;
+    }
+    .takeaway-icon {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
+    .takeaway-card h3 {
+        font-size: 1rem;
+        color: var(--text-heading, #f8fafc);
+        margin-bottom: 0.5rem;
+    }
+    .takeaway-card p {
+        font-size: 0.8125rem;
+        color: var(--text-muted, #94a3b8);
+        line-height: 1.5;
+        margin-bottom: 0;
+    }
+
+    .lab-footer-nav {
+        margin-top: 4rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.8125rem;
+    }
+
+    .lab-nav-btn {
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+    }
+    .lab-nav-btn:hover {
+        color: var(--text-heading, #f8fafc);
+    }
+
+    .next-hint {
+        color: var(--text-muted, #64748b);
+    }
+</style>

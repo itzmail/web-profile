@@ -1,6 +1,7 @@
 ---
 import SunIcon from "../assets/icons/SunIcon.astro";
 import MoonIcon from "../assets/icons/MoonIcon.astro";
+import LanguageToggle from "./LanguageToggle.astro";
 ---
 
 <nav class="navbar" id="navbar">
@@ -12,12 +13,14 @@ import MoonIcon from "../assets/icons/MoonIcon.astro";
         </a>
 
         <ul class="nav-links" id="navLinks">
-            <li><a href="https://itsmail.dev/projects" class="nav-link">Projects</a></li>
-            <li><a href="https://itsmail.dev/certificates" class="nav-link">Certificates</a></li>
-            <li><a href="/blog" class="nav-link">Blog</a></li>
+            <li><a href="https://itsmail.dev/projects" class="nav-link" data-i18n="nav.projects">Projects</a></li>
+            <li><a href="https://itsmail.dev/certificates" class="nav-link" data-i18n="nav.certificates">Certificates</a></li>
+            <li><a href="/lab" class="nav-link" data-i18n="nav.lab">Lab</a></li>
+            <li><a href="/blog" class="nav-link" data-i18n="nav.blog">Blog</a></li>
         </ul>
 
         <div class="nav-actions">
+            <LanguageToggle />
             <button
                 class="nav-action-btn nav-term-toggle"
                 id="navTermToggle"

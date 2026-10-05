@@ -1,0 +1,271 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { LAB_ITEMS } from "../../data/labs";
+
+function getDifficultyBadgeClass(difficulty: string) {
+    switch (difficulty) {
+        case "Easy": return "badge-easy";
+        case "Medium": return "badge-medium";
+        case "Hard": return "badge-hard";
+        default: return "";
+    }
+}
+---
+
+<Layout
+    title="Engineering Lab & PoCs — Ismail Alam"
+    description="Interactive Proof of Concepts, protocol dissections, and deep-dive architecture experiments."
+    canonicalURL="https://itsmail.dev/lab"
+>
+    <main class="lab-page">
+        <div class="container">
+            <header class="page-header reveal">
+                <p class="font-mono text-muted page-eyebrow" data-i18n="labIndex.eyebrow">// systems & architecture lab</p>
+                <h1 class="page-title" data-i18n="labIndex.title">Proof of Concepts</h1>
+                <p class="page-sub text-muted" data-i18n="labIndex.subtitle">
+                    Interactive engineering playgrounds, protocol dissections, and first-principles experiments built directly into the browser.
+                </p>
+            </header>
+
+            <div class="lab-grid">
+                {LAB_ITEMS.map((item) => {
+                    const isAvailable = item.available;
+                    return (
+                        <div class={`lab-card reveal-stagger ${item.featured ? 'featured' : ''}`}>
+                            <div class="lab-card-header">
+                                <div class="lab-meta-row font-mono">
+                                    <span class={`difficulty-badge ${getDifficultyBadgeClass(item.difficulty)}`}>
+                                        ● {item.difficulty}
+                                    </span>
+                                    <span class="category-tag">{item.category}</span>
+                                    {item.rfcRef && <span class="rfc-tag">{item.rfcRef}</span>}
+                                </div>
+                                <span class="reading-time font-mono text-muted">{item.readingTime}</span>
+                            </div>
+
+                            <h2 class="lab-card-title">
+                                {!isAvailable ? (
+                                    <span>{item.title}</span>
+                                ) : (
+                                    <a href={`/lab/${item.slug}`}>{item.title}</a>
+                                )}
+                            </h2>
+
+                            <p class="lab-card-subtitle">{item.subtitle}</p>
+                            <p class="lab-card-desc">{item.description}</p>
+
+                            <div class="lab-tags font-mono">
+                                {item.tags.map(t => (
+                                    <span class="tag">#{t}</span>
+                                ))}
+                            </div>
+
+                            <div class="lab-card-footer">
+                                {!isAvailable ? (
+                                    <span class="status-coming-soon font-mono">// in development</span>
+                                ) : (
+                                    <a href={`/lab/${item.slug}`} class="launch-btn font-mono">
+                                        <span>Launch Interactive Lab</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                                        </svg>
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .lab-page {
+        padding-top: calc(var(--nav-h) + 3rem);
+        padding-bottom: 6rem;
+        min-height: 100vh;
+    }
+
+    .page-header {
+        margin-bottom: 3rem;
+    }
+
+    .page-eyebrow {
+        font-size: 0.875rem;
+        color: var(--cyan, #06b6d4);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-title {
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 700;
+        color: var(--text-heading, #f8fafc);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+    }
+
+    .page-sub {
+        font-size: 1.0625rem;
+        max-width: 680px;
+        line-height: 1.6;
+    }
+
+    .lab-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 1.75rem;
+    }
+
+    @media (max-width: 640px) {
+        .lab-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .lab-card {
+        background: var(--bg-card, rgba(20, 24, 33, 0.6));
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+        border-radius: 12px;
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+    }
+
+    .lab-card:hover {
+        border-color: var(--border-hover, rgba(6, 182, 212, 0.4));
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .lab-card.featured {
+        border-color: rgba(6, 182, 212, 0.3);
+        background: linear-gradient(180deg, rgba(6, 182, 212, 0.04) 0%, var(--bg-card, rgba(20, 24, 33, 0.6)) 100%);
+    }
+
+    .lab-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 0.5rem;
+    }
+
+    .lab-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        font-size: 0.75rem;
+    }
+
+    .difficulty-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .badge-easy {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+    }
+    .badge-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+    }
+    .badge-hard {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+    }
+
+    .category-tag {
+        color: var(--text-muted, #94a3b8);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .rfc-tag {
+        color: var(--cyan, #06b6d4);
+        background: rgba(6, 182, 212, 0.1);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .reading-time {
+        font-size: 0.75rem;
+    }
+
+    .lab-card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.35;
+        margin-bottom: 0.5rem;
+    }
+
+    .lab-card-title a {
+        color: var(--text-heading, #f8fafc);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .lab-card-title a:hover {
+        color: var(--cyan, #06b6d4);
+    }
+
+    .lab-card-subtitle {
+        font-size: 0.875rem;
+        color: var(--text, #e2e8f0);
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+    }
+
+    .lab-card-desc {
+        font-size: 0.8125rem;
+        color: var(--text-muted, #94a3b8);
+        line-height: 1.6;
+        margin-bottom: 1.25rem;
+        flex: 1;
+    }
+
+    .lab-tags {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .tag {
+        font-size: 0.71875rem;
+        color: var(--text-muted, #64748b);
+    }
+
+    .lab-card-footer {
+        padding-top: 1rem;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .launch-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        transition: gap 0.2s;
+    }
+
+    .launch-btn:hover {
+        gap: 0.75rem;
+    }
+
+    .status-coming-soon {
+        font-size: 0.75rem;
+        color: var(--text-muted, #64748b);
+    }
+</style>
