@@ -1,0 +1,331 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import RateLimiterPlayground from "../../components/lab/RateLimiterPlayground.astro";
+---
+
+<Layout
+    title="Distributed Rate Limiter Visualizer — Lab #03"
+    description="Token Bucket vs Leaky Bucket vs Fixed Window vs Sliding Window — animated traffic simulation and a Redis race-condition workbench."
+    canonicalURL="https://itsmail.dev/lab/rate-limiter-visualizer"
+>
+    <main class="lab-detail-page">
+        <div class="container">
+            <!-- Breadcrumbs & Meta -->
+            <div class="lab-top-meta font-mono reveal">
+                <a href="/lab" class="back-link" data-i18n="rateLimiterLab.backLink">← // return to lab directory</a>
+                <div class="meta-badges">
+                    <span class="difficulty-badge badge-medium">● Medium</span>
+                    <span class="rfc-badge">RFC 6585 / Redis EVAL</span>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <header class="lab-header reveal">
+                <p class="font-mono text-muted page-eyebrow" data-i18n="rateLimiterLab.eyebrow">// LAB #03 • DISTRIBUTED SYSTEMS</p>
+                <h1 class="page-title" data-i18n="rateLimiterLab.title">Distributed Rate Limiter Visualizer</h1>
+                <p class="page-lead" data-i18n="rateLimiterLab.subtitle">
+                    Inside the algorithms that guard every API on earth: Token Bucket vs Leaky Bucket vs Fixed Window vs Sliding Window — and why naive Redis counters leak past their quota.
+                </p>
+            </header>
+
+            <!-- Interactive Playground -->
+            <section class="playground-section reveal">
+                <div class="section-label font-mono">
+                    <span class="live-pulse"></span> <span data-i18n="rateLimiterLab.livePlaygroundTitle">LIVE TRAFFIC & CONCURRENCY PLAYGROUND</span>
+                </div>
+                <RateLimiterPlayground />
+            </section>
+
+            <!-- Deep Dive Article -->
+            <article class="lab-notes reveal">
+                <h2 data-i18n="rateLimiterLab.section1Title">1. Why Rate Limiting Exists</h2>
+                <p data-i18n="rateLimiterLab.section1P1">
+                    Every API endpoint has finite CPU, memory, and downstream dependencies. Without a limiter, one misbehaving client can starve every other tenant.
+                </p>
+                <p data-i18n="rateLimiterLab.section1P2">
+                    Choosing an algorithm is choosing a trade-off between burst tolerance, memory footprint, and boundary correctness:
+                </p>
+
+                <div class="takeaways-grid">
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🪣</span>
+                        <h3 data-i18n="rateLimiterLab.section1Algo1Title">Token Bucket</h3>
+                        <p data-i18n="rateLimiterLab.section1Algo1Desc">A bucket holds up to N tokens and refills at a constant rate. Bursts up to N requests fly through instantly; sustained traffic is paced at the refill rate. Used by Stripe, NGINX, AWS API Gateway.</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🚰</span>
+                        <h3 data-i18n="rateLimiterLab.section1Algo2Title">Leaky Bucket</h3>
+                        <p data-i18n="rateLimiterLab.section1Algo2Desc">Requests enter a FIFO queue that drains at a fixed rate; overflow is dropped. Shapes traffic into a steady flow — ideal for protecting brittle downstream systems.</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🪟</span>
+                        <h3 data-i18n="rateLimiterLab.section1Algo3Title">Fixed Window</h3>
+                        <p data-i18n="rateLimiterLab.section1Algo3Desc">A counter resets at fixed intervals. Trivially cheap in Redis (INCR + EXPIRE), but vulnerable to 2× boundary bursts at window edges.</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">🎚️</span>
+                        <h3 data-i18n="rateLimiterLab.section1Algo4Title">Sliding Window Log</h3>
+                        <p data-i18n="rateLimiterLab.section1Algo4Desc">Stores a timestamp per request and evicts old entries. Boundary-perfect, but O(N) memory per client is expensive at scale.</p>
+                    </div>
+                </div>
+
+                <h2 data-i18n="rateLimiterLab.section2Title">2. The Distributed Cache Problem</h2>
+                <p data-i18n="rateLimiterLab.section2P1">
+                    The naive pattern — READ value, CHECK quota, WRITE value+1 — is not atomic between thousands of shared workers.
+                </p>
+                <p data-i18n="rateLimiterLab.section2P2">
+                    This is the classic lost-update race condition: 25 concurrent workers against a quota of 10 can let 14 requests sail past. Real incidents cause silent quota bypass and billing discrepancies.
+                </p>
+                <p data-i18n="rateLimiterLab.section2P3">
+                    Fixes: Redis Lua scripts (EVAL), the INCR-then-compare pattern, and distributed locking (SETNX / Redlock).
+                </p>
+
+                <h2 data-i18n="rateLimiterLab.section3Title">3. Production Implementation Patterns</h2>
+                <p data-i18n="rateLimiterLab.section3P1">
+                    The canonical atomic fixed-window limiter uses INCR-first semantics with a conditional EXPIRE — race-free by construction.
+                </p>
+                <p data-i18n="rateLimiterLab.section3P2">
+                    For sliding-window semantics at scale, production systems use Redis Sorted Sets with ZREMRANGEBYSCORE eviction inside one atomic EVAL.
+                </p>
+
+                <div class="defense-box">
+                    <div class="defense-title font-mono" data-i18n="rateLimiterLab.section3LuaTitle">🛡️ Battle-Tested Patterns:</div>
+                    <ul>
+                        <li data-i18n="rateLimiterLab.section3LuaPoint1"><strong>INCR-first (fixed window):</strong> The incremented ordinal itself is the admission ticket — atomic in one call.</li>
+                        <li data-i18n="rateLimiterLab.section3LuaPoint2"><strong>Sorted Set + ZREMRANGEBYSCORE (sliding window):</strong> Exact sliding behavior, wrapped in one EVAL for atomicity.</li>
+                    </ul>
+                </div>
+
+                <h2 data-i18n="rateLimiterLab.section4Title">4. The Standard HTTP Contract: IETF RateLimit Headers</h2>
+                <p data-i18n="rateLimiterLab.section4P1">
+                    The IETF draft-ietf-httpapi-ratelimit-headers standard defines response headers so well-behaved clients can back off automatically:
+                </p>
+
+                <div class="headers-guide font-mono">
+                    <div class="header-guide-line"><strong data-i18n="rateLimiterLab.section4Header1">RateLimit-Limit — total quota per window.</strong></div>
+                    <div class="header-guide-line"><strong data-i18n="rateLimiterLab.section4Header2">RateLimit-Remaining — room left right now.</strong></div>
+                    <div class="header-guide-line"><strong data-i18n="rateLimiterLab.section4Header3">RateLimit-Reset — seconds until quota fully recovers.</strong></div>
+                    <div class="header-guide-line"><strong data-i18n="rateLimiterLab.section4Header4">Retry-After — mandatory on 429 responses.</strong></div>
+                </div>
+
+                <h2 data-i18n="rateLimiterLab.section5Title">5. Key Takeaways from this Lab</h2>
+                <div class="takeaways-grid">
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">⚔️</span>
+                        <h3 data-i18n="rateLimiterLab.takeaway1Title">No limiter survives a race condition</h3>
+                        <p data-i18n="rateLimiterLab.takeaway1Desc">A perfect in-memory algorithm still fails distributed without atomicity. Enforce the read-check-write boundary with INCR-first, Lua EVAL, or locks.</p>
+                    </div>
+                    <div class="takeaway-card">
+                        <span class="takeaway-icon">📜</span>
+                        <h3 data-i18n="rateLimiterLab.takeaway2Title">Algorithm choice is a client contract</h3>
+                        <p data-i18n="rateLimiterLab.takeaway2Desc">Token Bucket forgives bursts; Leaky Bucket forgives nothing; Sliding Window tells the truth. Pick what your downstream can absorb, publish via RateLimit headers.</p>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Bottom Navigation -->
+            <div class="lab-footer-nav font-mono reveal">
+                <a href="/lab/protobuf-wire-inspector" class="lab-nav-btn" data-i18n="rateLimiterLab.footerPrevLab">← Lab #02: Protobuf Wire Inspector</a>
+                <span class="next-hint" data-i18n="rateLimiterLab.footerNextHint">Next Lab: OAuth2 PKCE Flow (Sprint 4) →</span>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .lab-detail-page {
+        padding-top: calc(var(--nav-h) + 2.5rem);
+        padding-bottom: 6rem;
+        min-height: 100vh;
+    }
+
+    .lab-top-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        font-size: 0.8125rem;
+    }
+
+    .back-link {
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--text, #fff); }
+
+    .meta-badges { display: flex; gap: 0.5rem; align-items: center; }
+
+    .difficulty-badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-medium {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .rfc-badge {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted, #8b949e);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.2rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+    }
+
+    .lab-header { margin-bottom: 2.5rem; }
+
+    .page-eyebrow {
+        font-size: 0.8125rem;
+        color: var(--cyan, #06b6d4);
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .page-title {
+        font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+        color: var(--text, #fff);
+    }
+
+    .page-lead {
+        font-size: 1.05rem;
+        color: var(--text-muted, #8b949e);
+        max-width: 48rem;
+        line-height: 1.6;
+    }
+
+    .playground-section { margin-bottom: 3.5rem; }
+
+    .section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--cyan, #06b6d4);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-bottom: 1rem;
+    }
+
+    .live-pulse {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--green, #00ff88);
+        box-shadow: 0 0 8px var(--green, #00ff88);
+    }
+
+    /* Article Styles */
+    .lab-notes {
+        max-width: 52rem;
+        margin: 0 auto;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        padding-top: 3rem;
+        color: var(--text-muted, #8b949e);
+        line-height: 1.7;
+    }
+
+    .lab-notes h2 {
+        color: var(--text, #fff);
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .lab-notes p { margin-bottom: 1.25rem; }
+
+    .takeaways-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.25rem;
+        margin: 1.75rem 0;
+    }
+
+    .takeaway-card {
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem;
+    }
+
+    .takeaway-icon { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+
+    .takeaway-card h3 {
+        color: var(--text, #fff);
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .takeaway-card p {
+        font-size: 0.82rem;
+        color: var(--text-muted, #8b949e);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .defense-box {
+        background: rgba(6, 182, 212, 0.05);
+        border: 1px solid rgba(6, 182, 212, 0.25);
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem;
+        margin: 1.75rem 0;
+    }
+
+    .defense-title {
+        color: var(--cyan, #06b6d4);
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .defense-box ul { margin: 0; padding-left: 1.25rem; }
+    .defense-box li { font-size: 0.82rem; margin-bottom: 0.5rem; line-height: 1.5; }
+    .defense-box li:last-child { margin-bottom: 0; }
+    .defense-box strong { color: var(--text, #fff); }
+
+    .headers-guide {
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: var(--radius, 12px);
+        padding: 1rem 1.25rem;
+        margin: 1.5rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .header-guide-line { font-size: 0.78rem; color: var(--text-muted, #8b949e); }
+    .header-guide-line strong { color: #4ade80; font-weight: 600; }
+
+    /* Footer Nav */
+    .lab-footer-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        margin-top: 4rem;
+        padding-top: 2rem;
+    }
+
+    .lab-nav-btn {
+        color: var(--cyan, #06b6d4);
+        text-decoration: none;
+        font-size: 0.82rem;
+        transition: color 0.2s;
+    }
+
+    .lab-nav-btn:hover { color: var(--text, #fff); }
+
+    .next-hint { font-size: 0.8rem; color: var(--text-muted, #8b949e); }
+</style>

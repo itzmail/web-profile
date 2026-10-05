@@ -154,6 +154,109 @@ export interface TranslationDict {
         footerPrevLab: string;
         footerNextHint: string;
     };
+    rateLimiterLab: {
+        eyebrow: string;
+        title: string;
+        subtitle: string;
+        backLink: string;
+        livePlaygroundTitle: string;
+        resetBtn: string;
+        // Engine selector
+        engineLabel: string;
+        algoTokenBucket: string;
+        algoLeakyBucket: string;
+        algoFixedWindow: string;
+        algoSlidingWindow: string;
+        // Parameter panel
+        paramsTitle: string;
+        capacityLabel: string;
+        refillLeakLabel: string;
+        windowMsLabel: string;
+        sentCountLabel: string;
+        // Traffic generator
+        trafficTitle: string;
+        sendOneBtn: string;
+        burstBtn: string;
+        burstSuffix: string;
+        streamLabel: string;
+        streamOff: string;
+        streamOn: string;
+        streamPerSecSuffix: string;
+        // Bucket visual
+        bucketTitle: string;
+        tokensFillLabel: string;
+        queueFillLabel: string;
+        windowFillLabel: string;
+        // Live HttpResponse headers
+        headersTitle: string;
+        headerLimit: string;
+        headerRemaining: string;
+        headerReset: string;
+        headerRetryAfter: string;
+        // Stats HUD
+        statsTitle: string;
+        statAllowed: string;
+        statBlocked: string;
+        statPassRate: string;
+        logTitle: string;
+        // Race simulator
+        raceTitle: string;
+        raceSubtitle: string;
+        raceWorkersLabel: string;
+        raceLatencyLabel: string;
+        raceQuotaLabel: string;
+        raceNaiveBtn: string;
+        raceAtomicBtn: string;
+        raceNaiveModeName: string;
+        raceAtomicModeName: string;
+        racePassedLabel: string;
+        raceDroppedLabel: string;
+        raceLeakedLabel: string;
+        raceVerdictSafe: string;
+        raceVerdictLeak: string;
+        raceWorkerLabel: string;
+        raceReadLabel: string;
+        raceSawLabel: string;
+        raceWriteLabel: string;
+        raceResultAllowed: string;
+        raceResultRejected: string;
+        raceTimelineTitle: string;
+        // Deep Dive Article
+        section1Title: string;
+        section1P1: string;
+        section1P2: string;
+        section1Algo1Title: string;
+        section1Algo1Desc: string;
+        section1Algo2Title: string;
+        section1Algo2Desc: string;
+        section1Algo3Title: string;
+        section1Algo3Desc: string;
+        section1Algo4Title: string;
+        section1Algo4Desc: string;
+        section2Title: string;
+        section2P1: string;
+        section2P2: string;
+        section2P3: string;
+        section3Title: string;
+        section3P1: string;
+        section3P2: string;
+        section3LuaTitle: string;
+        section3LuaPoint1: string;
+        section3LuaPoint2: string;
+        section4Title: string;
+        section4P1: string;
+        section4Header1: string;
+        section4Header2: string;
+        section4Header3: string;
+        section4Header4: string;
+        section5Title: string;
+        takeaway1Title: string;
+        takeaway1Desc: string;
+        takeaway2Title: string;
+        takeaway2Desc: string;
+        footerPrevLab: string;
+        footerNextHint: string;
+    };
 }
 
 export const translations: Record<Language, TranslationDict> = {
@@ -306,6 +409,101 @@ export const translations: Record<Language, TranslationDict> = {
             footerPrevLab: "← Lab #01: JWT Inspector",
             footerNextHint: "Next Lab: Distributed Rate Limiter (Sprint 3) →",
         },
+        rateLimiterLab: {
+            eyebrow: "// LAB #03 • DISTRIBUTED SYSTEMS",
+            title: "Distributed Rate Limiter Visualizer",
+            subtitle: "Inside the algorithms that guard every API on earth: Token Bucket vs Leaky Bucket vs Fixed Window vs Sliding Window — and why naive Redis counters leak past their quota.",
+            backLink: "← // return to lab directory",
+            livePlaygroundTitle: "LIVE TRAFFIC & CONCURRENCY PLAYGROUND",
+            resetBtn: "Reset Simulation",
+            engineLabel: "Algorithm:",
+            algoTokenBucket: "Token Bucket",
+            algoLeakyBucket: "Leaky Bucket",
+            algoFixedWindow: "Fixed Window",
+            algoSlidingWindow: "Sliding Window",
+            paramsTitle: "Parameters",
+            capacityLabel: "Capacity / Quota",
+            refillLeakLabel: "Refill / Leak Rate",
+            windowMsLabel: "Window Duration",
+            sentCountLabel: "Requests in flight",
+            trafficTitle: "Traffic Generator",
+            sendOneBtn: "⚡ Send 1 Request",
+            burstBtn: "💥 Burst Attack",
+            burstSuffix: "rd simult.",
+            streamLabel: "Continuous Stream",
+            streamOff: "OFF",
+            streamOn: "ON",
+            streamPerSecSuffix: " req/s",
+            bucketTitle: "Limiter State",
+            tokensFillLabel: "Tokens available",
+            queueFillLabel: "Queue volume",
+            windowFillLabel: "Window usage",
+            headersTitle: "Live HTTP Response (IETF draft-ietf-httpapi-ratelimit-headers)",
+            headerLimit: "RateLimit-Limit",
+            headerRemaining: "RateLimit-Remaining",
+            headerReset: "RateLimit-Reset",
+            headerRetryAfter: "Retry-After (only when blocked)",
+            statsTitle: "Session Statistics",
+            statAllowed: "Passed (200 OK)",
+            statBlocked: "Throttled (429)",
+            statPassRate: "Pass rate",
+            logTitle: "Request Log",
+            raceTitle: "Redis Race Condition Simulator",
+            raceSubtitle: "Why naive GET→SET counters leak past quota when workers tick in parallel",
+            raceWorkersLabel: "Concurrent workers",
+            raceLatencyLabel: "Demo latency (network + processing)",
+            raceQuotaLabel: "Quota limit",
+            raceNaiveBtn: "Naive GET → SET",
+            raceAtomicBtn: "Atomic Lua (EVAL)",
+            raceNaiveModeName: "Naive read-modify-write",
+            raceAtomicModeName: "Atomic server-side script",
+            racePassedLabel: "Passed",
+            raceDroppedLabel: "Dropped",
+            raceLeakedLabel: "Race Leak",
+            raceVerdictSafe: "✅ Zero leakage — atomic EVAL guarantees exactly {n} admissions",
+            raceVerdictLeak: "🚨 {leak} request(s) leaked past the {limit}-request quota — classic lost-update race",
+            raceWorkerLabel: "Worker",
+            raceReadLabel: "read@",
+            raceSawLabel: "saw",
+            raceWriteLabel: "write@",
+            raceResultAllowed: "PASS",
+            raceResultRejected: "REJECT",
+            raceTimelineTitle: "Timeline (ms) — click a row to inspect",
+            section1Title: "1. Why Rate Limiting Exists (Beyond “Being Nice”)",
+            section1P1: "Every API endpoint has finite CPU, memory, and downstream dependencies (databases, payment gateways, third-party APIs). Without a limiter, one misbehaving client — or one buggy deploy retry loop — can starve every other tenant. A limiter converts unbounded incoming traffic into a bounded, predictable contract.",
+            section1P2: "But not all limiters behave the same. Choosing an algorithm is choosing a trade-off between burst tolerance, memory footprint, and boundary correctness:",
+            section1Algo1Title: "Token Bucket — burst-friendly, most common default",
+            section1Algo1Desc: "A bucket holds up to N tokens and refills at a constant rate. Each request consumes one token. If tokens remain, bursts of up to N requests fly through instantly; sustained traffic is then paced at the refill rate. Used by Stripe, NGINX, AWS API Gateway (in spirit).",
+            section1Algo2Title: "Leaky Bucket — smooths traffic into a constant stream",
+            section1Algo2Desc: "Requests enter a FIFO queue that drains at a fixed rate; overflow requests are dropped. Instead of permitting bursts, it shapes traffic into a steady flow — ideal for protecting brittle downstream systems that choke on spikes.",
+            section1Algo3Title: "Fixed Window Counter — cheap but boundary-vulnerable",
+            section1Algo3Desc: "A simple counter resets at fixed intervals (e.g. every minute). Trivially cheap to implement in Redis (INCR + EXPIRE), but vulnerable to a 2× boundary burst: a client can fire a full quota at 00:59.999 and another full quota at 01:00.001.",
+            section1Algo4Title: "Sliding Window Log — exact but memory-hungry",
+            section1Algo4Desc: "Stores a timestamp for every request and evicts entries older than the window. Boundary-perfect with zero 2× spikes, but O(N) memory per client makes it expensive at scale — mitigated in production by approximations like Sliding Window Counter.",
+            section2Title: "2. The Distributed Cache Problem: Why Naive Redis Counters Leak",
+            section2P1: "In a real distributed deployment, thousands of servers share one Redis-backed counter. The naive pattern — READ value, CHECK quota, WRITE value+1 — is not atomic: between the READ of worker A and its WRITE, other workers also READ the same stale value and all reach the same “quota still available” conclusion.",
+            section2P2: "This is the classic lost-update race condition. Consider a quota of 10 and 25 concurrent workers: several workers read count = 9 simultaneously, all see “slot available,” all increment, and 14 requests sail past a 10-request quota. Real incidents of this shape cause silent quota bypass, billing discrepancies, and downstream overload.",
+            section2P3: "Fixes in production, from most common to most niche: Redis Lua scripts (EVAL) that execute read-check-write atomically on the server, the INCR-then-compare pattern (atomic increment first, reject when the incremented value exceeds the limit), and distributed locking (SETNX / Redlock) which trades throughput for strict ordering.",
+            section3Title: "3. Production Implementation Patterns (Redis)",
+            section3P1: "The canonical atomic fixed-window limiter is a single Lua script or MULTI/EXEC pipeline: INCR the key, and when the result is 1 (first hit in this window) set the expiry. Incrementing first means every worker gets a unique ordinal — no two workers can ever see the same value twice — making quota enforcement race-free by construction.",
+            section3P2: "For sliding-window semantics at scale, production systems use Redis Sorted Sets (ZADD member = unique request id, score = timestamp). Each hit adds one entry and evicts old ones via ZREMRANGEBYSCORE, then checks ZCARD against the quota inside the same atomic script.",
+            section3LuaTitle: "🛡️ Battle-Tested Patterns:",
+            section3LuaPoint1: "INCR-first (fixed window): The incremented ordinal itself is the admission ticket. Atomic in a single INCR call — no Lua required for basic windows.",
+            section3LuaPoint2: "Sorted Set + ZREMRANGEBYSCORE (sliding window): Exact sliding behavior with O(log N) insertion and O(log N) eviction, wrapped in one EVAL for atomicity.",
+            section4Title: "4. The Standard HTTP Contract: IETF RateLimit Headers",
+            section4P1: "Rate limiting is part of your API's public interface. The IETF draft-ietf-httpapi-ratelimit-headers standard defines response headers so well-behaved clients can back off automatically instead of hammering a 429 wall:",
+            section4Header1: "RateLimit-Limit — the total quota per window. Your client's ceiling.",
+            section4Header2: "RateLimit-Remaining — tokens/room left right now. Hit 0 and the next request fails.",
+            section4Header3: "RateLimit-Reset — seconds until the quota fully recovers. The number autoscalers watch.",
+            section4Header4: "Retry-After — mandatory once a request is rejected with 429. Tells the client exactly when to retry.",
+            section5Title: "5. Key Takeaways from this Lab",
+            takeaway1Title: "No limiter survives a race condition",
+            takeaway1Desc: "A perfect in-memory algorithm still fails when distributed without atomicity. Correctness lives at the read-check-write boundary — enforce it with INCR-first, Lua EVAL, or locks.",
+            takeaway2Title: "Algorithm choice is a contract with your clients",
+            takeaway2Desc: "Token Bucket forgives bursts; Leaky Bucket forgives nothing; Sliding Window tells the truth. Pick the one matching what your downstream can actually absorb, then publish it via RateLimit headers.",
+            footerPrevLab: "← Lab #02: Protobuf Wire Inspector",
+            footerNextHint: "Next Lab: OAuth2 PKCE Flow (Sprint 4) →",
+        },
     },
     id: {
         nav: {
@@ -455,6 +653,101 @@ export const translations: Record<Language, TranslationDict> = {
             footerBackBtn: "← Kembali ke Direktori Lab",
             footerPrevLab: "← Lab #01: Inspektor JWT",
             footerNextHint: "Lab Berikutnya: Distributed Rate Limiter (Sprint 3) →",
+        },
+        rateLimiterLab: {
+            eyebrow: "// LAB #03 • SISTEM TERDISTRIBUSI",
+            title: "Visualizer Distributed Rate Limiter",
+            subtitle: "Di balik algoritma yang menjaga setiap API di dunia: Token Bucket vs Leaky Bucket vs Fixed Window vs Sliding Window — dan mengapa counter naif di Redis bocor melewati kuotanya.",
+            backLink: "← // kembali ke direktori lab",
+            livePlaygroundTitle: "PLAYGROUND TRAFIK & KONKURENSI LIVE",
+            resetBtn: "Reset Simulasi",
+            engineLabel: "Algoritma:",
+            algoTokenBucket: "Token Bucket",
+            algoLeakyBucket: "Leaky Bucket",
+            algoFixedWindow: "Fixed Window",
+            algoSlidingWindow: "Sliding Window",
+            paramsTitle: "Parameter",
+            capacityLabel: "Kapasitas / Kuota",
+            refillLeakLabel: "Laju Refill / Leak",
+            windowMsLabel: "Durasi Window",
+            sentCountLabel: "Request dalam antrean",
+            trafficTitle: "Generator Trafik",
+            sendOneBtn: "⚡ Kirim 1 Request",
+            burstBtn: "💥 Burst Attack",
+            burstSuffix: " rd simult.",
+            streamLabel: "Stream Kontinu",
+            streamOff: "MATI",
+            streamOn: "HIDUP",
+            streamPerSecSuffix: " req/dt",
+            bucketTitle: "Status Limiter",
+            tokensFillLabel: "Token tersedia",
+            queueFillLabel: "Volume antrean",
+            windowFillLabel: "Pemakaian window",
+            headersTitle: "Respons HTTP Live (IETF draft-ietf-httpapi-ratelimit-headers)",
+            headerLimit: "RateLimit-Limit",
+            headerRemaining: "RateLimit-Remaining",
+            headerReset: "RateLimit-Reset",
+            headerRetryAfter: "Retry-After (hanya saat diblokir)",
+            statsTitle: "Statistik Sesi",
+            statAllowed: "Lolos (200 OK)",
+            statBlocked: "Dithrottle (429)",
+            statPassRate: "Rasio lolos",
+            logTitle: "Log Request",
+            raceTitle: "Simulator Race Condition Redis",
+            raceSubtitle: "Mengapa counter naif GET→SET bocor melewati kuota saat worker berjalan paralel",
+            raceWorkersLabel: "Worker paralel",
+            raceLatencyLabel: "Latensi demo (jaringan + processing)",
+            raceQuotaLabel: "Batas kuota",
+            raceNaiveBtn: "Naif GET → SET",
+            raceAtomicBtn: "Atomik Lua (EVAL)",
+            raceNaiveModeName: "Read-modify-write naif",
+            raceAtomicModeName: "Skrip atomik di sisi server",
+            racePassedLabel: "Lolos",
+            raceDroppedLabel: "Ditolak",
+            raceLeakedLabel: "Kebocoran Race",
+            raceVerdictSafe: "✅ Nol kebocoran — EVAL atomik menjamin tepat {n} admisi",
+            raceVerdictLeak: "🚨 {leak} request bocor melewati kuota {limit} request — lost-update race klasik",
+            raceWorkerLabel: "Worker",
+            raceReadLabel: "baca@",
+            raceSawLabel: "lihat",
+            raceWriteLabel: "tulis@",
+            raceResultAllowed: "LOLOS",
+            raceResultRejected: "TOLAK",
+            raceTimelineTitle: "Timeline (ms) — klik baris untuk inspeksi",
+            section1Title: "1. Mengapa Rate Limiting Itu Ada (Lebih dari “Sopan Santai”)",
+            section1P1: "Setiap endpoint API punya CPU, memori, dan dependensi downstream yang terbatas (database, payment gateway, API pihak ketiga). Tanpa limiter, satu klien nakal — atau satu loop retry deploy yang bug — bisa memstarvasi semua tenant lain. Limiter mengubah trafik masuk yang tak terbatas menjadi kontrak yang terikat dan terprediksi.",
+            section1P2: "Namun tidak semua limiter berperilaku sama. Memilih algoritma berarti memilih trade-off antara toleransi burst, jejak memori, dan kebenaran batas window:",
+            section1Algo1Title: "Token Bucket — ramah burst, default paling umum",
+            section1Algo1Desc: "Ember menyimpan hingga N token dan terisi ulang dengan laju konstan. Setiap request mengonsumsi satu token. Jika token tersedia, burst hingga N request langsung lolos; trafik berkelanjutan kemudian dipace di laju refill. Dipakai oleh Stripe, NGINX, AWS API Gateway (secara prinsip).",
+            section1Algo2Title: "Leaky Bucket — menghaluskan trafik menjadi aliran konstan",
+            section1Algo2Desc: "Request masuk ke antrean FIFO yang dibuang dengan laju tetap; request yang meluap di-drop. Alih-alih mengizinkan burst, ia membentuk trafik menjadi aliran stabil — ideal untuk melindungi sistem downstream yang rapuh terhadap lonjakan.",
+            section1Algo3Title: "Fixed Window Counter — murah tapi rentan di batas window",
+            section1Algo3Desc: "Counter sederhana yang di-reset pada interval tetap (misal tiap menit). Sangat murah diimplementasikan di Redis (INCR + EXPIRE), tetapi rentan burst 2× di batas: klien bisa menembak kuota penuh di 00:59.999 dan kuota penuh lagi di 01:00.001.",
+            section1Algo4Title: "Sliding Window Log — akurat tapi rakus memori",
+            section1Algo4Desc: "Menyimpan timestamp setiap request dan menghapus entri yang lebih tua dari window. Sempurna di batas window tanpa lonjakan 2×, tetapi memori O(N) per klien membuatnya mahal di skala besar — dimitigasi di produksi dengan aproksimasi seperti Sliding Window Counter.",
+            section2Title: "2. Masalah Cache Terdistribusi: Mengapa Counter Redis Naif Bocor",
+            section2P1: "Pada deployment terdistribusi nyata, ribuan server berbagi satu counter di Redis. Pola naif — BACA nilai, CEK kuota, TULIS nilai+1 — tidak atomik: di antara BACA worker A dan TULIS-nya, worker lain juga membaca nilai basi yang sama dan semua sampai pada kesimpulan “kuota masih tersedia”.",
+            section2P2: "Inilah race condition lost-update klasik. Ambil kuota 10 dengan 25 worker paralel: beberapa worker membaca count = 9 secara bersamaan, semua melihat “slot tersedia,” semua menambah, dan 14 request lewat begitu saja melewati kuota 10 request. Insiden nyata berpola seperti ini menyebabkan bypass kuota senyap, diskrepansi penagihan, dan overload di hilir.",
+            section2P3: "Solusi di produksi, dari yang paling umum hingga paling niche: skrip Lua Redis (EVAL) yang mengeksekusi baca-cek-tulis secara atomik di server, pola INCR-lalu-bandingkan (increment atomik dulu, tolak saat nilai hasil increment melebihi limit), dan distributed locking (SETNX / Redlock) yang menukar throughput demi urutan yang ketat.",
+            section3Title: "3. Pola Implementasi di Produksi (Redis)",
+            section3P1: "Limiter fixed-window atomik yang kanonik adalah skrip Lua tunggal atau pipeline MULTI/EXEC: INCR kunci tersebut, dan saat hasilnya 1 (hit pertama di window ini) pasang expiry. Increment di awal berarti setiap worker mendapat nomor unik — tidak ada dua worker yang pernah melihat nilai yang sama dua kali — sehingga penegakan kuota bebas race secara konstruksi.",
+            section3P2: "Untuk semantik sliding-window di skala besar, sistem produksi memakai Redis Sorted Sets (ZADD member = id request unik, score = timestamp). Setiap hit menambah satu entri dan menghapus entri lama via ZREMRANGEBYSCORE, lalu memeriksa ZCARD terhadap kuota di dalam skrip atomik yang sama.",
+            section3LuaTitle: "🛡️ Pola Teruji Produksi:",
+            section3LuaPoint1: "INCR-dulu (fixed window): Nomor hasil increment sendiri adalah tiket admisi. Atomik dalam satu panggilan INCR — tanpa butuh Lua untuk window dasar.",
+            section3LuaPoint2: "Sorted Set + ZREMRANGEBYSCORE (sliding window): Perilaku sliding yang eksak dengan penyisipan O(log N) dan eviksi O(log N), dibungkus satu EVAL untuk atomisitas.",
+            section4Title: "4. Kontrak HTTP Standar: Header IETF RateLimit",
+            section4P1: "Rate limiting adalah bagian dari antarmuka publik API Anda. Standar IETF draft-ietf-httpapi-ratelimit-headers mendefinisikan header respons agar klien yang baik dapat backoff otomatis alih-alih menghantam dinding 429:",
+            section4Header1: "RateLimit-Limit — total kuota per window. Plafon klien Anda.",
+            section4Header2: "RateLimit-Remaining — token/ruang tersisa saat ini. Jika 0, request berikutnya gagal.",
+            section4Header3: "RateLimit-Reset — detik hingga kuota pulih penuh. Angka yang dipantau autoscaler.",
+            section4Header4: "Retry-After — wajib saat request ditolak dengan 429. Memberi tahu klien tepat kapan harus mencoba lagi.",
+            section5Title: "5. Kesimpulan Penting dari Lab Ini",
+            takeaway1Title: "Tidak ada limiter yang selamat dari race condition",
+            takeaway1Desc: "Algoritma in-memory yang sempurna tetap gagal saat didistribusikan di Redis tanpa atomisitas. Kebenaran hidup di batas baca-cek-tulis — tegakkan dengan INCR-dulu, Lua EVAL, atau lock.",
+            takeaway2Title: "Pilihan algoritma adalah kontrak dengan klien Anda",
+            takeaway2Desc: "Token Bucket memaafkan burst; Leaky Bucket tidak memaafkan apa pun; Sliding Window berkata benar. Pilih yang sesuai dengan apa yang benar-benar bisa diserap downstream Anda, lalu publikasikan via header RateLimit.",
+            footerPrevLab: "← Lab #02: Inspektor Wire Protobuf",
+            footerNextHint: "Lab Berikutnya: Alur OAuth2 PKCE (Sprint 4) →",
         },
     },
 };

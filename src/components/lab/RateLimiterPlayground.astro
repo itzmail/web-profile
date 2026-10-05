@@ -1,0 +1,885 @@
+---
+// RateLimiterPlayground.astro — Traffic simulation, 4 algorithms, Redis race simulator
+---
+
+<div class="rl-lab" id="rlLab">
+    <!-- Top control bar -->
+    <div class="lab-status-bar font-mono">
+        <div class="engine-picker">
+            <span class="picker-label" data-i18n="rateLimiterLab.engineLabel">Algorithm:</span>
+            <div class="algo-btn-group">
+                <button type="button" class="algo-btn active" data-algo="tokenBucket" data-i18n="rateLimiterLab.algoTokenBucket">Token Bucket</button>
+                <button type="button" class="algo-btn" data-algo="leakyBucket" data-i18n="rateLimiterLab.algoLeakyBucket">Leaky Bucket</button>
+                <button type="button" class="algo-btn" data-algo="fixedWindow" data-i18n="rateLimiterLab.algoFixedWindow">Fixed Window</button>
+                <button type="button" class="algo-btn" data-algo="slidingWindow" data-i18n="rateLimiterLab.algoSlidingWindow">Sliding Window</button>
+            </div>
+        </div>
+        <div class="lab-actions">
+            <button class="lab-btn font-mono" id="rlResetBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span data-i18n="rateLimiterLab.resetBtn">Reset Simulation</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="rl-main-grid">
+        <!-- LEFT: Params + Bucket Animation -->
+        <div class="rl-col">
+            <!-- Parameters -->
+            <div class="rl-panel">
+                <div class="panel-header font-mono">
+                    <span class="panel-title" data-i18n="rateLimiterLab.paramsTitle">Parameters</span>
+                </div>
+                <div class="params-grid font-mono">
+                    <div class="param-item">
+                        <label class="param-label" for="paramCapacity"><span data-i18n="rateLimiterLab.capacityLabel">Capacity / Quota</span></label>
+                        <input type="number" id="paramCapacity" class="tbl-input" min="1" max="50" value="10" />
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="paramRefill"><span data-i18n="rateLimiterLab.refillLeakLabel">Refill / Leak Rate</span></label>
+                        <input type="number" id="paramRefill" class="tbl-input" min="1" max="50" value="5" />
+                        <span class="param-unit">req/s</span>
+                    </div>
+                    <div class="param-item">
+                        <label class="param-label" for="paramWindow"><span data-i18n="rateLimiterLab.windowMsLabel">Window Duration</span></label>
+                        <input type="number" id="paramWindow" class="tbl-input" min="500" max="10000" step="500" value="2000" />
+                        <span class="param-unit">ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bucket Animation -->
+            <div class="rl-panel">
+                <div class="panel-header font-mono">
+                    <span class="panel-title" data-i18n="rateLimiterLab.bucketTitle">Limiter State</span>
+                    <span class="panel-hint" id="rlFillHint"></span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="rlCanvas" width="720" height="300"></canvas>
+                    <div class="fill-legend font-mono">
+                        <span class="legend-item green"><span class="swatch swatch-green"></span><span id="rlFillLabel" data-i18n="rateLimiterLab.tokensFillLabel">Tokens available</span></span>
+                        <span class="legend-item red"><span class="swatch swatch-red"></span><span id="rlDroppedLabel" data-i18n="rateLimiterLab.statBlocked">Throttled (429)</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Traffic + Headers + Stats + Log -->
+        <div class="rl-col">
+            <!-- Traffic Generator -->
+            <div class="rl-panel">
+                <div class="panel-header font-mono">
+                    <span class="panel-title" data-i18n="rateLimiterLab.trafficTitle">Traffic Generator</span>
+                </div>
+                <div class="traffic-controls font-mono">
+                    <button type="button" class="traffic-btn btn-send" id="rlSendBtn" data-i18n="rateLimiterLab.sendOneBtn">⚡ Send 1 Request</button>
+                    <button type="button" class="traffic-btn btn-burst" id="rlBurstBtn"><span data-i18n="rateLimiterLab.burstBtn">💥 Burst Attack</span></button>
+                    <div class="stream-row">
+                        <label class="stream-label" for="streamRate"><span data-i18n="rateLimiterLab.streamLabel">Continuous Stream</span></label>
+                        <input type="range" id="streamRate" class="scale-slider" min="0" max="40" step="2" value="0" />
+                        <span class="stream-value" id="streamRateLabel">OFF</span>
+                        <button type="button" class="traffic-btn btn-stream" id="rlStreamToggle" data-i18n="rateLimiterLab.streamOff">OFF</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HTTP Headers -->
+            <div class="rl-panel">
+                <div class="panel-header font-mono">
+                    <span class="panel-title" data-i18n="rateLimiterLab.headersTitle">Live HTTP Response</span>
+                </div>
+                <div class="headers-box font-mono" id="rlHeaders">
+                    <div class="header-line status-line ok" id="rlHttpStatus">HTTP/1.1 200 OK</div>
+                    <div class="header-line"><span class="hk">RateLimit-Limit:</span> <span class="hv" id="rlHeaderLimit">10</span></div>
+                    <div class="header-line"><span class="hk">RateLimit-Remaining:</span> <span class="hv" id="rlHeaderRemaining">9</span></div>
+                    <div class="header-line"><span class="hk">RateLimit-Reset:</span> <span class="hv" id="rlHeaderReset">0.0</span></div>
+                    <div class="header-line dim"><span class="hk">Retry-After:</span> <span class="hv" id="rlHeaderRetry">—</span></div>
+                </div>
+            </div>
+
+            <!-- Stats HUD -->
+            <div class="rl-panel">
+                <div class="panel-header font-mono">
+                    <span class="panel-title" data-i18n="rateLimiterLab.statsTitle">Session Statistics</span>
+                </div>
+                <div class="stats-row font-mono">
+                    <div class="stat-box green">
+                        <span class="stat-val" id="rlStatAllowed">0</span>
+                        <span class="stat-label" data-i18n="rateLimiterLab.statAllowed">Passed (200 OK)</span>
+                    </div>
+                    <div class="stat-box red">
+                        <span class="stat-val" id="rlStatBlocked">0</span>
+                        <span class="stat-label" data-i18n="rateLimiterLab.statBlocked">Throttled (429)</span>
+                    </div>
+                    <div class="stat-box cyan">
+                        <span class="stat-val" id="rlStatPassRate">100%</span>
+                        <span class="stat-label" data-i18n="rateLimiterLab.statPassRate">Pass rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Log -->
+            <div class="rl-panel">
+                <div class="panel-header font-mono">
+                    <span class="panel-title" data-i18n="rateLimiterLab.logTitle">Request Log</span>
+                </div>
+                <div class="req-log font-mono" id="rlLog">
+                    <div class="log-empty font-mono" id="rlLogEmpty">// no requests yet — press ⚡ Send 1 Request</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULL-WIDTH: Redis Race Condition Simulator -->
+    <div class="rl-panel race-panel">
+        <div class="panel-header font-mono">
+            <span class="panel-title" data-i18n="rateLimiterLab.raceTitle">Redis Race Condition Simulator</span>
+            <span class="panel-hint" data-i18n="rateLimiterLab.raceSubtitle">Why naive GET→SET counters leak past quota when workers tick in parallel</span>
+        </div>
+
+        <div class="race-controls font-mono">
+            <div class="param-item">
+                <label class="param-label" for="raceWorkers"><span data-i18n="rateLimiterLab.raceWorkersLabel">Concurrent workers</span></label>
+                <input type="number" id="raceWorkers" class="tbl-input" min="5" max="60" value="25" />
+            </div>
+            <div class="param-item">
+                <label class="param-label" for="raceLatency"><span data-i18n="rateLimiterLab.raceLatencyLabel">Demo latency</span></label>
+                <input type="number" id="raceLatency" class="tbl-input" min="10" max="120" step="10" value="50" />
+                <span class="param-unit">ms</span>
+            </div>
+            <div class="param-item">
+                <label class="param-label" for="raceQuota"><span data-i18n="rateLimiterLab.raceQuotaLabel">Quota limit</span></label>
+                <input type="number" id="raceQuota" class="tbl-input" min="3" max="20" value="10" />
+            </div>
+            <div class="race-buttons">
+                <button type="button" class="traffic-btn btn-race-naive" id="raceNaiveBtn" data-i18n="rateLimiterLab.raceNaiveBtn">Naive GET → SET</button>
+                <button type="button" class="traffic-btn btn-race-atomic" id="raceAtomicBtn" data-i18n="rateLimiterLab.raceAtomicBtn">Atomic Lua (EVAL)</button>
+            </div>
+        </div>
+
+        <div class="race-results font-mono" id="raceResults" style="display:none;">
+            <div class="race-metric-row">
+                <div class="metric-card card-ok">
+                    <span class="metric-label" data-i18n="rateLimiterLab.racePassedLabel">Passed</span>
+                    <span class="metric-num" id="racePassed">0</span>
+                </div>
+                <div class="metric-card card-drop">
+                    <span class="metric-label" data-i18n="rateLimiterLab.raceDroppedLabel">Dropped</span>
+                    <span class="metric-num" id="raceDropped">0</span>
+                </div>
+                <div class="metric-card card-leak">
+                    <span class="metric-label" data-i18n="rateLimiterLab.raceLeakedLabel">Race Leak</span>
+                    <span class="metric-num" id="raceLeaked">0</span>
+                </div>
+                <div class="race-verdict" id="raceVerdict"></div>
+            </div>
+            <div class="race-timeline-title" data-i18n="rateLimiterLab.raceTimelineTitle">Timeline (ms) — click a row to inspect</div>
+            <div class="race-table" id="raceTable">
+                <!-- rows injected -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rl-lab { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* Status bar */
+    .lab-status-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 0.75rem;
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: var(--radius, 12px);
+        padding: 0.75rem 1.25rem;
+    }
+    .engine-picker { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .picker-label { color: var(--text-muted, #8b949e); font-size: 0.78rem; }
+    .algo-btn-group { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .algo-btn {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: 6px; color: var(--text-muted, #8b949e);
+        font-size: 0.75rem; padding: 0.28rem 0.65rem; cursor: pointer;
+        font-family: inherit; transition: all 0.15s ease;
+    }
+    .algo-btn:hover { color: var(--text, #fff); border-color: rgba(255,255,255,0.25); }
+    .algo-btn.active {
+        color: var(--cyan, #06b6d4); border-color: var(--cyan, #06b6d4);
+        background: rgba(6,182,212,0.1); font-weight: 600;
+    }
+    .lab-btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: 6px; color: var(--text-muted, #8b949e);
+        font-size: 0.78rem; padding: 0.35rem 0.75rem; cursor: pointer;
+        font-family: inherit; transition: all 0.2s ease;
+    }
+    .lab-btn:hover { color: var(--text, #fff); border-color: rgba(255,255,255,0.3); }
+
+    /* Main grid */
+    .rl-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media (max-width: 1024px) { .rl-main-grid { grid-template-columns: 1fr; } }
+    .rl-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .rl-panel {
+        background: var(--surface, #0d1117);
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: var(--radius, 12px);
+        padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem;
+    }
+    .panel-header {
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+        padding-bottom: 0.6rem; gap: 0.5rem;
+    }
+    .panel-title { font-size: 0.85rem; font-weight: 700; color: var(--text, #fff); }
+    .panel-hint { font-size: 0.7rem; color: var(--text-muted, #8b949e); }
+
+    /* Params */
+    .params-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+    @media (max-width: 640px) { .params-grid { grid-template-columns: 1fr; } }
+    .param-item { display: flex; flex-direction: column; gap: 0.25rem; }
+    .param-label { font-size: 0.68rem; color: var(--text-muted, #8b949e); text-transform: uppercase; letter-spacing: 0.03em; }
+    .param-unit { font-size: 0.65rem; color: var(--text-muted, #8b949e); }
+
+    /* Canvas */
+    .canvas-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+    #rlCanvas {
+        width: 100%; height: auto;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 6px;
+    }
+    .fill-legend { display: flex; gap: 1rem; font-size: 0.72rem; }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .legend-item.green { color: #4ade80; }
+    .legend-item.red { color: #f87171; }
+    .swatch { width: 10px; height: 10px; border-radius: 2px; }
+    .swatch-green { background: #4ade80; }
+    .swatch-red { background: #f87171; }
+
+    /* Traffic controls */
+    .traffic-controls { display: flex; flex-direction: column; gap: 0.6rem; }
+    .traffic-btn {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border, rgba(255,255,255,0.1));
+        border-radius: 6px; color: var(--text, #fff);
+        font-size: 0.78rem; padding: 0.45rem 0.8rem; cursor: pointer;
+        font-family: inherit; transition: all 0.15s ease; text-align: center;
+    }
+    .btn-send { border-color: rgba(74, 222, 128, 0.4); color: #4ade80; }
+    .btn-send:hover { background: rgba(74,222,128,0.12); }
+    .btn-burst { border-color: rgba(248,113,113,0.4); color: #f87171; }
+    .btn-burst:hover { background: rgba(248,113,113,0.12); }
+    .btn-burst:active, .btn-send:active { transform: scale(0.97); }
+    .stream-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .stream-label { font-size: 0.72rem; color: var(--text-muted, #8b949e); }
+    .stream-value { font-size: 0.75rem; color: var(--cyan, #06b6d4); font-weight: 700; min-width: 52px; }
+    .btn-stream { padding: 0.3rem 0.7rem; font-size: 0.72rem; }
+    .btn-stream.on { border-color: var(--cyan, #06b6d4); color: var(--cyan, #06b6d4); background: rgba(6,182,212,0.1); }
+
+    /* Headers box */
+    .headers-box {
+        background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 6px; padding: 0.7rem; font-size: 0.76rem;
+        display: flex; flex-direction: column; gap: 0.25rem;
+    }
+    .header-line { display: flex; gap: 0.5rem; }
+    .status-line { font-weight: 700; margin-bottom: 0.2rem; }
+    .status-line.ok { color: #4ade80; }
+    .status-line.blocked { color: #f87171; }
+    .hk { color: var(--text-muted, #8b949e); }
+    .hv { color: var(--text, #fff); font-weight: 600; }
+    .header-line.dim { opacity: 0.65; }
+
+    /* Stats */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+    .stat-box {
+        background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.15rem;
+    }
+    .stat-val { font-size: 1.2rem; font-weight: 800; }
+    .stat-label { font-size: 0.65rem; color: var(--text-muted, #8b949e); }
+    .stat-box.green { border-color: rgba(74,222,128,0.3); } .stat-box.green .stat-val { color: #4ade80; }
+    .stat-box.red { border-color: rgba(248,113,113,0.3); } .stat-box.red .stat-val { color: #f87171; }
+    .stat-box.cyan { border-color: rgba(6,182,212,0.3); } .stat-box.cyan .stat-val { color: var(--cyan, #06b6d4); }
+
+    /* Request log */
+    .req-log {
+        display: flex; flex-direction: column; gap: 0.2rem;
+        max-height: 180px; overflow-y: auto; font-size: 0.7rem;
+    }
+    .log-empty { color: var(--text-muted, #8b949e); font-size: 0.7rem; }
+    .req-log { scroll-behavior: smooth; }
+
+    /* Race simulator */
+    .race-panel { margin-top: 0.25rem; }
+    .race-controls {
+        display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end;
+    }
+    .race-buttons { display: flex; gap: 0.5rem; }
+    .btn-race-naive { border-color: rgba(248,113,113,0.4); color: #f87171; }
+    .btn-race-naive:hover { background: rgba(248,113,113,0.12); }
+    .btn-race-atomic { border-color: rgba(74,222,128,0.4); color: #4ade80; }
+    .btn-race-atomic:hover { background: rgba(74,222,128,0.12); }
+    .race-results { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .race-metric-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: stretch; }
+    .metric-card {
+        background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; padding: 0.6rem 1rem; display: flex; flex-direction: column; gap: 0.1rem; min-width: 90px;
+    }
+    .metric-label { font-size: 0.65rem; color: var(--text-muted, #8b949e); text-transform: uppercase; }
+    .metric-num { font-size: 1.3rem; font-weight: 800; }
+    .card-ok { border-color: rgba(74,222,128,0.3); } .card-ok .metric-num { color: #4ade80; }
+    .card-drop { border-color: rgba(96,165,250,0.3); } .card-drop .metric-num { color: #60a5fa; }
+    .card-leak { border-color: rgba(248,113,113,0.35); } .card-leak .metric-num { color: #f87171; }
+
+    .race-verdict {
+        flex: 1; min-width: 240px; display: flex; align-items: center;
+        border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.78rem; line-height: 1.4;
+    }
+    .race-verdict.safe { background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; }
+    .race-verdict.leak { background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.35); color: #f87171; }
+
+    .race-timeline-title { font-size: 0.7rem; color: var(--text-muted, #8b949e); }
+    .race-table { display: flex; flex-direction: column; gap: 0.2rem; max-height: 260px; overflow-y: auto; }
+
+    .scale-slider { flex: 1; min-width: 100px; accent-color: var(--cyan, #06b6d4); cursor: pointer; }
+</style>
+
+<style>
+    /* Dynamic DOM (injected via JS) — needs :global */
+    :global(.tbl-input) {
+        width: 100%;
+        background: rgba(0,0,0,0.45) !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        border-radius: 4px;
+        color: #ffffff !important;
+        padding: 0.35rem 0.5rem;
+        font-family: inherit;
+        font-size: 0.78rem;
+    }
+    :global(.tbl-input:focus) {
+        outline: none;
+        border-color: var(--cyan, #06b6d4) !important;
+    }
+
+    :global(.log-line) {
+        display: flex; gap: 0.5rem; padding: 0.12rem 0.3rem;
+        border-left: 2px solid rgba(255,255,255,0.12);
+        border-radius: 0 3px 3px 0;
+        white-space: nowrap;
+    }
+    :global(.log-line.allowed) { border-left-color: #4ade80; color: #4ade80; }
+    :global(.log-line.dropped) { border-left-color: #f87171; color: #f87171; }
+    :global(.log-time) { color: var(--text-muted, #8b949e); }
+
+    :global(.race-row) {
+        display: flex; gap: 0.6rem; align-items: center;
+        background: rgba(0,0,0,0.25);
+        border-left: 2px solid rgba(255,255,255,0.12);
+        border-radius: 0 4px 4px 0;
+        padding: 0.3rem 0.55rem; font-size: 0.72rem;
+    }
+    :global(.race-row.pass) { border-left-color: #4ade80; }
+    :global(.race-row.reject) { border-left-color: #f87171; opacity: 0.85; }
+    :global(.race-row .rw) { color: var(--text, #fff); font-weight: 700; min-width: 64px; }
+    :global(.race-row .rt) { color: var(--text-muted, #8b949e); }
+    :global(.race-row .rv) { color: #c084fc; font-weight: 700; }
+    :global(.race-row .rres) { margin-left: auto; font-weight: 800; }
+    :global(.race-row.pass .rres) { color: #4ade80; }
+    :global(.race-row.reject .rres) { color: #f87171; }
+</style>
+
+<script>
+    import {
+        type AlgorithmId,
+        type LimiterConfig,
+        type Decision,
+        createLimiter,
+        simulateRace,
+        type RaceResult,
+        type RaceEvent
+    } from "../../utils/rateLimiter";
+    import { translations, type Language } from "../../i18n/translations";
+
+    const currentLang: Language =
+        (typeof localStorage !== "undefined" && (localStorage.getItem("itsmail_lang") as Language)) || "en";
+    const t = translations[currentLang].rateLimiterLab;
+
+    const SIM_SPEED = 3; // 1 real second = 3 sim seconds
+
+    // --- State ---
+    let algo: AlgorithmId = "tokenBucket";
+    let limiter: ReturnType<typeof createLimiter> | null = null;
+    let simTimeMs = 0;
+    let statAllowed = 0;
+    let statBlocked = 0;
+    let streamOn = false;
+    let streamAccumulator = 0;
+    let lastDecision: Decision | null = null;
+    let rafId = 0;
+    let lastFrameTime = 0;
+    let particles: { x: number; y: number; vy: number; dropped: boolean }[] = [];
+
+    // --- DOM ---
+    const canvas = document.getElementById("rlCanvas") as HTMLCanvasElement | null;
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    const fillHint = document.getElementById("rlFillHint");
+    const fillLabel = document.getElementById("rlFillLabel");
+    const headersBox = document.getElementById("rlHeaders");
+    const headerLimit = document.getElementById("rlHeaderLimit");
+    const headerRemaining = document.getElementById("rlHeaderRemaining");
+    const headerReset = document.getElementById("rlHeaderReset");
+    const headerRetry = document.getElementById("rlHeaderRetry");
+    const statAllowedEl = document.getElementById("rlStatAllowed");
+    const statBlockedEl = document.getElementById("rlStatBlocked");
+    const statPassRateEl = document.getElementById("rlStatPassRate");
+    const logEl = document.getElementById("rlLog");
+    const logEmpty = document.getElementById("rlLogEmpty");
+    const streamRateInput = document.getElementById("streamRate") as HTMLInputElement | null;
+    const streamRateLabel = document.getElementById("streamRateLabel");
+    const streamToggleBtn = document.getElementById("rlStreamToggle");
+
+    // --- Limiter lifecycle ---
+    function currentConfig(): LimiterConfig {
+        const capacity = Number((document.getElementById("paramCapacity") as HTMLInputElement)?.value) || 10;
+        const refill = Number((document.getElementById("paramRefill") as HTMLInputElement)?.value) || 5;
+        const windowMs = Number((document.getElementById("paramWindow") as HTMLInputElement)?.value) || 2000;
+        return { limit: capacity, windowMs, refillRatePerSec: refill };
+    }
+
+    function rebuildLimiter() {
+        limiter = createLimiter(algo, currentConfig());
+        simTimeMs = 0;
+        statAllowed = 0;
+        statBlocked = 0;
+        lastDecision = null;
+        particles = [];
+        streamAccumulator = 0;
+        updateFillLabel();
+        if (logEl && logEmpty) {
+            logEl.innerHTML = "";
+            logEl.appendChild(logEmpty);
+            logEmpty.style.display = "";
+        }
+        updateStatsUI();
+        updateHeadersUI();
+    }
+
+    function updateFillLabel() {
+        if (!fillLabel) return;
+        const key =
+            algo === "tokenBucket" ? "tokensFillLabel" :
+            algo === "leakyBucket" ? "queueFillLabel" : "windowFillLabel";
+        fillLabel.textContent = translations[currentLang].rateLimiterLab[key];
+    }
+
+    // --- Requests ---
+    function emitRequest(count = 1) {
+        if (!limiter) return;
+        for (let i = 0; i < count; i++) {
+            const decision = limiter.tryTake();
+            lastDecision = decision;
+            if (decision.allowed) statAllowed++;
+            else statBlocked++;
+            if (!decision.allowed && (algo === "tokenBucket" || algo === "leakyBucket")) {
+                spawnDroppedParticle();
+            }
+            appendLogEntry(decision);
+        }
+        updateStatsUI();
+        updateHeadersUI();
+    }
+
+    function appendLogEntry(decision: Decision) {
+        if (!logEl || !logEmpty) return;
+        logEmpty.style.display = "none";
+        const line = document.createElement("div");
+        line.className = `log-line ${decision.allowed ? "allowed" : "dropped"}`;
+        const tSec = (simTimeMs / 1000).toFixed(2);
+        line.innerHTML = `<span class="log-time">t+${tSec}s</span> ${decision.allowed ? "200 OK → passed" : "429 → throttled (Retry-After " + decision.retryAfterSec.toFixed(2) + "s)"}`;
+        logEl.insertBefore(line, logEl.firstChild);
+        while (logEl.children.length > 40) {
+            logEl.removeChild(logEl.lastChild as ChildNode);
+        }
+    }
+
+    function updateStatsUI() {
+        if (statAllowedEl) statAllowedEl.textContent = String(statAllowed);
+        if (statBlockedEl) statBlockedEl.textContent = String(statBlocked);
+        const total = statAllowed + statBlocked;
+        if (statPassRateEl) {
+            statPassRateEl.textContent = total === 0 ? "—" : `${Math.round((statAllowed / total) * 100)}%`;
+        }
+    }
+
+    function updateHeadersUI() {
+        if (!limiter) return;
+        const cfg = currentConfig();
+        const d = lastDecision;
+        if (headerLimit) headerLimit.textContent = String(cfg.limit);
+        if (d) {
+            if (headerRemaining) headerRemaining.textContent = String(d.remaining);
+            if (headerReset) headerReset.textContent = d.resetRemainingSec.toFixed(1);
+            if (headerRetry) headerRetry.textContent = d.allowed ? "—" : `${d.retryAfterSec.toFixed(2)}s`;
+            if (headersBox) {
+                const statusEl = document.getElementById("rlHttpStatus");
+                if (statusEl) {
+                    statusEl.textContent = d.allowed ? "HTTP/1.1 200 OK" : "HTTP/1.1 429 Too Many Requests";
+                    statusEl.className = `header-line status-line ${d.allowed ? "ok" : "blocked"}`;
+                }
+            }
+        }
+    }
+
+    function spawnDroppedParticle() {
+        if (!canvas) return;
+        particles.push({ x: canvas.width * (0.18 + Math.random() * 0.06), y: canvas.height * 0.55, vy: 1.5 + Math.random(), dropped: true });
+    }
+
+    // --- Simulation loop ---
+    function tick(now: number) {
+        rafId = requestAnimationFrame(tick);
+        if (!limiter) return;
+        if (lastFrameTime === 0) lastFrameTime = now;
+        const realDt = Math.min(50, now - lastFrameTime);
+        lastFrameTime = now;
+        const simDt = realDt * SIM_SPEED;
+        simTimeMs += simDt;
+        limiter.advance(simDt);
+
+        // Continuous stream
+        if (streamOn && streamRateInput) {
+            const rate = Number(streamRateInput.value) || 0;
+            streamAccumulator += (rate * simDt) / 1000;
+            while (streamAccumulator >= 1) {
+                streamAccumulator -= 1;
+                emitRequest(1);
+            }
+        }
+
+        renderCanvas();
+        if (fillHint) {
+            fillHint.textContent = `t+${(simTimeMs / 1000).toFixed(1)}s`;
+        }
+    }
+
+    // --- Canvas rendering ---
+    function renderCanvas() {
+        if (!ctx || !canvas || !limiter) return;
+        const W = canvas.width;
+        const H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const level = Math.max(0, Math.min(1, limiter.fillLevel()));
+
+        // Particles update
+        particles.forEach(p => { p.y += p.vy; });
+        particles = particles.filter(p => p.y < H - 10);
+
+        if (algo === "tokenBucket" || algo === "leakyBucket") {
+            drawBucket(ctx, W, H, level);
+        } else {
+            drawWindowTimeline(ctx, W, H, level);
+        }
+    }
+
+    function drawBucket(c: CanvasRenderingContext2D, W: number, H: number, level: number) {
+        const bucketW = W * 0.34;
+        const bucketH = H * 0.62;
+        const bx = W * 0.18;
+        const by = H * 0.28;
+
+        // Bucket outline (trapezoid)
+        c.beginPath();
+        c.moveTo(bx, by);
+        c.lineTo(bx + bucketW, by);
+        c.lineTo(bx + bucketW * 0.92, by + bucketH);
+        c.lineTo(bx + bucketW * 0.08, by + bucketH);
+        c.closePath();
+        c.strokeStyle = "rgba(255,255,255,0.35)";
+        c.lineWidth = 2;
+        c.stroke();
+
+        // Fill (clip to bucket path)
+        c.save();
+        c.clip();
+        const fillH = bucketH * level;
+        const grad = c.createLinearGradient(0, by + bucketH - fillH, 0, by + bucketH);
+        if (algo === "tokenBucket") {
+            grad.addColorStop(0, "rgba(74,222,128,0.85)");
+            grad.addColorStop(1, "rgba(34,197,94,0.55)");
+        } else {
+            grad.addColorStop(0, "rgba(96,165,250,0.85)");
+            grad.addColorStop(1, "rgba(59,130,246,0.55)");
+        }
+        c.fillStyle = grad;
+        c.fillRect(bx - 2, by + bucketH - fillH, bucketW + 4, fillH + 2);
+        c.restore();
+
+        // Capacity label
+        const cfg = currentConfig();
+        c.fillStyle = "rgba(139,148,158,0.9)";
+        c.font = "12px 'JetBrains Mono', monospace";
+        c.textAlign = "center";
+        c.fillText(algo === "tokenBucket" ? "TOKENS" : "QUEUE", bx + bucketW / 2, by - 10);
+        c.fillStyle = "#4ade80";
+        c.font = "bold 13px 'JetBrains Mono', monospace";
+        c.fillText(
+            algo === "tokenBucket"
+                ? `${Math.floor((limiter as { tokens: number }).tokens)} / ${cfg.limit}`
+                : `${Math.floor((limiter as { queue: number }).queue)} / ${cfg.limit}`,
+            bx + bucketW / 2, by + bucketH + 20
+        );
+
+        // Refill arrow
+        c.strokeStyle = "rgba(74,222,128,0.8)";
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(bx + bucketW / 2, H * 0.06);
+        c.lineTo(bx + bucketW / 2, by - 4);
+        c.stroke();
+        c.beginPath();
+        c.moveTo(bx + bucketW / 2 - 5, by - 12);
+        c.lineTo(bx + bucketW / 2, by - 4);
+        c.lineTo(bx + bucketW / 2 + 5, by - 12);
+        c.stroke();
+        c.fillStyle = "rgba(74,222,128,0.8)";
+        c.font = "11px 'JetBrains Mono', monospace";
+        c.fillText(`${algo === "tokenBucket" ? "refill" : "in"} ${cfg.refillRatePerSec}/s`, bx + bucketW / 2, H * 0.04);
+
+        // Leak arrow (leaky bucket)
+        if (algo === "leakyBucket") {
+            c.strokeStyle = "rgba(96,165,250,0.8)";
+            c.beginPath();
+            c.moveTo(bx + bucketW / 2, by + bucketH + 2);
+            c.lineTo(bx + bucketW / 2, by + bucketH + 26);
+            c.stroke();
+            c.fillStyle = "rgba(96,165,250,0.9)";
+            c.fillText(`leak ${cfg.refillRatePerSec}/s (out)`, bx + bucketW / 2, by + bucketH + 40);
+        }
+
+        // Incoming request arrows
+        c.fillStyle = "rgba(255,255,255,0.75)";
+        c.font = "11px 'JetBrains Mono', monospace";
+        c.textAlign = "left";
+        c.fillText("requests →", W * 0.62, H * 0.2);
+
+        // Dropped particles
+        c.fillStyle = "#f87171";
+        particles.forEach(p => {
+            c.beginPath();
+            c.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            c.fill();
+        });
+        if (particles.length > 0) {
+            c.fillStyle = "#f87171";
+            c.font = "bold 12px 'JetBrains Mono', monospace";
+            c.textAlign = "left";
+            c.fillText("429 OVERFLOW", W * 0.6, H * 0.75);
+        }
+    }
+
+    function drawWindowTimeline(c: CanvasRenderingContext2D, W: number, H: number, level: number) {
+        const cfg = currentConfig();
+        const lim = limiter as { count?: number; timestamps?: number[]; windowStartMs?: number; nowMs?: number; windowMs: number; limit: number };
+        const isSliding = algo === "slidingWindow";
+        const used = isSliding ? (lim.timestamps?.length ?? 0) : (lim.count ?? 0);
+
+        // Two adjacent windows (the boundary trap!)
+        const winW = W * 0.34;
+        const winH = H * 0.45;
+        const y = H * 0.22;
+        const boundaryX = W * 0.5;
+
+        c.font = "12px 'JetBrains Mono', monospace";
+        c.textAlign = "center";
+
+        // Window 1 (previous / current)
+        drawWindowBox(c, boundaryX - winW - 20, y, winW, winH, isSliding ? "t-window" : "window N", Math.min(used, cfg.limit), cfg.limit, level);
+        // Window 2 (next)
+        drawWindowBox(c, boundaryX + 20, y, winW, winH, isSliding ? "t+window" : "window N+1", 0, cfg.limit, 0);
+
+        // Boundary line
+        c.strokeStyle = "rgba(248,113,113,0.7)";
+        c.setLineDash([5, 4]);
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(boundaryX, y - 18);
+        c.lineTo(boundaryX, y + winH + 18);
+        c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = "#f87171";
+        c.font = "bold 11px 'JetBrains Mono', monospace";
+        c.fillText(isSliding ? "sliding edge" : "boundary (2× trap)", boundaryX, y - 26);
+
+        // Count label
+        c.fillStyle = "#4ade80";
+        c.font = "bold 14px 'JetBrains Mono', monospace";
+        c.fillText(`${used} / ${cfg.limit} in window (${Math.round(cfg.windowMs / 1000)}s)`, W / 2, y + winH + 48);
+
+        // Sliding dots for sliding window
+        if (isSliding && lim.timestamps && canvas) {
+            const cutoff = (lim.nowMs ?? 0) - lim.windowMs;
+            lim.timestamps.forEach((ts: number) => {
+                const rel = (ts - cutoff) / lim.windowMs; // 0..1 within window
+                const dx = W * 0.08 + rel * (W * 0.84);
+                c.fillStyle = "#4ade80";
+                c.beginPath();
+                c.arc(dx, H * 0.85, 5, 0, Math.PI * 2);
+                c.fill();
+            });
+            c.strokeStyle = "rgba(255,255,255,0.2)";
+            c.lineWidth = 1;
+            c.beginPath();
+            c.moveTo(W * 0.08, H * 0.85);
+            c.lineTo(W * 0.92, H * 0.85);
+            c.stroke();
+        }
+    }
+
+    function drawWindowBox(
+        c: CanvasRenderingContext2D,
+        x: number, y: number, w: number, h: number,
+        label: string, used: number, limit: number, level: number
+    ) {
+        c.strokeStyle = "rgba(255,255,255,0.3)";
+        c.lineWidth = 2;
+        c.strokeRect(x, y, w, h);
+        // Fill
+        const fillH = h * level;
+        if (fillH > 0) {
+            const grad = c.createLinearGradient(0, y + h - fillH, 0, y + h);
+            grad.addColorStop(0, "rgba(74,222,128,0.85)");
+            grad.addColorStop(1, "rgba(34,197,94,0.55)");
+            c.fillStyle = grad;
+            c.fillRect(x, y + h - fillH, w, fillH);
+        }
+        c.fillStyle = "rgba(139,148,158,0.9)";
+        c.font = "11px 'JetBrains Mono', monospace";
+        c.fillText(label, x + w / 2, y + h + 16);
+        c.fillStyle = "#4ade80";
+        c.font = "bold 12px 'JetBrains Mono', monospace";
+        c.fillText(`${used}/${limit}`, x + w / 2, y - 8);
+    }
+
+    // --- Race simulator ---
+    function runRace(atomic: boolean) {
+        const workers = Math.max(5, Math.min(60, Number((document.getElementById("raceWorkers") as HTMLInputElement)?.value) || 25));
+        const latency = Math.max(10, Math.min(120, Number((document.getElementById("raceLatency") as HTMLInputElement)?.value) || 50));
+        const quota = Math.max(3, Math.min(20, Number((document.getElementById("raceQuota") as HTMLInputElement)?.value) || 10));
+
+        const result: RaceResult = simulateRace({ workers, limit: quota, maxJitterMs: 100, latencyMs: latency, atomic });
+        renderRaceResults(result);
+    }
+
+    function renderRaceResults(result: RaceResult) {
+        const resultsEl = document.getElementById("raceResults");
+        const tableEl = document.getElementById("raceTable");
+        const passedEl = document.getElementById("racePassed");
+        const droppedEl = document.getElementById("raceDropped");
+        const leakedEl = document.getElementById("raceLeaked");
+        const verdictEl = document.getElementById("raceVerdict");
+        if (!resultsEl || !tableEl) return;
+
+        resultsEl.style.display = "";
+        if (passedEl) passedEl.textContent = String(result.passed);
+        if (droppedEl) droppedEl.textContent = String(result.dropped);
+        if (leakedEl) leakedEl.textContent = String(result.leaked);
+        if (verdictEl) {
+            const lab = translations[currentLang].rateLimiterLab;
+            if (result.leaked > 0) {
+                verdictEl.className = "race-verdict leak";
+                verdictEl.textContent = lab.raceVerdictLeak.replace("{leak}", String(result.leaked)).replace("{limit}", String(result.limit));
+            } else {
+                verdictEl.className = "race-verdict safe";
+                verdictEl.textContent = lab.raceVerdictSafe.replace("{n}", String(result.limit));
+            }
+        }
+
+        const lab = translations[currentLang].rateLimiterLab;
+        const sorted = [...result.events].sort((a, b) => a.readAtMs - b.readAtMs);
+        tableEl.innerHTML = "";
+        sorted.forEach((ev: RaceEvent) => {
+            const row = document.createElement("div");
+            row.className = `race-row ${ev.allowed ? "pass" : "reject"}`;
+            row.innerHTML = `
+                <span class="rw">${lab.raceWorkerLabel} #${String(ev.worker + 1).padStart(2, "0")}</span>
+                <span class="rt">${lab.raceReadLabel} ${ev.readAtMs}ms</span>
+                <span class="rt">${lab.raceSawLabel}</span>
+                <span class="rv">${ev.readValue}</span>
+                <span class="rt">${lab.raceWriteLabel} ${ev.writeAtMs}ms</span>
+                <span class="rres">${ev.allowed ? lab.raceResultAllowed : lab.raceResultRejected}</span>
+            `;
+            tableEl.appendChild(row);
+        });
+    }
+
+    // --- Event wiring ---
+    document.querySelectorAll(".algo-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const a = btn.getAttribute("data-algo") as AlgorithmId | null;
+            if (!a) return;
+            algo = a;
+            document.querySelectorAll(".algo-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            rebuildLimiter();
+        });
+    });
+
+    document.getElementById("rlSendBtn")?.addEventListener("click", () => emitRequest(1));
+    document.getElementById("rlBurstBtn")?.addEventListener("click", () => emitRequest(12));
+
+    document.getElementById("rlStreamToggle")?.addEventListener("click", () => {
+        streamOn = !streamOn;
+        if (streamToggleBtn) {
+            const lab = translations[currentLang].rateLimiterLab;
+            streamToggleBtn.textContent = streamOn ? lab.streamOn : lab.streamOff;
+            streamToggleBtn.classList.toggle("on", streamOn);
+        }
+        if (streamRateLabel && streamRateInput) {
+            const rate = Number(streamRateInput.value) || 0;
+            streamRateLabel.textContent = streamOn && rate > 0 ? `${rate}${translations[currentLang].rateLimiterLab.streamPerSecSuffix}` : translations[currentLang].rateLimiterLab.streamOff;
+        }
+    });
+
+    streamRateInput?.addEventListener("input", () => {
+        if (streamRateLabel) {
+            const rate = Number(streamRateInput.value) || 0;
+            const lab = translations[currentLang].rateLimiterLab;
+            streamRateLabel.textContent = rate === 0 ? lab.streamOff : `${rate}${lab.streamPerSecSuffix}`;
+        }
+    });
+
+    ["paramCapacity", "paramRefill", "paramWindow"].forEach(id => {
+        document.getElementById(id)?.addEventListener("change", rebuildLimiter);
+    });
+
+    document.getElementById("rlResetBtn")?.addEventListener("click", rebuildLimiter);
+
+    document.getElementById("raceNaiveBtn")?.addEventListener("click", () => runRace(false));
+    document.getElementById("raceAtomicBtn")?.addEventListener("click", () => runRace(true));
+
+    window.addEventListener("langchange", ((e: CustomEvent) => {
+        const lang = e.detail?.lang as Language | undefined;
+        if (!lang) return;
+        updateFillLabel();
+        if (streamRateLabel && streamRateInput) {
+            const rate = Number(streamRateInput.value) || 0;
+            const lab = translations[lang].rateLimiterLab;
+            streamRateLabel.textContent = streamOn && rate > 0 ? `${rate}${lab.streamPerSecSuffix}` : lab.streamOff;
+        }
+        if (streamToggleBtn) {
+            streamToggleBtn.textContent = streamOn ? translations[lang].rateLimiterLab.streamOn : translations[lang].rateLimiterLab.streamOff;
+        }
+    }) as EventListener);
+
+    // --- Init ---
+    rebuildLimiter();
+    lastFrameTime = 0;
+    rafId = requestAnimationFrame(tick);
+</script>
