@@ -4,12 +4,18 @@ import JsonTool from "../../components/tools/JsonTool.astro";
 import Base64Tool from "../../components/tools/Base64Tool.astro";
 import TimestampTool from "../../components/tools/TimestampTool.astro";
 import UuidTool from "../../components/tools/UuidTool.astro";
+import CurlTool from "../../components/tools/CurlTool.astro";
+import CronTool from "../../components/tools/CronTool.astro";
+import CidrTool from "../../components/tools/CidrTool.astro";
 
 const TOOLS = [
 	{ id: "json", label: "JSON Swiss Knife", desc: "Beautify · Minify · Validate · → TypeScript", icon: "{ }" },
 	{ id: "base64", label: "Base64 & URL", desc: "UTF-8 safe encode/decode · image preview", icon: "b64" },
 	{ id: "timestamp", label: "Epoch Converter", desc: "Live clock · s/ms/µs · relative time", icon: "⏱" },
 	{ id: "uuid", label: "UUID & ULID", desc: "v4 · v7 · ULID generator + inspector", icon: "#ID" },
+	{ id: "curl", label: "Curl to Code", desc: "cURL → fetch · axios · Python · Go · PHP", icon: "→req" },
+	{ id: "cron", label: "Cron Visualizer", desc: "Human description · next 5 executions", icon: "⏰" },
+	{ id: "cidr", label: "Subnet / CIDR", desc: "IPv4 range · mask · binary · RFC scope", icon: "/24" },
 ] as const;
 
 type ToolId = (typeof TOOLS)[number]["id"];
@@ -70,6 +76,9 @@ const activeTool: ToolId = (TOOLS.find((t) => t.id === requested)?.id ?? DEFAULT
 							{tool.id === "base64" && <Base64Tool />}
 							{tool.id === "timestamp" && <TimestampTool />}
 							{tool.id === "uuid" && <UuidTool />}
+							{tool.id === "curl" && <CurlTool />}
+							{tool.id === "cron" && <CronTool />}
+							{tool.id === "cidr" && <CidrTool />}
 						</div>
 					))}
 				</section>

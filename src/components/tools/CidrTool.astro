@@ -1,0 +1,104 @@
+---
+// CidrTool.astro — IPv4 subnet / CIDR calculator
+---
+
+<div class="cidr-tool">
+	<div class="ts-input-row">
+		<input type="text" class="tool-input" id="cidrInput" spellcheck="false" inputmode="text"
+			placeholder="e.g. 192.168.1.100/24 or 10.0.0.0/255.0.0.0" />
+		<button class="tool-btn" id="cidrCalc">Calculate</button>
+		<button class="tool-btn" id="cidrSample" title="Load sample">Sample</button>
+	</div>
+
+	<div class="cidr-result" id="cidrResult" hidden>
+		<div class="cidr-grid">
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Network</span><span class="ts-result-val font-mono" id="cidrNetwork"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Broadcast</span><span class="ts-result-val font-mono" id="cidrBroadcast"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Usable range</span><span class="ts-result-val font-mono" id="cidrRange"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Usable hosts</span><span class="ts-result-val font-mono" id="cidrHosts"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Subnet mask</span><span class="ts-result-val font-mono" id="cidrMask"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Wildcard</span><span class="ts-result-val font-mono" id="cidrWildcard"></span></div>
+			<div class="ts-result-item"><span class="ts-result-key font-mono">Scope</span><span class="ts-result-val font-mono" id="cidrScope"></span></div>
+		</div>
+		<div class="pane-label font-mono" style="margin-top: 1.25rem">// BINARY VIEW</div>
+		<div class="cidr-binary font-mono">
+			<div><span class="cidr-bin-label">IP&nbsp;&nbsp;&nbsp;</span><span id="cidrBinIp"></span></div>
+			<div><span class="cidr-bin-label">Mask&nbsp;</span><span id="cidrBinMask"></span></div>
+		</div>
+	</div>
+
+	<div class="json-status" id="cidrStatus" data-state="idle">Ready.</div>
+</div>
+
+<style>
+	.cidr-result {
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.9rem 1.1rem;
+		background: var(--surface);
+	}
+
+	.cidr-binary {
+		display: grid;
+		gap: 0.4rem;
+		font-size: 0.71875rem;
+		color: var(--text-muted);
+		letter-spacing: 0.02em;
+	}
+
+	.cidr-bin-label {
+		color: var(--cyan);
+	}
+</style>
+
+<script>
+	import { calcCidr } from "../../utils/devtools/cidr";
+
+	const input = document.getElementById("cidrInput") as HTMLInputElement;
+	const status = document.getElementById("cidrStatus") as HTMLElement;
+	const resultEl = document.getElementById("cidrResult") as HTMLElement;
+
+	function setStatus(msg: string, state: "idle" | "ok" | "error") {
+		status.textContent = msg;
+		status.dataset.state = state;
+	}
+
+	function set(id: string, text: string) {
+		(document.getElementById(id) as HTMLElement).textContent = text;
+	}
+
+	function run() {
+		const raw = input.value.trim();
+		resultEl.hidden = true;
+		if (!raw) {
+			setStatus("Enter an IP with prefix (e.g. 192.168.1.100/24).", "error");
+			return;
+		}
+		try {
+			const r = calcCidr(raw);
+			set("cidrNetwork", r.network);
+			set("cidrBroadcast", r.broadcast);
+			set("cidrRange", `${r.firstHost} → ${r.lastHost}`);
+			set("cidrHosts", `${r.totalHosts.toLocaleString()} of ${r.totalAddresses.toLocaleString()} total`);
+			set("cidrMask", `${r.mask} (prefix /${r.cidr})`);
+			set("cidrWildcard", r.wildcard);
+			set("cidrScope", r.scope);
+			set("cidrBinIp", r.binaryIp);
+			set("cidrBinMask", r.binaryMask);
+			resultEl.hidden = false;
+			setStatus(`✓ ${r.ip}/${r.cidr} calculated.`, "ok");
+		} catch (e) {
+			setStatus(`✗ ${(e as Error).message}`, "error");
+		}
+	}
+
+	document.getElementById("cidrCalc")!.addEventListener("click", run);
+	input.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") run();
+	});
+
+	document.getElementById("cidrSample")!.addEventListener("click", () => {
+		input.value = "192.168.1.100/24";
+		run();
+	});
+</script>

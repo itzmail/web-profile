@@ -1,0 +1,143 @@
+---
+// CronTool.astro — cron expression parser & next-run visualizer
+---
+
+<div class="cron-tool">
+	<div class="ts-input-row">
+		<input type="text" class="tool-input" id="cronInput" spellcheck="false"
+			placeholder="e.g. */15 * * * * or @daily" />
+		<button class="tool-btn" id="cronParse">Parse</button>
+	</div>
+
+	<div class="cron-presets">
+		{["*/15 * * * *", "0 9 * * *", "0 9 * * 1-5", "0 0 1 * *", "@daily", "@hourly"].map((expr) => (
+			<button class="tool-btn cron-preset-btn" data-expr={expr}>{expr}</button>
+		))}
+	</div>
+
+	<div class="cron-result" id="cronResult" hidden>
+		<div class="cron-desc font-mono" id="cronDesc"></div>
+		<div class="pane-label font-mono" style="margin-top: 1.25rem">// NEXT 5 EXECUTIONS (LOCAL TIME)</div>
+		<ul class="cron-runs font-mono" id="cronRuns"></ul>
+	</div>
+
+	<div class="json-status" id="cronStatus" data-state="idle">Ready.</div>
+</div>
+
+<style>
+	.cron-presets {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin-bottom: 1.25rem;
+	}
+
+	.cron-result {
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.9rem 1.1rem;
+		background: var(--surface);
+	}
+
+	.cron-desc {
+		color: var(--green);
+		font-size: 0.95rem;
+		line-height: 1.6;
+	}
+
+	.cron-runs {
+		list-style: none;
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.cron-runs li {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		font-size: 0.8125rem;
+		color: var(--text);
+		border-bottom: 1px dashed var(--border);
+		padding-bottom: 0.35rem;
+		flex-wrap: wrap;
+	}
+
+	.cron-runs li:last-child {
+		border-bottom: none;
+		padding-bottom: 0;
+	}
+
+	.cron-runs .run-countdown {
+		color: var(--cyan);
+		font-size: 0.71875rem;
+	}
+</style>
+
+<script>
+	import { parseCron, nextRuns, describeCron } from "../../utils/devtools/cron";
+
+	const input = document.getElementById("cronInput") as HTMLInputElement;
+	const status = document.getElementById("cronStatus") as HTMLElement;
+	const resultEl = document.getElementById("cronResult") as HTMLElement;
+
+	function setStatus(msg: string, state: "idle" | "ok" | "error") {
+		status.textContent = msg;
+		status.dataset.state = state;
+	}
+
+	function countdown(d: Date): string {
+		const diffMs = d.getTime() - Date.now();
+		if (diffMs <= 0) return "now";
+		const mins = Math.round(diffMs / 60000);
+		if (mins < 60) return `in ${mins} min`;
+		const hours = Math.round(mins / 60);
+		if (hours < 48) return `in ${hours} h`;
+		return `in ${Math.round(hours / 24)} days`;
+	}
+
+	function run() {
+		const raw = input.value.trim();
+		resultEl.hidden = true;
+		if (!raw) {
+			setStatus("Enter a cron expression.", "error");
+			return;
+		}
+		try {
+			const c = parseCron(raw);
+			const runs = nextRuns(c, 5);
+			document.getElementById("cronDesc")!.textContent = describeCron(c);
+
+			const list = document.getElementById("cronRuns") as HTMLElement;
+			list.innerHTML = "";
+			for (const d of runs) {
+				const li = document.createElement("li");
+				const local = d.toLocaleString(undefined, {
+					weekday: "short",
+					year: "numeric",
+					month: "short",
+					day: "2-digit",
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+				li.innerHTML = `<span>${local} <span style="color: var(--text-dim)">(${d.toISOString()})</span></span><span class="run-countdown">${countdown(d)}</span>`;
+				list.appendChild(li);
+			}
+			resultEl.hidden = false;
+			setStatus("✓ Parsed.", "ok");
+		} catch (e) {
+			setStatus(`✗ ${(e as Error).message}`, "error");
+		}
+	}
+
+	document.getElementById("cronParse")!.addEventListener("click", run);
+	input.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") run();
+	});
+
+	document.querySelectorAll<HTMLButtonElement>(".cron-preset-btn").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			input.value = btn.dataset.expr!;
+			run();
+		});
+	});
+</script>

@@ -1,0 +1,134 @@
+---
+// CurlTool.astro — cURL command to code converter
+---
+
+<div class="curl-tool">
+	<div class="tool-toolbar">
+		<div class="toolbar-group">
+			<select class="tool-select" id="curlTarget">
+				<option value="fetch">JS/TS — fetch</option>
+				<option value="axios">JS/TS — axios</option>
+				<option value="python">Python — requests</option>
+				<option value="go">Go — net/http</option>
+				<option value="php">PHP — cURL</option>
+			</select>
+			<button class="tool-btn" id="curlGenerate">Convert</button>
+			<button class="tool-btn" id="curlSample" title="Load sample cURL">Sample</button>
+		</div>
+		<div class="toolbar-group">
+			<button class="tool-btn" id="curlCopy">Copy</button>
+			<button class="tool-btn tool-btn-danger" id="curlClear">Clear</button>
+		</div>
+	</div>
+
+	<div class="curl-panes">
+		<div class="curl-pane">
+			<div class="pane-label font-mono">// cURL COMMAND</div>
+			<textarea id="curlInput" class="tool-textarea" rows="14" spellcheck="false"
+				placeholder='curl -X POST https://api.example.com/v1/users \
+  -H "Content-Type: application/json" \
+  -d {"name": "..."}'></textarea>
+		</div>
+		<div class="curl-pane">
+			<div class="pane-label font-mono">// GENERATED CODE</div>
+			<textarea id="curlOutput" class="tool-textarea" rows="14" spellcheck="false" readonly
+				placeholder="Generated code appears here…"></textarea>
+		</div>
+	</div>
+
+	<div class="curl-warnings" id="curlWarnings" hidden></div>
+	<div class="json-status" id="curlStatus" data-state="idle">Ready.</div>
+</div>
+
+<style>
+	.curl-panes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.curl-pane {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	.curl-warnings {
+		margin-top: 0.85rem;
+		border: 1px solid rgba(245, 158, 11, 0.3);
+		background: rgba(245, 158, 11, 0.06);
+		color: #f59e0b;
+		border-radius: 8px;
+		padding: 0.6rem 1rem;
+		font-family: var(--font-mono);
+		font-size: 0.71875rem;
+		line-height: 1.6;
+	}
+
+	@media (max-width: 768px) {
+		.curl-panes {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+
+<script>
+	import { parseCurl, generateCode, CURL_SAMPLE, type CurlTarget } from "../../utils/devtools/curlParser";
+
+	const input = document.getElementById("curlInput") as HTMLTextAreaElement;
+	const output = document.getElementById("curlOutput") as HTMLTextAreaElement;
+	const status = document.getElementById("curlStatus") as HTMLElement;
+	const warningsEl = document.getElementById("curlWarnings") as HTMLElement;
+	const targetSelect = document.getElementById("curlTarget") as unknown as HTMLSelectElement;
+
+	function setStatus(msg: string, state: "idle" | "ok" | "error") {
+		status.textContent = msg;
+		status.dataset.state = state;
+	}
+
+	function convert() {
+		const raw = input.value.trim();
+		output.value = "";
+		warningsEl.hidden = true;
+		if (!raw) {
+			setStatus("Input is empty.", "error");
+			return;
+		}
+		try {
+			const parsed = parseCurl(raw);
+			output.value = generateCode(targetSelect.value as CurlTarget, parsed);
+			if (parsed.warnings.length) {
+				warningsEl.textContent = parsed.warnings.map((w) => `⚠ ${w}`).join("\n");
+				warningsEl.hidden = false;
+			}
+			setStatus(`✓ ${parsed.method} ${new URL(parsed.url).hostname} → ${targetSelect.value}`, "ok");
+		} catch (e) {
+			setStatus(`✗ ${(e as Error).message}`, "error");
+		}
+	}
+
+	document.getElementById("curlGenerate")!.addEventListener("click", convert);
+	targetSelect.addEventListener("change", () => {
+		if (output.value) convert();
+	});
+
+	document.getElementById("curlSample")!.addEventListener("click", () => {
+		input.value = CURL_SAMPLE;
+		setStatus("Sample loaded. Hit Convert.", "idle");
+		convert();
+	});
+
+	document.getElementById("curlCopy")!.addEventListener("click", async () => {
+		if (!output.value) return;
+		await navigator.clipboard.writeText(output.value);
+		setStatus("✓ Copied to clipboard.", "ok");
+	});
+
+	document.getElementById("curlClear")!.addEventListener("click", () => {
+		input.value = "";
+		output.value = "";
+		warningsEl.hidden = true;
+		setStatus("Cleared.", "idle");
+	});
+</script>
