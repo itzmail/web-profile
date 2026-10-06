@@ -7,6 +7,9 @@ import UuidTool from "../../components/tools/UuidTool.astro";
 import CurlTool from "../../components/tools/CurlTool.astro";
 import CronTool from "../../components/tools/CronTool.astro";
 import CidrTool from "../../components/tools/CidrTool.astro";
+import HashTool from "../../components/tools/HashTool.astro";
+import DiffTool from "../../components/tools/DiffTool.astro";
+import RegexTool from "../../components/tools/RegexTool.astro";
 
 const TOOLS = [
 	{ id: "json", label: "JSON Swiss Knife", desc: "Beautify · Minify · Validate · → TypeScript", icon: "{ }" },
@@ -16,6 +19,9 @@ const TOOLS = [
 	{ id: "curl", label: "Curl to Code", desc: "cURL → fetch · axios · Python · Go · PHP", icon: "→req" },
 	{ id: "cron", label: "Cron Visualizer", desc: "Human description · next 5 executions", icon: "⏰" },
 	{ id: "cidr", label: "Subnet / CIDR", desc: "IPv4 range · mask · binary · RFC scope", icon: "/24" },
+	{ id: "hash", label: "Hash & HMAC", desc: "MD5 · SHA-1/256/512 · HMAC · Hex/Base64", icon: "#hx" },
+	{ id: "diff", label: "Diff Checker", desc: "Side-by-side & unified · JSON normalize", icon: "±" },
+	{ id: "regex", label: "Regex Tester", desc: "Live match highlight · token explainer", icon: ".*" },
 ] as const;
 
 type ToolId = (typeof TOOLS)[number]["id"];
@@ -24,12 +30,37 @@ const DEFAULT_TOOL: ToolId = "json";
 // Deep-link support: /tools?tab=timestamp
 const requested = Astro.url.searchParams.get("tab");
 const activeTool: ToolId = (TOOLS.find((t) => t.id === requested)?.id ?? DEFAULT_TOOL) as ToolId;
+
+// Rich-snippet structured data for the tools hub
+const toolsJsonLd = {
+	"@context": "https://schema.org",
+	"@type": "WebApplication",
+	name: "Developer Tools — itsmail.dev",
+	alternateName: "itsmail.dev DevTools",
+	url: "https://itsmail.dev/tools",
+	applicationCategory: "DeveloperApplication",
+	operatingSystem: "Any (Web Browser)",
+	description:
+		"Free online developer tools that run 100% client-side: JSON formatter & TypeScript generator, Base64/URL encoder-decoder, Unix epoch timestamp converter, UUID/ULID generator, cURL to code converter, cron expression visualizer, IPv4 subnet calculator, hash & HMAC generator, text diff checker, and regex tester. No data leaves your browser.",
+	featureList: TOOLS.map((t) => t.label),
+	offers: {
+		"@type": "Offer",
+		price: "0",
+		priceCurrency: "USD",
+	},
+	author: {
+		"@type": "Person",
+		name: "Ismail Alam",
+		url: "https://itsmail.dev",
+	},
+};
 ---
 
 <Layout
-	title="Developer Tools — Ismail Alam"
-	description="Free in-browser developer utilities: JSON formatter & TypeScript generator, Base64/URL converter, epoch timestamp converter, and UUID/ULID generator. 100% client-side, zero tracking."
+	title="Free Developer Tools — JSON, Base64, Cron, CIDR & Regex | Ismail Alam"
+	description="Free client-side developer tools: JSON formatter & TypeScript generator, Base64/URL converter, epoch timestamp converter, UUID/ULID generator, cURL to code, cron visualizer, CIDR subnet calculator, hash & HMAC, diff checker, and regex tester. 100% in your browser — zero tracking."
 	canonicalURL="https://itsmail.dev/tools"
+	jsonLd={toolsJsonLd}
 >
 	<main class="tools-page">
 		<div class="container">
@@ -39,6 +70,14 @@ const activeTool: ToolId = (TOOLS.find((t) => t.id === requested)?.id ?? DEFAULT
 				<p class="page-sub text-muted">
 					All-in-one utilities for everyday engineering. Everything runs <strong>100% in your browser</strong> —
 					no data ever leaves your machine.
+				</p>
+				<p class="tools-seo-list font-mono">
+					{TOOLS.map((t, i) => (
+						<>
+							{i > 0 && " · "}
+							<span>{t.label}</span>
+						</>
+					))}
 				</p>
 			</header>
 
@@ -79,6 +118,9 @@ const activeTool: ToolId = (TOOLS.find((t) => t.id === requested)?.id ?? DEFAULT
 							{tool.id === "curl" && <CurlTool />}
 							{tool.id === "cron" && <CronTool />}
 							{tool.id === "cidr" && <CidrTool />}
+							{tool.id === "hash" && <HashTool />}
+							{tool.id === "diff" && <DiffTool />}
+							{tool.id === "regex" && <RegexTool />}
 						</div>
 					))}
 				</section>
@@ -139,6 +181,17 @@ const activeTool: ToolId = (TOOLS.find((t) => t.id === requested)?.id ?? DEFAULT
 		font-size: 1.0625rem;
 		max-width: 680px;
 		line-height: 1.6;
+	}
+
+	.tools-seo-list {
+		margin-top: 0.75rem;
+		font-size: 0.71875rem;
+		color: #94a3b8;
+		letter-spacing: 0.02em;
+	}
+
+	.tools-seo-list span {
+		color: var(--text-muted);
 	}
 
 	.tools-layout {
@@ -207,13 +260,13 @@ const activeTool: ToolId = (TOOLS.find((t) => t.id === requested)?.id ?? DEFAULT
 
 	.tools-nav-desc {
 		font-size: 0.6875rem;
-		color: var(--text-dim);
+		color: #94a3b8;
 	}
 
 	.tools-privacy {
 		margin-top: 1rem;
 		font-size: 0.6875rem;
-		color: var(--text-dim);
+		color: #94a3b8;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;

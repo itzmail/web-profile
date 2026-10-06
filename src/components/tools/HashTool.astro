@@ -1,0 +1,170 @@
+---
+// HashTool.astro — hash & HMAC generator
+---
+
+<div class="hash-tool">
+	<div class="tool-toolbar">
+		<div class="toolbar-group">
+			<button class="tool-btn" id="hashAll">Hash All</button>
+			<select class="tool-select" id="hashFormat">
+				<option value="hex">Hex</option>
+				<option value="base64">Base64</option>
+			</select>
+			<button class="tool-btn" id="hashSample" title="Load sample">Sample</button>
+			<button class="tool-btn tool-btn-danger" id="hashClear">Clear</button>
+		</div>
+	</div>
+
+	<div class="ts-section">
+		<div class="pane-label font-mono">// INPUT</div>
+		<textarea id="hashInput" class="tool-textarea" rows="6" spellcheck="false"
+			placeholder="Text to hash…"></textarea>
+	</div>
+
+	<div class="hash-grid" id="hashGrid"></div>
+
+	<div class="ts-section">
+		<div class="pane-label font-mono">// HMAC (requires secret)</div>
+		<div class="ts-input-row">
+			<input type="text" class="tool-input" id="hmacSecret" placeholder="Secret key…" spellcheck="false" />
+			<button class="tool-btn" id="hmacCalc">Compute HMAC</button>
+		</div>
+		<div class="hash-grid" id="hmacGrid" style="margin-top: 0.75rem"></div>
+	</div>
+</div>
+
+<style is:global>
+	/* Hash rows are created dynamically in JS — Astro scoped styles don't apply */
+	.hash-grid {
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.hash-row {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.55rem 1rem;
+		background: var(--surface);
+	}
+
+	.hash-algo {
+		color: var(--cyan);
+		font-family: var(--font-mono);
+		font-size: 0.71875rem;
+		font-weight: 600;
+		min-width: 100px;
+	}
+
+	.hash-value {
+		flex: 1;
+		font-family: var(--font-mono);
+		font-size: 0.71875rem;
+		color: var(--text);
+		word-break: break-all;
+		line-height: 1.5;
+	}
+
+	.hash-copy {
+		background: none;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		color: var(--text-muted);
+		font-size: 0.65rem;
+		font-family: var(--font-mono);
+		padding: 0.25rem 0.6rem;
+		cursor: pointer;
+		transition: all var(--duration) var(--ease);
+		flex-shrink: 0;
+	}
+
+	.hash-copy:hover {
+		color: var(--green);
+		border-color: var(--border-glow);
+	}
+</style>
+
+<script>
+	import { hashText, hmacText, HASH_ALGOS } from "../../utils/devtools/hash";
+
+	const input = document.getElementById("hashInput") as HTMLTextAreaElement;
+	const grid = document.getElementById("hashGrid") as HTMLElement;
+	const hmacGrid = document.getElementById("hmacGrid") as HTMLElement;
+	const secretInput = document.getElementById("hmacSecret") as HTMLInputElement;
+	const formatSelect = document.getElementById("hashFormat") as unknown as HTMLSelectElement;
+
+	function makeRow(algo: string, value: string): HTMLElement {
+		const row = document.createElement("div");
+		row.className = "hash-row";
+		const span = document.createElement("span");
+		span.className = "hash-algo";
+		span.textContent = algo;
+		const val = document.createElement("span");
+		val.className = "hash-value";
+		val.textContent = value;
+		const btn = document.createElement("button");
+		btn.className = "hash-copy";
+		btn.textContent = "copy";
+		btn.addEventListener("click", async () => {
+			try {
+				await navigator.clipboard.writeText(value);
+				btn.textContent = "copied!";
+				setTimeout(() => (btn.textContent = "copy"), 1000);
+			} catch {
+				btn.textContent = "failed";
+				setTimeout(() => (btn.textContent = "copy"), 1200);
+			}
+		});
+		row.appendChild(span);
+		row.appendChild(val);
+		row.appendChild(btn);
+		return row;
+	}
+
+	async function computeHashes() {
+		const text = input.value;
+		const format = formatSelect.value as "hex" | "base64";
+		grid.innerHTML = "";
+		hmacGrid.innerHTML = "";
+		if (!text) return;
+
+		for (const algo of HASH_ALGOS) {
+			const value = await hashText(algo, text, format);
+			grid.appendChild(makeRow(algo, value));
+		}
+	}
+
+	async function computeHmac() {
+		const text = input.value;
+		const secret = secretInput.value;
+		const format = formatSelect.value as "hex" | "base64";
+		hmacGrid.innerHTML = "";
+		if (!text || !secret) return;
+		for (const algo of ["SHA-256", "SHA-512"] as const) {
+			const value = await hmacText(algo, text, secret, format);
+			hmacGrid.appendChild(makeRow(`HMAC-${algo}`, value));
+		}
+	}
+
+	document.getElementById("hashAll")!.addEventListener("click", computeHashes);
+	input.addEventListener("input", () => void computeHashes());
+	formatSelect.addEventListener("change", () => void computeHashes());
+
+	document.getElementById("hmacCalc")!.addEventListener("click", computeHmac);
+	secretInput.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") void computeHmac();
+	});
+
+	document.getElementById("hashSample")!.addEventListener("click", () => {
+		input.value = "hello world";
+		void computeHashes();
+	});
+
+	document.getElementById("hashClear")!.addEventListener("click", () => {
+		input.value = "";
+		grid.innerHTML = "";
+		hmacGrid.innerHTML = "";
+	});
+</script>

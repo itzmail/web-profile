@@ -1,0 +1,214 @@
+---
+// DiffTool.astro — side-by-side & unified diff for text/JSON
+---
+
+<div class="diff-tool">
+	<div class="tool-toolbar">
+		<div class="toolbar-group">
+			<select class="tool-select" id="diffNormalize">
+				<option value="none">Raw lines</option>
+				<option value="trim">Ignore trailing spaces</option>
+				<option value="json">Normalize JSON</option>
+			</select>
+			<select class="tool-select" id="diffView">
+				<option value="side">Side-by-side</option>
+				<option value="unified">Unified</option>
+			</select>
+			<button class="tool-btn" id="diffCompute">Compare</button>
+			<button class="tool-btn tool-btn-danger" id="diffClear">Clear</button>
+		</div>
+	</div>
+
+	<div class="diff-panes">
+		<div class="diff-pane">
+			<div class="pane-label font-mono">// ORIGINAL <span class="pane-meta" id="diffMetaA"></span></div>
+			<textarea id="diffInputA" class="tool-textarea" rows="12" spellcheck="false" placeholder="Original text / JSON…"></textarea>
+		</div>
+		<div class="diff-pane">
+			<div class="pane-label font-mono">// CHANGED <span class="pane-meta" id="diffMetaB"></span></div>
+			<textarea id="diffInputB" class="tool-textarea" rows="12" spellcheck="false" placeholder="Modified text / JSON…"></textarea>
+		</div>
+	</div>
+
+	<div class="diff-stats font-mono" id="diffStats" hidden>
+		<span class="diff-stat-added">+<b id="diffAdded">0</b></span>
+		<span class="diff-stat-removed">−<b id="diffRemoved">0</b></span>
+		<span class="diff-stat-unchanged">=<b id="diffUnchanged">0</b></span>
+	</div>
+
+	<div class="diff-output" id="diffOutput" hidden></div>
+</div>
+
+<style>
+	.diff-pane {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	.diff-stats {
+		display: flex;
+		gap: 1rem;
+		margin-top: 1rem;
+		font-size: 0.75rem;
+	}
+
+	.diff-stat-added { color: #10b981; }
+	.diff-stat-removed { color: #ef4444; }
+	.diff-stat-unchanged { color: var(--text-muted); }
+
+	.diff-output {
+		margin-top: 0.75rem;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--bg);
+		max-height: 420px;
+		overflow: auto;
+	}
+</style>
+
+<style is:global>
+	/* Diff rows/table created dynamically in JS — scoped styles don't apply.
+	   .diff-panes lives here too so its mobile media query can override it. */
+	.diff-panes {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	@media (max-width: 768px) {
+		.diff-panes {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.diff-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: var(--font-mono);
+		font-size: 0.71875rem;
+		line-height: 1.5;
+	}
+
+	.diff-table td {
+		padding: 0.05rem 0.5rem;
+		vertical-align: top;
+		white-space: pre-wrap;
+		word-break: break-all;
+	}
+
+	.diff-num {
+		color: var(--text-dim);
+		text-align: right;
+		user-select: none;
+		min-width: 3ch;
+		width: 3ch;
+	}
+
+	.diff-row-equal { background: transparent; }
+	.diff-row-change-left { background: rgba(239, 68, 68, 0.08); color: #ef4444; }
+	.diff-row-change-right { background: rgba(16, 185, 129, 0.08); color: #10b981; }
+
+	.diff-unified {
+		font-family: var(--font-mono);
+		font-size: 0.71875rem;
+		line-height: 1.55;
+		padding: 0.75rem 1rem;
+		white-space: pre-wrap;
+		word-break: break-all;
+		color: var(--text);
+	}
+
+	.diff-unified .line-add { color: #10b981; }
+	.diff-unified .line-remove { color: #ef4444; }
+</style>
+
+<script>
+	import { diffLines, diffStats, unifiedDiff, type DiffNormalize } from "../../utils/devtools/diff";
+	import { escapeHtml } from "../../utils/devtools/html";
+	const inputA = document.getElementById("diffInputA") as HTMLTextAreaElement;
+	const inputB = document.getElementById("diffInputB") as HTMLTextAreaElement;
+	const output = document.getElementById("diffOutput") as HTMLElement;
+	const statsEl = document.getElementById("diffStats") as HTMLElement;
+	const viewSelect = document.getElementById("diffView") as unknown as HTMLSelectElement;
+	const normalizeSelect = document.getElementById("diffNormalize") as unknown as HTMLSelectElement;
+
+	function lineNumbers(metaId: string, text: string) {
+		(document.getElementById(metaId) as HTMLElement).textContent =
+			text ? `(${text.replace(/\r\n?/g, "\n").split("\n").length} lines)` : "";
+	}
+
+	function render() {
+		const a = inputA.value;
+		const b = inputB.value;
+		lineNumbers("diffMetaA", a);
+		lineNumbers("diffMetaB", b);
+		output.innerHTML = "";
+		if (!a && !b) {
+			output.hidden = true;
+			statsEl.hidden = true;
+			return;
+		}
+		const normalize = normalizeSelect.value as DiffNormalize;
+
+		try {
+			if (viewSelect.value === "unified") {
+				const pre = document.createElement("pre");
+				pre.className = "diff-unified";
+				for (const line of unifiedDiff(a, b, normalize).split("\n").slice(0, -1)) {
+					const span = document.createElement("span");
+					if (line.startsWith("+")) span.className = "line-add";
+					else if (line.startsWith("-")) span.className = "line-remove";
+					span.textContent = line + "\n";
+					pre.appendChild(span);
+				}
+				output.appendChild(pre);
+			} else {
+				const rows = diffLines(a, b, normalize);
+				const table = document.createElement("table");
+				table.className = "diff-table";
+				for (const row of rows) {
+					const tr = document.createElement("tr");
+					const leftCls =
+						row.op === "remove" || row.op === "change" ? "diff-row-change-left" : row.op === "equal" ? "diff-row-equal" : "";
+					const rightCls =
+						row.op === "add" || row.op === "change" ? "diff-row-change-right" : row.op === "equal" ? "diff-row-equal" : "";
+					tr.innerHTML = `
+						<td class="diff-num ${leftCls}">${row.left?.num ?? ""}</td>
+						<td class="${leftCls}">${escapeHtml(row.left?.text ?? "")}</td>
+						<td class="diff-num ${rightCls}">${row.right?.num ?? ""}</td>
+						<td class="${rightCls}">${escapeHtml(row.right?.text ?? "")}</td>`;
+					table.appendChild(tr);
+				}
+				output.appendChild(table);
+			}
+
+			const stats = diffStats(diffLines(a, b, normalize));
+			document.getElementById("diffAdded")!.textContent = String(stats.added);
+			document.getElementById("diffRemoved")!.textContent = String(stats.removed);
+			document.getElementById("diffUnchanged")!.textContent = String(stats.unchanged);
+			output.hidden = false;
+			statsEl.hidden = false;
+		} catch (e) {
+			output.innerHTML = "";
+			output.textContent = `⚠ ${(e as Error).message}`;
+			output.hidden = false;
+			statsEl.hidden = true;
+		}
+	}
+
+	document.getElementById("diffCompute")!.addEventListener("click", render);
+	viewSelect.addEventListener("change", render);
+	normalizeSelect.addEventListener("change", render);
+
+	document.getElementById("diffClear")!.addEventListener("click", () => {
+		inputA.value = "";
+		inputB.value = "";
+		output.innerHTML = "";
+		output.hidden = true;
+		statsEl.hidden = true;
+		lineNumbers("diffMetaA", "");
+		lineNumbers("diffMetaB", "");
+	});
+</script>

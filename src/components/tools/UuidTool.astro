@@ -35,7 +35,8 @@
 	</div>
 </div>
 
-<style>
+<style is:global>
+	/* UUID list items are created dynamically in JS — scoped styles don't apply */
 	.uuid-list {
 		list-style: none;
 		border: 1px solid var(--border);
@@ -132,9 +133,14 @@
 	list.addEventListener("click", async (e) => {
 		const btn = (e.target as HTMLElement).closest(".uuid-copy") as HTMLButtonElement | null;
 		if (!btn) return;
-		await navigator.clipboard.writeText(btn.dataset.value || "");
-		btn.textContent = "copied!";
-		setTimeout(() => (btn.textContent = "copy"), 1000);
+		try {
+			await navigator.clipboard.writeText(btn.dataset.value || "");
+			btn.textContent = "copied!";
+			setTimeout(() => (btn.textContent = "copy"), 1000);
+		} catch {
+			btn.textContent = "failed";
+			setTimeout(() => (btn.textContent = "copy"), 1200);
+		}
 	});
 
 	document.getElementById("uuidCopyAll")!.addEventListener("click", async () => {

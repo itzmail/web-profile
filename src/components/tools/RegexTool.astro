@@ -1,0 +1,210 @@
+---
+// RegexTool.astro — regex tester, match highlighter, explainer
+---
+
+<div class="regex-tool">
+	<div class="ts-input-row">
+		<span class="pane-label font-mono" style="margin: 0">/</span>
+		<input type="text" class="tool-input" id="regexPattern" spellcheck="false" placeholder="pattern…" />
+		<input type="text" class="tool-input tool-input-sm" id="regexFlags" value="g" spellcheck="false" placeholder="flags" />
+		<button class="tool-btn" id="regexTest">Test</button>
+	</div>
+
+	<div class="regex-presets">
+		{["Email", "IPv4", "SemVer", "Slug", "ISO Date"].map((label) => (
+			<button class="tool-btn regex-preset-btn font-mono" data-preset={label}>{label}</button>
+		))}
+	</div>
+
+	<div class="ts-section">
+		<div class="pane-label font-mono">// TEST STRING</div>
+		<textarea id="regexInput" class="tool-textarea" rows="5" spellcheck="false"
+			placeholder="Text to test against…"></textarea>
+		<div class="regex-highlight font-mono" id="regexHighlight" hidden></div>
+	</div>
+
+	<div class="ts-result-grid" id="regexMatches" hidden>
+		<div class="ts-result-item"><span class="ts-result-key font-mono">Matches</span><span class="ts-result-val font-mono" id="regexCount">0</span></div>
+	</div>
+
+	<div class="pane-label font-mono" style="margin-top: 1.25rem" id="regexExplainHeader">// EXPLANATION <span class="pane-meta" id="regexExplainCount"></span></div>
+	<ul class="regex-explain font-mono" id="regexExplain"></ul>
+
+	<div class="json-status" id="regexStatus" data-state="idle">Ready.</div>
+</div>
+
+<style>
+	.regex-presets {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin: 0.75rem 0 1.25rem;
+	}
+
+	.regex-highlight {
+		margin-top: 0.5rem;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.7rem 1rem;
+		background: var(--bg);
+		line-height: 1.7;
+		font-size: 0.8125rem;
+		word-break: break-all;
+	}
+</style>
+
+<style is:global>
+	/* Explain list + <mark> highlights are created dynamically in JS —
+	   Astro scoped styles don't reach them. */
+	.regex-highlight mark {
+		background: rgba(0, 255, 136, 0.2);
+		color: var(--green);
+		border-radius: 3px;
+		padding: 0 0.1rem;
+	}
+
+	.regex-explain {
+		list-style: none;
+		display: grid;
+		gap: 0.25rem;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		background: var(--surface);
+		max-height: 260px;
+		overflow-y: auto;
+	}
+
+	.regex-explain li {
+		display: flex;
+		gap: 0.75rem;
+		font-size: 0.71875rem;
+		align-items: baseline;
+	}
+
+	.regex-explain .tok-raw {
+		color: var(--green);
+		min-width: 6ch;
+		word-break: break-all;
+	}
+
+	.regex-explain .tok-desc {
+		color: var(--text-muted);
+	}
+
+	.regex-explain li[data-depth="1"] { padding-left: 1rem; }
+	.regex-explain li[data-depth="2"] { padding-left: 2rem; }
+	.regex-explain li[data-depth="3"] { padding-left: 3rem; }
+</style>
+
+<script>
+	import { explainRegex, REGEX_PRESETS } from "../../utils/devtools/regexExplainer";
+	import { escapeHtml } from "../../utils/devtools/html";
+
+	const patternInput = document.getElementById("regexPattern") as HTMLInputElement;
+	const flagsInput = document.getElementById("regexFlags") as HTMLInputElement;
+	const testInput = document.getElementById("regexInput") as HTMLTextAreaElement;
+	const status = document.getElementById("regexStatus") as HTMLElement;
+	const highlight = document.getElementById("regexHighlight") as HTMLElement;
+	const matchesEl = document.getElementById("regexMatches") as HTMLElement;
+	const explainEl = document.getElementById("regexExplain") as HTMLElement;
+
+	function setStatus(msg: string, state: "idle" | "ok" | "error") {
+		status.textContent = msg;
+		status.dataset.state = state;
+	}
+
+	function renderExplain(pattern: string) {
+		const tokens = explainRegex(pattern);
+		explainEl.innerHTML = "";
+		for (const t of tokens) {
+			const li = document.createElement("li");
+			li.dataset.depth = String(Math.min(t.depth, 3));
+			li.innerHTML = `<span class="tok-raw">${escapeHtml(t.raw)}</span><span class="tok-desc">${escapeHtml(t.desc)}</span>`;
+			explainEl.appendChild(li);
+		}
+		const countEl = document.getElementById("regexExplainCount") as HTMLElement;
+		countEl.textContent = tokens.length ? `(${tokens.length} tokens)` : "";
+	}
+
+	function run() {
+		const pattern = patternInput.value;
+		highlight.hidden = true;
+		explainEl.innerHTML = "";
+		matchesEl.hidden = true;
+		if (!pattern) {
+			setStatus("Enter a pattern.", "idle");
+			return;
+		}
+
+		renderExplain(pattern);
+
+		let re: RegExp;
+		try {
+			re = new RegExp(pattern, flagsInput.value);
+		} catch (e) {
+			setStatus(`✗ Invalid regex: ${(e as SyntaxError).message}`, "error");
+			return;
+		}
+
+		const text = testInput.value;
+		if (!text) {
+			setStatus("✓ Valid regex. Enter test text to see matches.", "ok");
+			return;
+		}
+		if (text.length > 100_000) {
+			setStatus("✗ Test string too long (max 100,000 chars).", "error");
+			return;
+		}
+
+		const global = re.global || re.sticky;
+		const rx = global ? new RegExp(re.source, re.flags) : re;
+		const matches: { text: string; index: number; groups: (string | undefined)[] }[] = [];
+		if (global) {
+			rx.lastIndex = 0;
+			let m: RegExpExecArray | null;
+			let guard = 0;
+			while ((m = rx.exec(text)) !== null && guard++ < 1000) {
+				matches.push({ text: m[0], index: m.index, groups: m.slice(1) });
+				if (m[0] === "") rx.lastIndex++;
+				if (!rx.global) break;
+			}
+		} else {
+			const m = rx.exec(text);
+			if (m) matches.push({ text: m[0], index: m.index, groups: m.slice(1) });
+		}
+
+		// Highlight (single-pass, safe overlapping)
+		let html = "";
+		let cursor = 0;
+		for (const m of matches) {
+			html += escapeHtml(text.slice(cursor, m.index));
+			html += `<mark>${escapeHtml(m.text)}</mark>`;
+			cursor = m.index + m.text.length;
+		}
+		html += escapeHtml(text.slice(cursor));
+		highlight.innerHTML = html;
+		highlight.hidden = false;
+
+		matchesEl.hidden = false;
+		const countEl = document.getElementById("regexCount") as HTMLElement;
+		countEl.textContent = `${matches.length}${matches.length >= 1000 ? " (capped)" : ""}`;
+		setStatus(`✓ ${matches.length} match(es) found.`, "ok");
+	}
+
+	document.getElementById("regexTest")!.addEventListener("click", run);
+	patternInput.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") run();
+	});
+
+	document.querySelectorAll<HTMLButtonElement>(".regex-preset-btn").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			const preset = REGEX_PRESETS.find((p) => p.label === btn.dataset.preset);
+			if (!preset) return;
+			patternInput.value = preset.pattern;
+			flagsInput.value = preset.flags;
+			testInput.value = preset.sample;
+			run();
+		});
+	});
+</script>
