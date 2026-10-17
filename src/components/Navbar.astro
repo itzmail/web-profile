@@ -2,6 +2,9 @@
 import SunIcon from "../assets/icons/SunIcon.astro";
 import MoonIcon from "../assets/icons/MoonIcon.astro";
 import LanguageToggle from "./LanguageToggle.astro";
+
+const pathname = Astro.url.pathname;
+const showLanguageToggle = pathname === "/lab" || pathname.startsWith("/lab/");
 ---
 
 <nav class="navbar" id="navbar">
@@ -21,7 +24,7 @@ import LanguageToggle from "./LanguageToggle.astro";
         </ul>
 
         <div class="nav-actions">
-            <LanguageToggle />
+            {showLanguageToggle && <LanguageToggle />}
             <button
                 class="nav-action-btn nav-term-toggle"
                 id="navTermToggle"
