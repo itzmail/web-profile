@@ -9,7 +9,6 @@ export default defineConfig({
   adapter: cloudflare(),
   redirects: {
     '/blog': '/notes',
-    '/blog/[...slug]': '/notes/[...slug]',
   },
   vite: {
     server: {
