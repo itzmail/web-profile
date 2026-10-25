@@ -26,10 +26,9 @@ const topPosts = resolvedPosts.slice(0, 5);
 >
 	<div class="v2-section-header">
 		<h2 class="v2-section-title">
-			<span class="v2-section-index">02 //</span>
 			<span>RECENT NOTES</span>
 		</h2>
-		<a href="/blog" class="v2-section-link">[all notes →]</a>
+		<a href="/notes" class="v2-section-link">[all notes →]</a>
 	</div>
 
 	<div class="v2-window">
@@ -62,7 +61,7 @@ const topPosts = resolvedPosts.slice(0, 5);
 						const dateStr = validDate ? validDate.toISOString().slice(0, 10) : "2026";
 						return (
 							<li>
-								<a href={`/blog/${post.slug}`} class="v2-writing-row">
+								<a href={`/notes/${post.slug}`} class="v2-writing-row">
 									<time class="v2-writing-date" datetime={dateStr}>
 										{dateStr}
 									</time>
@@ -77,8 +76,8 @@ const topPosts = resolvedPosts.slice(0, 5);
 				</ul>
 			) : (
 				<div class="v2-window-body v2-writing-empty">
-					<span>No published notes returned from API — check /blog archive.</span>
-					<a href="/blog" class="v2-btn">[Open Blog Archive →]</a>
+					<span>No published notes returned from API — check /notes archive.</span>
+					<a href="/notes" class="v2-btn">[Open Notes Archive →]</a>
 				</div>
 			)}
 		</div>

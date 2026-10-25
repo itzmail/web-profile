@@ -1,0 +1,342 @@
+---
+import { marked } from "marked";
+import { apiFetch } from "../../utils/api";
+import { embedVideoLinks } from "../../utils/videoEmbed";
+import LayoutV2 from "../../layouts/LayoutV2.astro";
+import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
+import CvModal from "../../components/CvModal.astro";
+import type { Post, ApiSettings } from "../../types/index";
+
+const { slug } = Astro.params;
+
+const t0 = Date.now();
+const [post, settings] = await Promise.all([
+	apiFetch<Post>(`/posts/${encodeURIComponent(slug ?? "")}`),
+	apiFetch<ApiSettings>("/settings"),
+]);
+const fetchMs = Math.max(12, Date.now() - t0);
+
+if (!post) {
+	return Astro.redirect("/404");
+}
+
+const htmlContent = post.body ? marked(embedVideoLinks(post.body)) : "";
+
+function formatDate(iso: string) {
+	try {
+		return new Date(iso).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+	} catch {
+		return iso;
+	}
+}
+
+const pageTitle = post.meta_title ?? post.title;
+const pageDesc = post.meta_description ?? post.excerpt ?? "";
+const canonicalURL = `https://itsmail.dev/notes/${post.slug || slug}`;
+
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "BlogPosting",
+	headline: post.title,
+	description: pageDesc,
+	datePublished: post.published_at,
+	author: { "@type": "Person", name: "Ismail Alam" },
+	...(post.cover_image && { image: post.cover_image }),
+};
+---
+
+<LayoutV2
+	title={`${pageTitle} — Ismail Alam`}
+	description={pageDesc}
+	canonicalURL={canonicalURL}
+	jsonLd={jsonLd}
+>
+	<main class="v2-container">
+		<!-- Back Breadcrumb & Metadata -->
+		<header class="v2-note-header">
+			<div class="v2-note-meta-row">
+				<a href="/notes" class="v2-back-link">
+					<span class="v2-back-arrow">←</span>
+					<span>all notes</span>
+				</a>
+				<span class="v2-note-read-tag">
+					{post.reading_time ? `[${post.reading_time} min read]` : "[rfc]"}
+				</span>
+			</div>
+
+			<h1 class="v2-note-headline">{post.title}</h1>
+
+			<div class="v2-note-byline">
+				<time datetime={post.published_at}>{formatDate(post.published_at)}</time>
+				<span class="v2-note-sep">·</span>
+				<span>Ismail Nur Alam</span>
+				{post.tags && post.tags.length > 0 && (
+					<>
+						<span class="v2-note-sep">·</span>
+						<span class="v2-note-tags">
+							{post.tags.map((t) => (
+								<span class="v2-tag">{t}</span>
+							))}
+						</span>
+					</>
+				)}
+			</div>
+		</header>
+
+		<!-- Main Reader Window Frame -->
+		<article class="v2-window v2-note-window" data-v2-async-box data-fetch-ms={fetchMs}>
+			<div class="v2-window-titlebar">
+				<span>buffer // {slug}.md</span>
+				<span class="v2-box-telemetry">
+					<span>● 200 OK</span>
+				</span>
+			</div>
+
+			{post.cover_image && (
+				<div class="v2-note-cover">
+					<img src={post.cover_image} alt={post.title} class="v2-note-cover-img" />
+					<span class="v2-gallery-scanline" aria-hidden="true"></span>
+				</div>
+			)}
+
+			<div class="v2-markdown-body" set:html={htmlContent} />
+
+			<div class="v2-note-footer">
+				<a href="/notes" class="v2-btn">
+					[← Back to all notes]
+				</a>
+			</div>
+		</article>
+	</main>
+
+	<!-- Retro Robot Agent & Spotlight Command Bar -->
+	<CommandBarV2 email={settings?.profile_email || "ismailnuralam@gmail.com"} />
+
+	<!-- CV Modal -->
+	<CvModal />
+</LayoutV2>
+
+<style>
+	.v2-note-header {
+		margin-bottom: 2rem;
+		padding-top: 0.5rem;
+	}
+
+	.v2-note-meta-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.85rem;
+	}
+
+	.v2-back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-family: var(--v2-font-mono);
+		font-size: 0.78rem;
+		color: var(--v2-text-muted);
+		transition: color 0.12s ease;
+	}
+
+	.v2-back-link:hover {
+		color: var(--v2-green);
+	}
+
+	.v2-note-read-tag {
+		font-family: var(--v2-font-mono);
+		font-size: 0.72rem;
+		color: var(--v2-text-dim);
+	}
+
+	.v2-note-headline {
+		font-family: var(--v2-font-sans);
+		font-size: clamp(2rem, 4.5vw, 2.75rem);
+		font-weight: 800;
+		letter-spacing: -0.035em;
+		line-height: 1.15;
+		color: var(--v2-text);
+		margin-bottom: 0.85rem;
+	}
+
+	.v2-note-byline {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		font-family: var(--v2-font-mono);
+		font-size: 0.78rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-note-sep {
+		opacity: 0.5;
+	}
+
+	.v2-note-tags {
+		display: inline-flex;
+		gap: 0.3rem;
+	}
+
+	/* Reader Window */
+	.v2-note-window {
+		margin-bottom: 3.5rem;
+	}
+
+	.v2-note-cover {
+		position: relative;
+		width: 100%;
+		max-height: 260px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+		background: #08090d;
+		border-bottom: 1px solid var(--v2-border);
+		padding: 0.75rem 0;
+	}
+
+	.v2-note-cover-img {
+		max-width: 100%;
+		height: auto;
+		max-height: 240px;
+		object-fit: contain;
+		display: block;
+	}
+
+	.v2-gallery-scanline {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			rgba(18, 16, 16, 0) 50%,
+			rgba(0, 0, 0, 0.2) 50%
+		);
+		background-size: 100% 2px;
+		pointer-events: none;
+		opacity: 0.4;
+	}
+
+	.v2-markdown-body {
+		padding: 2.25rem 2.5rem;
+		font-size: 1.02rem;
+		line-height: 1.8;
+		color: var(--v2-text);
+	}
+
+	.v2-markdown-body :global(h2) {
+		font-family: var(--v2-font-display);
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--v2-text);
+		margin-top: 2.25rem;
+		margin-bottom: 0.85rem;
+		border-bottom: 1px solid var(--v2-border);
+		padding-bottom: 0.4rem;
+	}
+
+	.v2-markdown-body :global(h3) {
+		font-family: var(--v2-font-display);
+		font-size: 1.2rem;
+		font-weight: 600;
+		color: var(--v2-text);
+		margin-top: 1.75rem;
+		margin-bottom: 0.6rem;
+	}
+
+	.v2-markdown-body :global(p) {
+		margin-bottom: 1.35rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-markdown-body :global(ul),
+	.v2-markdown-body :global(ol) {
+		margin-bottom: 1.35rem;
+		padding-left: 1.5rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-markdown-body :global(li) {
+		margin-bottom: 0.4rem;
+	}
+
+	.v2-markdown-body :global(blockquote) {
+		border-left: 2px solid var(--v2-green);
+		padding-left: 1.25rem;
+		margin: 1.5rem 0;
+		color: var(--v2-text-dim);
+		font-style: italic;
+	}
+
+	.v2-markdown-body :global(code) {
+		font-family: var(--v2-font-mono);
+		font-size: 0.85em;
+		background: var(--v2-bg-elevated);
+		border: 1px solid var(--v2-border);
+		padding: 0.15rem 0.35rem;
+		color: var(--v2-green);
+	}
+
+	.v2-markdown-body :global(pre) {
+		background: var(--v2-bg-elevated);
+		border: 1px solid var(--v2-border);
+		padding: 1.25rem;
+		overflow-x: auto;
+		margin-bottom: 1.5rem;
+	}
+
+	.v2-markdown-body :global(pre code) {
+		background: transparent;
+		border: none;
+		padding: 0;
+		color: var(--v2-text);
+	}
+
+	.v2-markdown-body :global(img) {
+		max-width: 100%;
+		height: auto;
+		max-height: 440px;
+		object-fit: contain;
+		display: block;
+		margin: 1.5rem auto;
+		border: 1px solid var(--v2-border);
+		background: #000000;
+		padding: 4px;
+	}
+
+	.v2-markdown-body :global(.video-embed) {
+		position: relative;
+		width: 100%;
+		max-width: 680px;
+		aspect-ratio: 16 / 9;
+		margin: 1.5rem auto;
+		border: 1px solid var(--v2-border);
+		background: #000000;
+		padding: 4px;
+	}
+
+	.v2-markdown-body :global(.video-embed iframe),
+	.v2-markdown-body :global(.video-embed video) {
+		width: 100%;
+		height: 100%;
+		border: none;
+		display: block;
+	}
+
+	.v2-note-footer {
+		padding: 1.25rem 2.5rem 2rem;
+		border-top: 1px dashed var(--v2-border);
+	}
+
+	@media (max-width: 680px) {
+		.v2-markdown-body {
+			padding: 1.25rem 1rem;
+		}
+		.v2-note-footer {
+			padding: 1rem;
+		}
+	}
+</style>

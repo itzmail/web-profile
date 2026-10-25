@@ -1,5 +1,7 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import LayoutV2 from "../../layouts/LayoutV2.astro";
+import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
+import CvModal from "../../components/CvModal.astro";
 import JsonTool from "../../components/tools/JsonTool.astro";
 import Base64Tool from "../../components/tools/Base64Tool.astro";
 import TimestampTool from "../../components/tools/TimestampTool.astro";
@@ -56,13 +58,13 @@ const toolsJsonLd = {
 };
 ---
 
-<Layout
+<LayoutV2
 	title="Free Developer Tools — JSON, Base64, Cron, CIDR & Regex | Ismail Alam"
 	description="Free client-side developer tools: JSON formatter & TypeScript generator, Base64/URL converter, epoch timestamp converter, UUID/ULID generator, cURL to code, cron visualizer, CIDR subnet calculator, hash & HMAC, diff checker, and regex tester. 100% in your browser — zero tracking."
 	canonicalURL="https://itsmail.dev/tools"
 	jsonLd={toolsJsonLd}
 >
-	<main class="tools-page">
+	<main class="tools-page v2-container">
 		<div class="container">
 			<header class="page-header reveal">
 				<p class="font-mono page-eyebrow">// devtools</p>
@@ -127,7 +129,7 @@ const toolsJsonLd = {
 			</div>
 		</div>
 	</main>
-</Layout>
+</LayoutV2>
 
 <script>
 	const navItems = [...document.querySelectorAll<HTMLButtonElement>(".tools-nav-item")];
@@ -482,3 +484,10 @@ const toolsJsonLd = {
 		color: var(--red);
 	}
 </style>
+
+<!-- Retro Robot Agent & Spotlight Command Bar -->
+<CommandBarV2 email="ismailnuralam@gmail.com" />
+
+<!-- CV Modal -->
+<CvModal />
+

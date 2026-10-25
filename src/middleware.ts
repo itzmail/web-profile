@@ -1,6 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 
 const BLOG_HOST = "blog.itsmail.dev";
+const NOTES_HOST = "notes.itsmail.dev";
 
 /**
  * Baseline hardening headers for every response served by the Worker.
@@ -21,14 +22,23 @@ function applySecurityHeaders(response: Response): Response {
 export const onRequest = defineMiddleware(async (context, next) => {
 	const { url } = context;
 
+	// 1. Subdomain redirect: blog.itsmail.dev -> notes.itsmail.dev / itsmail.dev/notes (301 Permanent)
+	if (url.hostname === BLOG_HOST) {
+		const target = new URL(url);
+		target.hostname = NOTES_HOST;
+		target.pathname = target.pathname.replace(/^\/blog(\/|$)/, "$1") || "/";
+		return applySecurityHeaders(context.redirect(target.toString(), 301));
+	}
+
 	let response: Response;
 
+	// 2. Subdomain routing: notes.itsmail.dev maps transparently to /notes internally
 	if (
-		url.hostname === BLOG_HOST &&
-		!url.pathname.startsWith("/blog") &&
+		url.hostname === NOTES_HOST &&
+		!url.pathname.startsWith("/notes") &&
 		!url.pathname.startsWith("/api")
 	) {
-		url.pathname = `/blog${url.pathname === "/" ? "" : url.pathname}`;
+		url.pathname = `/notes${url.pathname === "/" ? "" : url.pathname}`;
 		response = await next(url);
 	} else {
 		response = await next();

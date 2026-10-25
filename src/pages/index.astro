@@ -1,31 +1,49 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import Hero from "../components/Hero.astro";
-import BentoGrid from "../components/bento/BentoGrid.astro";
-import Projects from "../components/Projects.astro";
-import Contact from "../components/Contact.astro";
-import CvModal from "../components/CvModal.astro";
+export const prerender = false;
 
-const jsonLd = {
-	"@context": "https://schema.org",
-	"@type": "Person",
-	name: "Ismail Alam",
-	url: "https://itsmail.dev",
-	jobTitle: "Fullstack Engineer",
-	description: "Fullstack developer & architect. Building scalable backend systems, beautiful interfaces, and everything in between.",
-};
+import HomeV1 from "../components/v1/HomeV1.astro";
+import HomeV2 from "../components/v2/HomeV2.astro";
+import { env } from "cloudflare:workers";
+
+// 1. Prioritas 1: Query param override (?v=1 atau ?v=2)
+const url = new URL(Astro.request.url);
+const queryV = url.searchParams.get("v");
+
+let activeVersion = "v2"; // default
+
+// Cache the KV lookup per isolate so we don't pay a round trip on every page view.
+// 60s TTL: flipping ACTIVE_PROFILE_VERSION in KV takes effect within a minute.
+const VERSION_CACHE_TTL_MS = 60_000;
+const versionCache: { value?: string; expiresAt?: number } = {};
+
+if (queryV === "1" || queryV === "v1") {
+	activeVersion = "v1";
+} else if (queryV === "2" || queryV === "v2") {
+	activeVersion = "v2";
+} else {
+	try {
+		const cfEnv = env as unknown as { SESSION?: KVNamespace; PROFILE_VERSION?: string };
+
+		if (versionCache.value && (versionCache.expiresAt ?? 0) > Date.now()) {
+			activeVersion = versionCache.value;
+		} else {
+			const kvVersion = await cfEnv?.SESSION?.get("ACTIVE_PROFILE_VERSION");
+			if (kvVersion === "v1" || kvVersion === "v2") {
+				activeVersion = kvVersion;
+			} else if (cfEnv?.PROFILE_VERSION === "v1" || cfEnv?.PROFILE_VERSION === "v2") {
+				// Prioritas 3: wrangler.toml [vars]
+				activeVersion = cfEnv.PROFILE_VERSION;
+			}
+			versionCache.value = activeVersion;
+			versionCache.expiresAt = Date.now() + VERSION_CACHE_TTL_MS;
+		}
+	} catch {
+		const cfEnv = env as unknown as { PROFILE_VERSION?: string };
+		if (cfEnv?.PROFILE_VERSION === "v1" || cfEnv?.PROFILE_VERSION === "v2") {
+			activeVersion = cfEnv.PROFILE_VERSION;
+		}
+	}
+}
 ---
 
-<Layout
-	title="Ismail Alam — Fullstack Architect"
-	description="Fullstack developer & architect. Building scalable backend systems, beautiful interfaces, and everything in between."
-	jsonLd={jsonLd}
->
-	<main>
-		<Hero />
-		<BentoGrid />
-		<Projects />
-		<Contact />
-	</main>
-	<CvModal />
-</Layout>
+{activeVersion === "v1" ? <HomeV1 /> : <HomeV2 />}

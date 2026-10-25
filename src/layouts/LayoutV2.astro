@@ -59,10 +59,10 @@ const {
 		<header class="v2-header">
 			<div class="v2-container v2-header-inner">
 				<nav class="v2-nav" aria-label="Primary navigation">
-					<a href="/v2" class="v2-brand">[itsmail.dev]</a>
-					<a href="/v2" class="v2-nav-link active">home</a>
-					<a href="/projects" class="v2-nav-link">projects</a>
-					<a href="/blog" class="v2-nav-link">notes</a>
+					<a href="/" class="v2-brand">[itsmail.dev]</a>
+					<a href="/" class={`v2-nav-link ${Astro.url.pathname === "/" || Astro.url.pathname === "/v2" ? "active" : ""}`}>home</a>
+					<a href="/projects" class={`v2-nav-link ${Astro.url.pathname.startsWith("/projects") ? "active" : ""}`}>projects</a>
+					<a href="/notes" class={`v2-nav-link ${Astro.url.pathname.startsWith("/notes") || Astro.url.pathname.startsWith("/blog") ? "active" : ""}`}>notes</a>
 				</nav>
 
 				<div class="v2-header-controls">
@@ -116,7 +116,7 @@ const {
 
 				<div class="v2-footer-right">
 					<a href="/tools" class="v2-footer-link">[tools]</a>
-					<a href="/" class="v2-footer-link">[v1.0]</a>
+					<a href="/?v=1" class="v2-footer-link">[v1.0]</a>
 					<button
 						type="button"
 						class="v2-help-btn"
@@ -144,10 +144,10 @@ const {
 						<dt>j / k</dt><dd>scroll down / up</dd>
 						<dt>gg / G</dt><dd>scroll to top / bottom</dd>
 						<dt>c</dt><dd>open Curriculum Vitae (PDF)</dd>
-						<dt>g h</dt><dd>go home (/v2)</dd>
+						<dt>g h</dt><dd>go home (/)</dd>
 						<dt>g w</dt><dd>jump to selected works</dd>
 						<dt>g p</dt><dd>go to projects</dd>
-						<dt>g n</dt><dd>go to notes / blog</dd>
+						<dt>g n</dt><dd>go to notes</dd>
 						<dt>g t</dt><dd>go to offline tools</dd>
 						<dt>?</dt><dd>toggle this help dialog</dd>
 					</dl>
@@ -266,12 +266,46 @@ const {
 
 				if (gPressed) {
 					gPressed = false;
-					if (e.key === "h") window.location.href = "/v2";
+					if (e.key === "h") window.location.href = "/";
 					if (e.key === "w") window.location.hash = "#v2-works";
 					if (e.key === "p") window.location.href = "/projects";
 					if (e.key === "t") window.location.href = "/tools";
-					if (e.key === "n" || e.key === "b") window.location.href = "/blog";
+					if (e.key === "n" || e.key === "b") window.location.href = "/notes";
 				}
+			});
+
+			// Retro Telemetry & Async Box Revealer
+			const braille = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+			const asyncBoxes = Array.from(document.querySelectorAll<HTMLElement>("[data-v2-async-box]"));
+
+			asyncBoxes.forEach((box, idx) => {
+				const skeleton = box.querySelector<HTMLElement>("[data-box-skeleton]");
+				const content = box.querySelector<HTMLElement>("[data-box-content]");
+				const spinner = box.querySelector<HTMLElement>("[data-box-spinner]");
+				const label = box.querySelector<HTMLElement>("[data-box-label]");
+				const fetchMs = Number(box.dataset.fetchMs || 24);
+				const count = Number(box.dataset.itemCount || 0);
+				const stagger = Number(box.dataset.stagger || idx * 140);
+
+				let step = 0;
+				const timer = window.setInterval(() => {
+					step = (step + 1) % braille.length;
+					if (spinner) spinner.textContent = braille[step];
+					if (label) label.textContent = `FETCHING · ${Math.min(fetchMs, step * 9 + 12)}ms`;
+				}, 55);
+
+				window.setTimeout(() => {
+					clearInterval(timer);
+					if (skeleton) skeleton.hidden = true;
+					if (content) content.hidden = false;
+					if (spinner) {
+						spinner.textContent = "●";
+						spinner.style.color = "var(--v2-green)";
+					}
+					if (label) {
+						label.textContent = count > 0 ? `200 OK · ${count} items · ${fetchMs}ms` : `200 OK · ${fetchMs}ms`;
+					}
+				}, 260 + stagger);
 			});
 		</script>
 	</body>
@@ -302,6 +336,21 @@ const {
 		flex-wrap: wrap;
 		gap: 1.25rem;
 		font-size: 0.82rem;
+	}
+
+	@media (max-width: 520px) {
+		.v2-header-inner {
+			gap: 0.5rem;
+		}
+
+		.v2-nav {
+			gap: 0.7rem;
+			font-size: 0.74rem;
+		}
+
+		.v2-header-controls {
+			gap: 0.3rem;
+		}
 	}
 
 	.v2-brand {

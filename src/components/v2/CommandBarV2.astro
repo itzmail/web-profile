@@ -150,13 +150,13 @@ const { email } = Astro.props;
 				<span class="v2-agent-key">g p</span>
 			</a>
 			<a
-				href="/blog"
+				href="/notes"
 				class="v2-agent-item"
 				data-keywords="notes blog writings articles posts"
 			>
 				<span class="v2-agent-item-left">
 					<span class="v2-agent-tag">NOTES</span>
-					<span>Read Technical Notes (/blog)</span>
+					<span>Read Technical Notes (/notes)</span>
 				</span>
 				<span class="v2-agent-key">g n</span>
 			</a>
@@ -861,7 +861,7 @@ const { email } = Astro.props;
 				});
 				break;
 			default:
-				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn">Selected Works</a> <a href="/blog" class="v2-btn">Notes</a>`;
+				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn">Selected Works</a> <a href="/notes" class="v2-btn">Notes</a>`;
 				break;
 		}
 

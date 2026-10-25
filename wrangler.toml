@@ -2,6 +2,7 @@ name = "web-profile"
 compatibility_date = "2026-04-15"
 
 [vars]
+PROFILE_VERSION = "v2"
 OPENROUTER_MODEL = "nvidia/nemotron-3.5-lightning:free"
 AI_MODEL = "clef-flash"
 AI_MIN_CONFIDENCE = "0.5"

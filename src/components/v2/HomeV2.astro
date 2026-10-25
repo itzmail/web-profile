@@ -1,0 +1,364 @@
+---
+import LayoutV2 from "../../layouts/LayoutV2.astro";
+import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
+import SelectedWorksV2 from "../../components/v2/SelectedWorksV2.astro";
+import RecentWritingsV2 from "../../components/v2/RecentWritingsV2.astro";
+import CvModal from "../../components/CvModal.astro";
+import { apiFetch } from "../../utils/api";
+import type {
+	ApiSettings,
+	ApiProject,
+	PaginatedResponse,
+	PostListItem,
+	ApiSocial,
+} from "../../types/index";
+
+const [apiSettings, apiProjects, rawPosts, apiSocials] = await Promise.all([
+	apiFetch<ApiSettings>("/settings"),
+	apiFetch<ApiProject[]>("/projects/highlighted"),
+	apiFetch<PaginatedResponse<PostListItem> | PostListItem[]>("/posts"),
+	apiFetch<ApiSocial[]>("/socials"),
+]);
+
+const settings: ApiSettings = apiSettings ?? {
+	available_for_work: "true",
+	profile_name: "Ismail Nur Alam",
+	profile_bio:
+		"Fullstack & AI Systems Engineer building high-throughput backend architectures, edge decision loops, and resilient web applications.",
+	profile_location: "Yogyakarta, Indonesia",
+	profile_email: "ismailnuralam@gmail.com",
+};
+
+const projects: ApiProject[] = apiProjects ?? [];
+const posts: PostListItem[] = Array.isArray(rawPosts)
+	? rawPosts
+	: rawPosts?.data ?? [];
+const socials: ApiSocial[] = apiSocials ?? [];
+
+const isAvailable =
+	settings.available_for_work === "true" || settings.available_for_work === "1";
+
+const defaultBio =
+	"I build high-throughput backend services (Go, Rust, TypeScript), scalable web architectures, and edge-native AI systems. Previously engineered enterprise school ERP, toll-road HCIS mobile systems, and multi-tenant EdTech platforms.";
+
+const bioText =
+	settings.profile_bio && settings.profile_bio.length > 40
+		? settings.profile_bio
+		: defaultBio;
+
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "Person",
+	name: settings.profile_name || "Ismail Alam",
+	url: "https://itsmail.dev",
+	jobTitle: "Systems & Fullstack Engineer",
+	description: bioText,
+};
+---
+
+<LayoutV2
+	title="Ismail Alam — Systems & Fullstack Engineer"
+	description={bioText}
+	canonicalURL="https://itsmail.dev/"
+	jsonLd={jsonLd}
+>
+	<main class="v2-container">
+		<!-- Hero Section: Pure & Uncluttered (Home + About unified) -->
+		<section class="v2-hero v2-corner-frame v2-dither-surface">
+			<div class="v2-hero-top">
+				<div class="v2-status-line">
+					<span class="v2-dot"></span>
+					<span class="v2-status-text">
+						{isAvailable ? "Available for work" : "Currently engaged"}
+					</span>
+					<span class="v2-status-sep">·</span>
+					<span class="v2-status-loc">
+						{settings.profile_location || "Yogyakarta, ID"}
+					</span>
+				</div>
+
+				<!-- Mini Conway's Glider Easter-Egg -->
+				<button
+					type="button"
+					class="v2-mini-glider"
+					id="v2GliderWidget"
+					title="Conway's Game of Life (click to step)"
+					aria-label="Step Conway's Game of Life simulation"
+				>
+					<span class="v2-mini-glider-label">glider</span>
+					<span class="v2-mini-glider-grid" id="v2GliderGrid" aria-hidden="true">
+						{Array.from({ length: 25 }).map((_, i) => (
+							<span class="v2-mini-cell" data-cell={i}></span>
+						))}
+					</span>
+				</button>
+			</div>
+
+			<h1 class="v2-hero-headline">
+				Ismail Alam.
+				<span class="v2-hero-subheadline">
+					Systems &amp; Fullstack Engineer.
+				</span>
+			</h1>
+
+			<p class="v2-hero-bio">
+				{bioText}
+			</p>
+
+			<!-- Clean Action Row -->
+			<div class="v2-hero-links">
+				<button
+					type="button"
+					class="v2-btn v2-btn-primary"
+					id="openCvModalBtn"
+					data-open-cv
+				>
+					[Curriculum Vitae (PDF) ↗]
+				</button>
+				<a href={`mailto:${settings.profile_email}`} class="v2-btn">
+					[Direct Email →]
+				</a>
+				{socials.length > 0 ? (
+					socials.slice(0, 4).map((s) => {
+						const rawHref = s.web_profile?.data?.href || "";
+						const safeHref = /^(https?:\/\/|mailto:)/i.test(rawHref) ? rawHref : "#";
+						return (
+							<a
+								href={safeHref}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="v2-btn"
+							>
+								[{s.title} ↗]
+							</a>
+						);
+					})
+				) : (
+					<>
+						<a
+							href="https://github.com/itzmail"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="v2-btn"
+						>
+							[Github ↗]
+						</a>
+						<a
+							href="https://x.com/itsmailalam"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="v2-btn"
+						>
+							[X ↗]
+						</a>
+					</>
+				)}
+			</div>
+		</section>
+
+		<!-- 01 // SELECTED WORKS (Compact Directory Rows with Retro Telemetry Loader) -->
+		<SelectedWorksV2 projects={projects} />
+
+		<!-- 02 // RECENT NOTES (Clean Monospace Chrono Log with Retro Telemetry Loader) -->
+		<RecentWritingsV2 posts={posts} />
+	</main>
+
+	<!-- Retro Robot Agent & Spotlight Command Bar -->
+	<CommandBarV2 email={settings.profile_email} />
+
+	<!-- Fullscreen PDF Viewer Modal -->
+	<CvModal />
+</LayoutV2>
+
+<style>
+	.v2-hero {
+		padding: 2rem 2.25rem;
+		margin-bottom: 2.5rem;
+	}
+
+	.v2-hero-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.v2-status-line {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-family: var(--v2-font-mono);
+		font-size: 0.78rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-status-text {
+		color: var(--v2-green);
+		font-weight: 500;
+	}
+
+	.v2-status-sep {
+		opacity: 0.5;
+	}
+
+	/* Mini Conway Glider Button */
+	.v2-mini-glider {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.2rem 0.4rem;
+		background: transparent;
+		border: 1px dashed var(--v2-border);
+		cursor: pointer;
+		font-family: var(--v2-font-mono);
+		font-size: 0.65rem;
+		color: var(--v2-text-muted);
+		transition: border-color 0.15s ease, color 0.15s ease;
+	}
+
+	.v2-mini-glider:hover {
+		border-color: var(--v2-green);
+		color: var(--v2-green);
+	}
+
+	.v2-mini-glider-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 4px);
+		grid-template-rows: repeat(5, 4px);
+		gap: 1px;
+	}
+
+	.v2-mini-cell {
+		width: 4px;
+		height: 4px;
+		background: var(--v2-border);
+	}
+
+	.v2-mini-cell.is-alive {
+		background: var(--v2-green);
+	}
+
+	.v2-hero-headline {
+		font-family: var(--v2-font-sans);
+		font-size: clamp(2rem, 5vw, 3.25rem);
+		font-weight: 800;
+		letter-spacing: -0.04em;
+		line-height: 1.08;
+		color: var(--v2-text);
+		margin-bottom: 1.25rem;
+	}
+
+	.v2-hero-subheadline {
+		display: block;
+		font-size: clamp(1.15rem, 2.5vw, 1.75rem);
+		font-weight: 600;
+		color: var(--v2-text-muted);
+		letter-spacing: -0.02em;
+		margin-top: 0.35rem;
+	}
+
+	.v2-hero-bio {
+		font-size: 1rem;
+		line-height: 1.65;
+		color: var(--v2-text-muted);
+		max-width: 68ch;
+		margin-bottom: 1.75rem;
+	}
+
+	.v2-hero-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.65rem;
+		align-items: center;
+	}
+
+	@media (max-width: 640px) {
+		.v2-hero {
+			padding: 1.25rem 1rem;
+			margin-bottom: 1.75rem;
+		}
+
+		.v2-hero-top {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+
+		.v2-hero-links {
+			gap: 0.5rem;
+		}
+
+		.v2-hero-links .v2-btn {
+			width: 100%;
+			justify-content: center;
+		}
+	}
+</style>
+
+<script>
+	// Mini Conway's Glider Step Simulation
+	const gliderBtn = document.getElementById("v2GliderWidget");
+	const cells = Array.from(document.querySelectorAll<HTMLElement>("#v2GliderGrid .v2-mini-cell"));
+
+	// Initial Glider pattern on 5x5
+	// . X . . .
+	// . . X . .
+	// X X X . .
+	let state = [
+		0, 1, 0, 0, 0,
+		0, 0, 1, 0, 0,
+		1, 1, 1, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+	];
+
+	function renderGrid() {
+		cells.forEach((cell, idx) => {
+			if (state[idx]) {
+				cell.classList.add("is-alive");
+			} else {
+				cell.classList.remove("is-alive");
+			}
+		});
+	}
+
+	function step() {
+		const next = new Array(25).fill(0);
+		for (let r = 0; r < 5; r++) {
+			for (let c = 0; c < 5; c++) {
+				const idx = r * 5 + c;
+				let neighbors = 0;
+				for (let dr = -1; dr <= 1; dr++) {
+					for (let dc = -1; dc <= 1; dc++) {
+						if (dr === 0 && dc === 0) continue;
+						const nr = (r + dr + 5) % 5;
+						const nc = (c + dc + 5) % 5;
+						neighbors += state[nr * 5 + nc];
+					}
+				}
+				if (state[idx] === 1) {
+					next[idx] = neighbors === 2 || neighbors === 3 ? 1 : 0;
+				} else {
+					next[idx] = neighbors === 3 ? 1 : 0;
+				}
+			}
+		}
+		state = next;
+		renderGrid();
+	}
+
+	renderGrid();
+	gliderBtn?.addEventListener("click", step);
+	let simInterval = window.setInterval(step, 1400);
+
+	gliderBtn?.addEventListener("mouseenter", () => {
+		clearInterval(simInterval);
+		simInterval = window.setInterval(step, 400);
+	});
+
+	gliderBtn?.addEventListener("mouseleave", () => {
+		clearInterval(simInterval);
+		simInterval = window.setInterval(step, 1400);
+	});
+</script>

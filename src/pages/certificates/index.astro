@@ -1,811 +1,482 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import LayoutV2 from "../../layouts/LayoutV2.astro";
+import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
+import CvModal from "../../components/CvModal.astro";
 ---
 
-<Layout
-    title="Certificates — Ismail Alam"
-    description="Professional certificates and training credentials by Ismail Alam."
-    canonicalURL="https://itsmail.dev/certificates"
+<LayoutV2
+	title="Certificates & Credentials — Ismail Alam"
+	description="Professional certifications, training credentials, and engineering specializations by Ismail Alam."
+	canonicalURL="https://itsmail.dev/certificates"
 >
-    <main class="certs-page">
-        <div class="container">
-            <nav class="breadcrumb">
-                <a href="/" class="back-link font-mono">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
-                    </svg>
-                    Back to Home
-                </a>
-            </nav>
+	<main class="v2-container">
+		<!-- Page Header -->
+		<header class="v2-page-header">
+			<div class="v2-page-header-top">
+				<a href="/" class="v2-back-link">
+					<span class="v2-back-arrow">←</span>
+					<span>home</span>
+				</a>
+				<span class="v2-page-tag">[verified credentials]</span>
+			</div>
+			<h1 class="v2-page-title">
+				CERTIFICATES &amp; TRAINING
+			</h1>
+			<p class="v2-page-desc">
+				Verified professional specializations, cloud architecture certifications, and systems training records.
+			</p>
+		</header>
 
-            <header class="page-header reveal">
-                <p class="page-label font-mono">// credentials</p>
-                <h1 class="page-title">Certificates <span>&amp; Training</span></h1>
-                <p class="page-subtitle" id="cert-count">&nbsp;</p>
-            </header>
+		<!-- Window Container -->
+		<section class="v2-window v2-certs-window" id="v2CertsWindow">
+			<div class="v2-window-titlebar">
+				<span>endpoint // GET /certificates</span>
+				<span class="v2-box-telemetry" id="v2CertsTelemetry">
+					<span id="v2CertsSpinner">⠋</span>
+					<span id="v2CertsStatusLabel">SYNCING CREDENTIALS...</span>
+				</span>
+			</div>
 
-            <div id="certs-loading" class="loading-state">
-                <div class="skeleton-grid">
-                    {Array.from({ length: 6 }).map(() => (
-                        <div class="skeleton-card">
-                            <div class="skeleton-line skeleton-line--short"></div>
-                            <div class="skeleton-line skeleton-line--long"></div>
-                            <div class="skeleton-line skeleton-line--medium"></div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+			<!-- Skeleton State -->
+			<div class="v2-certs-skeleton" id="v2CertsSkeleton">
+				{[1, 2, 3, 4, 5, 6].map((num) => (
+					<div class="v2-cert-row v2-cert-skeleton">
+						<span class="v2-skeleton-bar" style="width: 70px; height: 12px;"></span>
+						<span class="v2-skeleton-bar" style={`width: ${180 + (num % 3) * 60}px; height: 14px;`}></span>
+						<span class="v2-skeleton-bar" style="width: 90px; height: 12px; margin-left: auto;"></span>
+					</div>
+				))}
+			</div>
 
-            <div id="certs-error" class="error-state" style="display:none;text-align:center;padding:4rem 0;"></div>
+			<!-- Live Directory List -->
+			<div class="v2-certs-list" id="v2CertsList" hidden></div>
 
-            <div id="certs-grid" class="certs-grid" style="display:none;"></div>
-        </div>
-    </main>
+			<!-- Empty / Error state -->
+			<div class="v2-empty-state" id="v2CertsNotice" hidden>
+				<span id="v2CertsNoticeText">[fetching certificates...]</span>
+			</div>
+		</section>
+	</main>
 
-    <!-- Detail Modal -->
-    <div id="cert-modal" class="modal-backdrop" aria-hidden="true">
-        <div class="modal-box" role="dialog" aria-modal="true">
-            <button class="modal-close font-mono" id="cert-modal-close" aria-label="Close">&times;</button>
-            <div class="modal-body" id="cert-modal-body"></div>
-        </div>
-    </div>
-</Layout>
+	<!-- Retro Preview Modal -->
+	<dialog id="v2CertModal" class="v2-cert-dialog" aria-modal="true" aria-labelledby="v2CertModalTitle">
+		<div class="v2-window">
+			<div class="v2-window-titlebar v2-window-titlebar-invert">
+				<span id="v2CertModalTitle">credential // preview</span>
+				<button type="button" class="v2-modal-close" id="v2CloseCertModalBtn">[esc]</button>
+			</div>
+			<div class="v2-cert-modal-body" id="v2CertModalBody"></div>
+		</div>
+	</dialog>
 
-<script>
-    const API_BASE = import.meta.env.PUBLIC_API_URL ?? "https://my-data.itsmail.dev/api";
+	<!-- Retro Robot Agent & Spotlight Command Bar -->
+	<CommandBarV2 email="ismailnuralam@gmail.com" />
 
-    interface CertData {
-        id: string;
-        title: string;
-        description?: string;
-        issuer?: string;
-        issued_at?: string;
-        expired_at?: string | null;
-        credential_id?: string | null;
-        credential_url?: string | null;
-        category?: string | null;
-        file_url?: string | null;
-        file_type?: "pdf" | "image" | null;
-    }
-
-    interface ApiCertificate {
-        id: string;
-        title: string;
-        description: string;
-        is_active: number;
-        order: number;
-        web_profile: {
-            data: {
-                slug: string;
-                issuer: string;
-                issued_at: string;
-                expired_at: string | null;
-                credential_id: string | null;
-                credential_url: string | null;
-                category: string | null;
-                file_url: string | null;
-                file_type: "pdf" | "image" | null;
-            };
-        };
-    }
-
-    function formatDate(dateStr: string | null | undefined): string {
-        if (!dateStr) return "";
-        return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-    }
-
-    function formatDateShort(dateStr: string | null | undefined): string {
-        if (!dateStr) return "";
-        return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "short" });
-    }
-
-    function isExpired(expiredAt: string | null | undefined): boolean {
-        if (!expiredAt) return false;
-        return new Date(expiredAt) < new Date();
-    }
-
-    function buildCardData(cert: ApiCertificate): CertData {
-        const data = cert.web_profile?.data ?? {} as ApiCertificate["web_profile"]["data"];
-        return {
-            id: cert.id,
-            title: cert.title,
-            description: cert.description,
-            ...data,
-        };
-    }
-
-    function renderCard(cert: ApiCertificate): string {
-        const data = cert.web_profile?.data ?? {} as ApiCertificate["web_profile"]["data"];
-        const expired = isExpired(data.expired_at);
-        const cardData = JSON.stringify(buildCardData(cert)).replace(/"/g, "&quot;");
-
-        const badge = expired
-            ? `<span class="cert-badge cert-badge--expired font-mono">expired</span>`
-            : data.expired_at
-                ? `<span class="cert-badge cert-badge--valid font-mono">valid</span>`
-                : `<span class="cert-badge cert-badge--lifetime font-mono">lifetime</span>`;
-
-        const categoryHtml = data.category
-            ? `<span class="cert-category font-mono">${data.category}</span>`
-            : `<span></span>`;
-
-        const issuedHtml = data.issued_at
-            ? `<span class="cert-date"><span class="date-label">issued</span>${formatDateShort(data.issued_at)}</span>`
-            : "";
-
-        const expiredHtml = data.expired_at
-            ? `<span class="cert-date"><span class="date-label">expires</span>${formatDateShort(data.expired_at)}</span>`
-            : "";
-
-        const fileBadge = data.file_url
-            ? `<span class="cert-file-badge font-mono">${data.file_type === "pdf" ? "PDF" : "IMG"}</span>`
-            : "";
-
-        const verifyHtml = data.credential_url
-            ? `<span class="cert-verify font-mono">verify &rarr;</span>`
-            : "";
-
-        const descHtml = cert.description
-            ? `<p class="cert-desc">${cert.description}</p>`
-            : "";
-
-        return `
-            <button class="cert-card${expired ? " cert-card--expired" : ""}" data-cert="${cardData}" aria-label="View ${cert.title}">
-                <div class="cert-card-header">${categoryHtml}${badge}</div>
-                <h2 class="cert-title">${cert.title}</h2>
-                ${data.issuer ? `<p class="cert-issuer font-mono"><span class="issuer-label">by</span> ${data.issuer}</p>` : ""}
-                ${descHtml}
-                <div class="cert-dates font-mono">${issuedHtml}${expiredHtml}</div>
-                <div class="cert-card-footer">${fileBadge}${verifyHtml}</div>
-            </button>
-        `;
-    }
-
-    function renderModal(data: CertData): void {
-        const body = document.getElementById("cert-modal-body");
-        if (!body) return;
-
-        const expired = isExpired(data.expired_at);
-
-        const fileHtml = data.file_url
-            ? data.file_type === "pdf"
-                ? `<div class="modal-file-section">
-                     <p class="modal-section-label font-mono">// certificate file</p>
-                     <a href="${data.file_url}" target="_blank" rel="noopener noreferrer" class="modal-file-link font-mono">
-                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                         </svg>
-                         Download PDF
-                     </a>
-                   </div>`
-                : `<div class="modal-file-section">
-                     <p class="modal-section-label font-mono">// certificate</p>
-                     <img src="${data.file_url}" alt="${data.title}" class="modal-cert-image" loading="lazy" />
-                   </div>`
-            : "";
-
-        const verifyHtml = data.credential_url
-            ? `<a href="${data.credential_url}" target="_blank" rel="noopener noreferrer" class="modal-verify-btn font-mono">Verify Credential &rarr;</a>`
-            : "";
-
-        const credentialIdHtml = data.credential_id
-            ? `<div class="modal-meta-row">
-                   <span class="modal-meta-label font-mono">Credential ID</span>
-                   <span class="modal-meta-value font-mono">${data.credential_id}</span>
-               </div>`
-            : "";
-
-        body.innerHTML = `
-            <div class="modal-cert-header">
-                <div class="modal-badges">
-                    ${data.category ? `<span class="modal-badge modal-badge--category font-mono">${data.category}</span>` : ""}
-                    ${expired
-                        ? `<span class="modal-badge modal-badge--expired font-mono">expired</span>`
-                        : data.expired_at
-                            ? `<span class="modal-badge modal-badge--valid font-mono">valid</span>`
-                            : `<span class="modal-badge modal-badge--lifetime font-mono">lifetime</span>`
-                    }
-                </div>
-                <h2 class="modal-title">${data.title}</h2>
-                ${data.issuer ? `<p class="modal-issuer font-mono">by ${data.issuer}</p>` : ""}
-            </div>
-            ${data.description ? `<p class="modal-description">${data.description}</p>` : ""}
-            <div class="modal-meta">
-                ${data.issued_at ? `<div class="modal-meta-row"><span class="modal-meta-label font-mono">Issued</span><span class="modal-meta-value font-mono">${formatDate(data.issued_at)}</span></div>` : ""}
-                ${data.expired_at ? `<div class="modal-meta-row"><span class="modal-meta-label font-mono">Expires</span><span class="modal-meta-value font-mono${expired ? " text-expired" : ""}">${formatDate(data.expired_at)}</span></div>` : ""}
-                ${credentialIdHtml}
-            </div>
-            ${fileHtml}
-            ${verifyHtml}
-        `;
-    }
-
-    const modal = document.getElementById("cert-modal") as HTMLElement;
-    const closeBtn = document.getElementById("cert-modal-close") as HTMLElement;
-
-    function openModal(data: CertData): void {
-        renderModal(data);
-        modal.setAttribute("aria-hidden", "false");
-        modal.classList.add("active");
-        document.body.style.overflow = "hidden";
-    }
-
-    function closeModal(): void {
-        modal.setAttribute("aria-hidden", "true");
-        modal.classList.remove("active");
-        document.body.style.overflow = "";
-    }
-
-    function attachCardListeners(): void {
-        document.querySelectorAll<HTMLButtonElement>(".cert-card").forEach((card) => {
-            card.addEventListener("click", () => {
-                const raw = card.dataset.cert;
-                if (!raw) return;
-                try {
-                    openModal(JSON.parse(raw) as CertData);
-                } catch {}
-            });
-        });
-    }
-
-    closeBtn.addEventListener("click", closeModal);
-    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
-
-    // Fetch data client-side
-    async function loadCertificates(): Promise<void> {
-        const loading = document.getElementById("certs-loading")!;
-        const errorEl = document.getElementById("certs-error")!;
-        const grid = document.getElementById("certs-grid")!;
-        const countEl = document.getElementById("cert-count")!;
-
-        try {
-            const res = await fetch(`${API_BASE}/certificates`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const certs: ApiCertificate[] = await res.json();
-
-            loading.style.display = "none";
-
-            if (certs.length === 0) {
-                countEl.textContent = "0 credentials";
-                errorEl.innerHTML = `
-                    <p class="font-mono text-muted" style="font-size:0.875rem;">// no certificates yet</p>
-                    <p style="font-size:0.9rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.6;max-width:40ch;">
-                        Still earning them — credentials will appear here once added.
-                    </p>`;
-                errorEl.style.display = "block";
-                return;
-            }
-
-            countEl.textContent = `${certs.length} credential${certs.length !== 1 ? "s" : ""}`;
-            grid.innerHTML = certs.map(renderCard).join("");
-            grid.style.display = "grid";
-            attachCardListeners();
-        } catch {
-            loading.style.display = "none";
-            errorEl.innerHTML = `
-                <p class="font-mono text-muted" style="font-size:0.875rem;">// failed to load</p>
-                <p style="font-size:0.9rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.6;">
-                    Couldn't reach the server — try refreshing the page.
-                </p>`;
-            errorEl.style.display = "block";
-        }
-    }
-
-    loadCertificates();
-</script>
+	<!-- CV Modal -->
+	<CvModal />
+</LayoutV2>
 
 <style is:global>
-    .certs-page {
-        padding-top: calc(var(--nav-h) + 3rem);
-        padding-bottom: 6rem;
-    }
-
-    .breadcrumb {
-        margin-bottom: 2.5rem;
-    }
-
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        text-decoration: none;
-        transition: color var(--duration) var(--ease);
-    }
-
-    .back-link:hover {
-        color: var(--green);
-    }
-
-    .page-header {
-        margin-bottom: 3rem;
-    }
-
-    .page-label {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        letter-spacing: 0.1em;
-        margin-bottom: 0.5rem;
-    }
-
-    .page-title {
-        font-size: clamp(2rem, 5vw, 3rem);
-        font-weight: 700;
-        line-height: 1.1;
-        margin-bottom: 0.5rem;
-    }
-
-    .page-title span {
-        color: var(--green);
-    }
-
-    .page-subtitle {
-        font-size: 0.875rem;
-        color: var(--text-muted);
-    }
-
-    /* Skeleton */
-    .skeleton-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .skeleton-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        height: 180px;
-    }
-
-    .skeleton-line {
-        background: linear-gradient(90deg, var(--border) 25%, rgba(255,255,255,0.04) 50%, var(--border) 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-        border-radius: 4px;
-        height: 12px;
-    }
-
-    .skeleton-line--short { width: 40%; }
-    .skeleton-line--medium { width: 60%; }
-    .skeleton-line--long { width: 85%; height: 18px; }
-
-    @keyframes shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-    }
-
-    .error-state {
-        text-align: center;
-        padding: 3rem 0;
-    }
-
-    .certs-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .cert-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        cursor: pointer;
-        text-align: left;
-        color: inherit;
-        transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .cert-card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(ellipse at top right, rgba(0, 255, 136, 0.05), transparent 60%);
-        opacity: 0;
-        transition: opacity 0.35s var(--ease);
-    }
-
-    .cert-card:hover {
-        border-color: var(--border-glow);
-        transform: translateY(-4px);
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 20px var(--green-glow);
-    }
-
-    .cert-card:hover::before { opacity: 1; }
-
-    .cert-card--expired { opacity: 0.65; }
-    .cert-card--expired:hover { opacity: 1; }
-
-    .cert-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-    }
-
-    .cert-category {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        letter-spacing: 0.08em;
-    }
-
-    .cert-badge {
-        font-family: var(--font-mono);
-        font-size: 0.6rem;
-        padding: 0.18rem 0.5rem;
-        border-radius: 4px;
-        letter-spacing: 0.05em;
-        border: 1px solid;
-    }
-
-    .cert-badge--valid {
-        color: var(--green);
-        border-color: rgba(0, 255, 136, 0.3);
-        background: rgba(0, 255, 136, 0.06);
-    }
-
-    :global([data-theme="light"]) .cert-badge--valid {
-        border-color: rgba(0, 170, 85, 0.3);
-        background: rgba(0, 170, 85, 0.08);
-    }
-
-    .cert-badge--lifetime {
-        color: var(--cyan, #00d4ff);
-        border-color: rgba(0, 212, 255, 0.3);
-        background: rgba(0, 212, 255, 0.06);
-    }
-
-    :global([data-theme="light"]) .cert-badge--lifetime {
-        border-color: rgba(0, 153, 187, 0.3);
-        background: rgba(0, 153, 187, 0.08);
-    }
-
-    .cert-badge--expired {
-        color: rgba(255, 140, 100, 0.9);
-        border-color: rgba(255, 100, 80, 0.25);
-        background: rgba(255, 100, 80, 0.06);
-    }
-
-    :global([data-theme="light"]) .cert-badge--expired {
-        color: #c2410c;
-        border-color: rgba(194, 65, 12, 0.25);
-        background: rgba(194, 65, 12, 0.08);
-    }
-
-    .cert-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text);
-        line-height: 1.3;
-        margin: 0;
-    }
-
-    .cert-issuer {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin: 0;
-    }
-
-    .issuer-label { opacity: 0.5; }
-
-    .cert-desc {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        line-height: 1.6;
-        margin: 0;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .cert-dates {
-        display: flex;
-        gap: 1.25rem;
-        margin-top: auto;
-    }
-
-    .cert-date {
-        display: flex;
-        flex-direction: column;
-        font-size: 0.7rem;
-    }
-
-    .date-label {
-        font-size: 0.6rem;
-        color: var(--text-muted);
-        opacity: 0.6;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.1rem;
-    }
-
-    .cert-card-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-top: 0.25rem;
-    }
-
-    .cert-file-badge {
-        font-size: 0.6rem;
-        padding: 0.1rem 0.4rem;
-        border: 1px solid var(--border);
-        border-radius: 3px;
-        color: var(--text-muted);
-        letter-spacing: 0.05em;
-    }
-
-    .cert-verify {
-        font-size: 0.7rem;
-        color: var(--green);
-        letter-spacing: 0.04em;
-        margin-left: auto;
-    }
-
-    /* Modal */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.75);
-        backdrop-filter: blur(6px);
-        z-index: 200;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.25s var(--ease);
-    }
-
-    .modal-backdrop.active {
-        opacity: 1;
-        pointer-events: all;
-    }
-
-    .modal-box {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 2rem;
-        max-width: 560px;
-        width: 100%;
-        max-height: 85vh;
-        overflow-y: auto;
-        position: relative;
-        transform: translateY(16px);
-        transition: transform 0.25s var(--ease);
-        scrollbar-width: thin;
-        scrollbar-color: var(--border) transparent;
-    }
-
-    .modal-backdrop.active .modal-box {
-        transform: translateY(0);
-    }
-
-    .modal-close {
-        position: absolute;
-        top: 1.25rem;
-        right: 1.25rem;
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-        border-radius: 6px;
-        width: 2rem;
-        height: 2rem;
-        font-size: 1.1rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease);
-    }
-
-    .modal-close:hover {
-        color: var(--text);
-        border-color: var(--text-muted);
-    }
-
-    .modal-body {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .modal-cert-header {
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-        padding-right: 2.5rem;
-    }
-
-    .modal-badges {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-
-    .modal-badge {
-        font-family: var(--font-mono);
-        font-size: 0.6rem;
-        padding: 0.18rem 0.5rem;
-        border-radius: 4px;
-        letter-spacing: 0.05em;
-        border: 1px solid;
-    }
-
-    .modal-badge--category {
-        color: var(--badge-text);
-        border-color: var(--badge-border);
-        background: var(--badge-bg);
-    }
-
-    .modal-badge--valid {
-        color: var(--green);
-        border-color: rgba(0, 255, 136, 0.3);
-        background: rgba(0, 255, 136, 0.06);
-    }
-
-    :global([data-theme="light"]) .modal-badge--valid {
-        border-color: rgba(0, 170, 85, 0.3);
-        background: rgba(0, 170, 85, 0.08);
-    }
-
-    .modal-badge--lifetime {
-        color: var(--cyan, #00d4ff);
-        border-color: rgba(0, 212, 255, 0.3);
-        background: rgba(0, 212, 255, 0.06);
-    }
-
-    :global([data-theme="light"]) .modal-badge--lifetime {
-        border-color: rgba(0, 153, 187, 0.3);
-        background: rgba(0, 153, 187, 0.08);
-    }
-
-    .modal-badge--expired {
-        color: rgba(255, 140, 100, 0.9);
-        border-color: rgba(255, 100, 80, 0.25);
-        background: rgba(255, 100, 80, 0.06);
-    }
-
-    :global([data-theme="light"]) .modal-badge--expired {
-        color: #c2410c;
-        border-color: rgba(194, 65, 12, 0.25);
-        background: rgba(194, 65, 12, 0.08);
-    }
-
-    .modal-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text);
-        line-height: 1.2;
-        margin: 0;
-    }
-
-    .modal-issuer {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        margin: 0;
-        opacity: 0.85;
-    }
-
-    .modal-description {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        line-height: 1.7;
-        margin: 0;
-    }
-
-    .modal-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        padding: 0;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .modal-meta-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 1rem;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .modal-meta-row:last-child {
-        border-bottom: none;
-    }
-
-    .modal-meta-label {
-        color: var(--text-muted);
-        font-size: 0.68rem;
-        letter-spacing: 0.06em;
-        flex-shrink: 0;
-    }
-
-    .modal-meta-value {
-        color: var(--text);
-        font-size: 0.78rem;
-        text-align: right;
-        word-break: break-all;
-    }
-
-    .text-expired { color: rgba(255, 140, 100, 0.85) !important; }
-
-    .modal-file-section {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .modal-section-label {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        letter-spacing: 0.1em;
-        margin: 0;
-    }
-
-    .modal-cert-image {
-        width: 100%;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        display: block;
-    }
-
-    .modal-file-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.82rem;
-        color: var(--green);
-        text-decoration: none;
-        border: 1px solid rgba(0, 255, 136, 0.25);
-        border-radius: 8px;
-        padding: 0.6rem 1rem;
-        transition: background var(--duration) var(--ease);
-    }
-
-    .modal-file-link:hover { background: rgba(0, 255, 136, 0.06); }
-
-    .modal-verify-btn {
-        display: inline-block;
-        font-size: 0.82rem;
-        color: var(--green);
-        text-decoration: none;
-        border: 1px solid rgba(0, 255, 136, 0.25);
-        border-radius: 8px;
-        padding: 0.6rem 1.25rem;
-        text-align: center;
-        transition: background var(--duration) var(--ease);
-        cursor: pointer;
-    }
-
-    .modal-verify-btn:hover { background: rgba(0, 255, 136, 0.08); }
-
-    @media (max-width: 768px) {
-        .skeleton-grid,
-        .certs-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .modal-box {
-            padding: 1.5rem;
-            max-height: 90vh;
-        }
-    }
+	.v2-page-header {
+		margin-bottom: 2rem;
+		padding-top: 0.5rem;
+	}
+
+	.v2-page-header-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+
+	.v2-back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-family: var(--v2-font-mono);
+		font-size: 0.78rem;
+		color: var(--v2-text-muted);
+		transition: color 0.12s ease;
+	}
+
+	.v2-back-link:hover {
+		color: var(--v2-green);
+	}
+
+	.v2-page-tag {
+		font-family: var(--v2-font-mono);
+		font-size: 0.72rem;
+		color: var(--v2-text-dim);
+	}
+
+	.v2-page-title {
+		font-family: var(--v2-font-sans);
+		font-size: clamp(1.75rem, 4vw, 2.5rem);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		line-height: 1.15;
+		color: var(--v2-text);
+		margin-bottom: 0.75rem;
+	}
+
+	.v2-title-highlight {
+		color: var(--v2-green);
+	}
+
+	.v2-page-desc {
+		font-size: 0.95rem;
+		line-height: 1.6;
+		color: var(--v2-text-muted);
+		max-width: 65ch;
+	}
+
+	/* Certs Window */
+	.v2-certs-window {
+		margin-bottom: 3.5rem;
+	}
+
+	.v2-certs-list,
+	.v2-certs-skeleton {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.v2-certs-list[hidden],
+	.v2-certs-skeleton[hidden] {
+		display: none !important;
+	}
+
+	.v2-cert-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.25rem;
+		padding: 0.9rem 1.15rem;
+		border-bottom: 1px solid var(--v2-border);
+		cursor: pointer;
+		transition: background 0.12s ease;
+		background: var(--v2-bg);
+		width: 100%;
+		border-left: none;
+		border-right: none;
+		border-top: none;
+		text-align: left;
+		color: var(--v2-text);
+		font-family: var(--v2-font-sans);
+	}
+
+	.v2-cert-row:last-child {
+		border-bottom: none;
+	}
+
+	.v2-cert-row:hover {
+		background: var(--v2-bg-elevated);
+	}
+
+	.v2-cert-row:hover .v2-cert-title,
+	.v2-cert-row:hover .v2-cert-arrow {
+		color: var(--v2-green);
+	}
+
+	.v2-cert-left {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.v2-cert-badge {
+		font-family: var(--v2-font-mono);
+		font-size: 0.68rem;
+		color: var(--v2-green);
+		background: var(--v2-green-bg);
+		border: 1px solid var(--v2-green);
+		padding: 0.1rem 0.4rem;
+		flex-shrink: 0;
+	}
+
+	.v2-cert-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+
+	.v2-cert-title {
+		font-family: var(--v2-font-display);
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--v2-text);
+		transition: color 0.12s ease;
+	}
+
+	.v2-cert-issuer {
+		font-size: 0.76rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-cert-right {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		flex-shrink: 0;
+	}
+
+	.v2-cert-date {
+		font-family: var(--v2-font-mono);
+		font-size: 0.74rem;
+		color: var(--v2-text-dim);
+	}
+
+	.v2-cert-arrow {
+		font-size: 0.85rem;
+		color: var(--v2-text-muted);
+		transition: color 0.12s ease, transform 0.12s ease;
+	}
+
+	.v2-cert-row:hover .v2-cert-arrow {
+		transform: translateX(2px);
+	}
+
+	.v2-empty-state {
+		padding: 3rem 1.5rem;
+		text-align: center;
+		font-family: var(--v2-font-mono);
+		font-size: 0.82rem;
+		color: var(--v2-text-dim);
+	}
+
+	/* Modal Dialog */
+	.v2-cert-dialog {
+		margin: auto;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--v2-text);
+		width: min(640px, 94vw);
+	}
+
+	.v2-cert-dialog::backdrop {
+		background: rgba(9, 10, 15, 0.75);
+		backdrop-filter: blur(2px);
+	}
+
+	.v2-cert-modal-body {
+		padding: 1.5rem 1.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.v2-cert-modal-preview {
+		max-height: 380px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: #000000;
+		border: 1px solid var(--v2-border);
+		overflow: hidden;
+	}
+
+	.v2-cert-modal-preview img {
+		max-width: 100%;
+		max-height: 380px;
+		object-fit: contain;
+	}
+
+	.v2-cert-modal-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px dashed var(--v2-border);
+	}
+
+	@media (max-width: 680px) {
+		.v2-cert-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.4rem;
+		}
+		.v2-cert-right {
+			width: 100%;
+			justify-content: space-between;
+			padding-left: 2.2rem;
+		}
+	}
 </style>
+
+<script>
+	const API_BASE = "https://my-data.itsmail.dev/api";
+
+	interface CertItem {
+		id: string;
+		title: string;
+		issuer?: string;
+		issued_at?: string;
+		credential_id?: string | null;
+		credential_url?: string | null;
+		category?: string | null;
+		file_url?: string | null;
+		file_type?: "pdf" | "image" | null;
+	}
+
+	const listEl = document.getElementById("v2CertsList");
+	const skeletonEl = document.getElementById("v2CertsSkeleton");
+	const noticeEl = document.getElementById("v2CertsNotice");
+	const noticeText = document.getElementById("v2CertsNoticeText");
+	const spinnerEl = document.getElementById("v2CertsSpinner");
+	const statusLabel = document.getElementById("v2CertsStatusLabel");
+
+	const modal = document.getElementById("v2CertModal") as HTMLDialogElement | null;
+	const modalClose = document.getElementById("v2CloseCertModalBtn");
+	const modalTitle = document.getElementById("v2CertModalTitle");
+	const modalBody = document.getElementById("v2CertModalBody");
+
+	modalClose?.addEventListener("click", () => modal?.close());
+	modal?.addEventListener("click", (e) => {
+		const r = modal.getBoundingClientRect();
+		if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+			modal.close();
+		}
+	});
+
+	function formatDate(iso?: string) {
+		if (!iso) return "";
+		try {
+			return new Date(iso).toLocaleDateString("en-US", {
+				year: "numeric",
+				month: "short",
+			});
+		} catch {
+			return iso;
+		}
+	}
+
+	/** Escape API-provided text before it enters an innerHTML template. */
+	function esc(value: unknown): string {
+		return String(value ?? "")
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
+	}
+
+	/** Only allow http(s) URLs; anything else (javascript:, data:) becomes inert. */
+	function safeUrl(value?: string | null): string {
+		if (!value) return "";
+		try {
+			const parsed = new URL(value, window.location.origin);
+			return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : "";
+		} catch {
+			return "";
+		}
+	}
+
+	async function loadCerts() {
+		const t0 = performance.now();
+		try {
+			const res = await fetch(`${API_BASE}/certificates`);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const data = (await res.json()) as CertItem[] | { data?: CertItem[] };
+			const certs: CertItem[] = Array.isArray(data) ? data : data?.data ?? [];
+			const elapsed = Math.round(performance.now() - t0);
+
+			if (spinnerEl && statusLabel) {
+				spinnerEl.textContent = "●";
+				spinnerEl.style.color = "var(--v2-green)";
+				statusLabel.textContent = `200 OK · ${certs.length} verified (${elapsed}ms)`;
+			}
+
+			if (skeletonEl) skeletonEl.hidden = true;
+
+			if (!certs.length) {
+				if (noticeEl && noticeText) {
+					noticeEl.hidden = false;
+					noticeText.textContent = "[no certificates indexed in public ledger]";
+				}
+				return;
+			}
+
+			if (listEl) {
+				listEl.innerHTML = "";
+				certs.forEach((cert) => {
+					const btn = document.createElement("button");
+					btn.type = "button";
+					btn.className = "v2-cert-row";
+
+					const category = esc((cert.category || "CERT").toUpperCase());
+					const dateStr = esc(formatDate(cert.issued_at));
+
+					btn.innerHTML = `
+						<div class="v2-cert-left" style="display:flex; align-items:center; gap:1rem; min-width:0; flex:1;">
+							<span class="v2-cert-badge" style="font-family:var(--v2-font-mono); font-size:0.68rem; color:var(--v2-green); background:var(--v2-green-bg); border:1px solid var(--v2-green); padding:0.1rem 0.4rem; flex-shrink:0;">[${category}]</span>
+							<div class="v2-cert-info" style="display:flex; flex-direction:column; gap:0.15rem; min-width:0;">
+								<span class="v2-cert-title" style="font-family:var(--v2-font-display); font-size:0.95rem; font-weight:600; color:var(--v2-text);">${esc(cert.title)}</span>
+								<span class="v2-cert-issuer" style="font-size:0.76rem; color:var(--v2-text-muted);">${esc(cert.issuer || "Verified Issuer")}</span>
+							</div>
+						</div>
+						<div class="v2-cert-right" style="display:flex; align-items:center; gap:0.85rem; flex-shrink:0;">
+							<span class="v2-cert-date" style="font-family:var(--v2-font-mono); font-size:0.74rem; color:var(--v2-text-dim);">${dateStr}</span>
+							<span class="v2-cert-arrow" style="font-size:0.85rem; color:var(--v2-text-muted);">↗</span>
+						</div>
+					`;
+
+					btn.addEventListener("click", () => openCertDetail(cert));
+					listEl.appendChild(btn);
+				});
+
+				listEl.hidden = false;
+			}
+		} catch (err) {
+			if (skeletonEl) skeletonEl.hidden = true;
+			if (noticeEl && noticeText) {
+				noticeEl.hidden = false;
+				noticeText.textContent = "[failed to fetch certificates from API]";
+			}
+		}
+	}
+
+	function openCertDetail(cert: CertItem) {
+		if (!modal || !modalBody || !modalTitle) return;
+		modalTitle.textContent = `credential // ${cert.id}`;
+
+		const fileUrl = safeUrl(cert.file_url);
+		const credentialUrl = safeUrl(cert.credential_url);
+
+		const imgBlock = fileUrl && cert.file_type !== "pdf"
+			? `<div class="v2-cert-modal-preview"><img src="${esc(fileUrl)}" alt="${esc(cert.title)}" /></div>`
+			: "";
+
+		const credIdBlock = cert.credential_id
+			? `<p style="font-family: var(--v2-font-mono); font-size: 0.76rem; color: var(--v2-text-muted);">
+					Credential ID: <span style="color: var(--v2-green);">${esc(cert.credential_id)}</span>
+			   </p>`
+			: "";
+
+		const actions = [
+			credentialUrl
+				? `<a href="${esc(credentialUrl)}" target="_blank" rel="noopener noreferrer" class="v2-btn v2-btn-primary">[Verify Credential ↗]</a>`
+				: "",
+			fileUrl
+				? `<a href="${esc(fileUrl)}" target="_blank" rel="noopener noreferrer" class="v2-btn">[View Original File ↗]</a>`
+				: "",
+		].filter(Boolean).join(" ");
+
+		modalBody.innerHTML = `
+			<div>
+				<h3 style="font-family: var(--v2-font-display); font-size: 1.25rem; font-weight: 700; color: var(--v2-text); margin-bottom: 0.35rem;">${esc(cert.title)}</h3>
+				<p style="font-size: 0.85rem; color: var(--v2-text-muted);">${esc(cert.issuer || "")} · ${esc(formatDate(cert.issued_at))}</p>
+			</div>
+			${credIdBlock}
+			${imgBlock}
+			${actions ? `<div class="v2-cert-modal-actions">${actions}</div>` : ""}
+		`;
+
+		modal.showModal();
+	}
+
+	loadCerts();
+</script>

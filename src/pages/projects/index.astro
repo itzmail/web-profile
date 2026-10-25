@@ -1,511 +1,529 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import LayoutV2 from "../../layouts/LayoutV2.astro";
+import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
+import CvModal from "../../components/CvModal.astro";
 import { apiFetch } from "../../utils/api";
-import type { ApiProject } from "../../types/index";
-import ExternalLinkIcon from "../../assets/icons/ExternalLinkIcon.astro";
-import GithubIcon from "../../assets/icons/GithubIcon.astro";
+import type { ApiProject, ApiSettings } from "../../types/index";
 
-const projects = await apiFetch<ApiProject[]>("/projects") ?? [];
+const t0 = Date.now();
+const [projectsRes, settingsRes] = await Promise.all([
+	apiFetch<ApiProject[]>("/projects"),
+	apiFetch<ApiSettings>("/settings"),
+]);
+const fetchMs = Math.max(14, Date.now() - t0);
 
-const highlighted = projects.filter(p => p.web_profile?.is_highlighted);
-const others = projects.filter(p => !p.web_profile?.is_highlighted);
-
-const typeLabels: Record<string, string> = {
-    production: 'Production App',
-    client_work: 'Client Work',
-    side_project: 'Side Project',
-    open_source: 'Open Source',
+const projects: ApiProject[] = projectsRes ?? [];
+const settings: ApiSettings = settingsRes ?? {
+	available_for_work: "true",
+	profile_name: "Ismail Nur Alam",
+	profile_bio: "",
+	profile_location: "Yogyakarta, Indonesia",
+	profile_email: "ismailnuralam@gmail.com",
 };
 
-const typeColors: Record<string, string> = {
-    production: 'var(--green)',
-    client_work: 'var(--cyan)',
-    side_project: 'var(--text-muted)',
-    open_source: 'var(--purple)',
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "CollectionPage",
+	name: "Projects — Ismail Alam",
+	url: "https://itsmail.dev/projects",
+	description: "Production software, distributed backends, edge runtimes, and mobile systems engineered by Ismail Alam.",
 };
 ---
 
-<Layout title="Projects — Ismail Alam" description="All projects by Ismail Alam" canonicalURL="https://itsmail.dev/projects">
-    <main class="projects-page">
-        <div class="container">
-            <nav class="breadcrumb">
-                <a href="/" class="back-link font-mono">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
-                    </svg>
-                    Back to Home
-                </a>
-            </nav>
+<LayoutV2
+	title="Projects — Ismail Alam"
+	description="Production software, distributed backends, edge runtimes, and mobile systems engineered by Ismail Alam."
+	jsonLd={jsonLd}
+>
+	<main class="v2-container">
+		<!-- Projects Header -->
+		<header class="v2-page-header">
+			<div class="v2-page-header-top">
+				<a href="/" class="v2-back-link">
+					<span class="v2-back-arrow">←</span>
+					<span>home</span>
+				</a>
+				<span class="v2-page-tag">[directory]</span>
+			</div>
+			<h1 class="v2-page-title">
+				PROJECTS ARCHIVE
+			</h1>
+			<p class="v2-page-desc">
+				Production systems, distributed backends, edge runtimes, and mobile platforms engineered for scale.
+			</p>
+		</header>
 
-            <header class="page-header reveal">
-                <p class="font-mono text-muted page-eyebrow">// projects</p>
-                <h1 class="page-title">All Projects</h1>
-                <p class="page-sub text-muted">Things I've built, shipped, and open-sourced.</p>
-            </header>
+		<!-- Category Filter Bar (Retro Tab Frame) -->
+		<div class="v2-filter-bar" role="tablist" aria-label="Project category filter">
+			<button
+				type="button"
+				class="v2-filter-btn is-active"
+				data-filter="all"
+				role="tab"
+				aria-selected="true"
+			>
+				[ALL] <span class="v2-filter-count">({projects.length})</span>
+			</button>
+			<button
+				type="button"
+				class="v2-filter-btn"
+				data-filter="production"
+				role="tab"
+				aria-selected="false"
+			>
+				[PRODUCTION]
+			</button>
+			<button
+				type="button"
+				class="v2-filter-btn"
+				data-filter="client_work"
+				role="tab"
+				aria-selected="false"
+			>
+				[CLIENT WORK]
+			</button>
+			<button
+				type="button"
+				class="v2-filter-btn"
+				data-filter="open_source"
+				role="tab"
+				aria-selected="false"
+			>
+				[OPEN SOURCE]
+			</button>
+		</div>
 
-            {highlighted.length > 0 && (
-                <section class="section-block reveal">
-                    <h2 class="section-title font-mono">★ Featured</h2>
-                    <div class="projects-grid">
-                        {highlighted.map((p) => {
-                            const d = p.web_profile?.data;
-                            const accent = d?.accent ?? '#00ff88';
-                            const type = d?.project_type ?? 'side_project';
-                            const stack = d?.stack ?? [];
-                            const images = d?.images ?? [];
-                            const thumb = d?.cover_image ?? images[0] ?? null;
-                            const liveLink = d?.links?.find(l => l.label === 'live');
-                            const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
-                            return (
-                                <article class="project-card project-card--featured reveal-stagger" style={`--accent: ${accent};`}>
-                                    <div class="card-accent-bar"></div>
-                                    {thumb && (
-                                        <div class="card-cover card-cover--featured">
-                                            <img src={thumb} alt={p.title} loading="lazy" class="cover-img" />
-                                            {(liveLink || repoLink) && (
-                                                <div class="cover-overlay">
-                                                    {liveLink && (
-                                                        <a href={liveLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Live link">
-                                                            <ExternalLinkIcon />
-                                                        </a>
-                                                    )}
-                                                    {repoLink && (
-                                                        <a href={repoLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Repository link">
-                                                            <GithubIcon />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <div class="card-body">
-                                        <div class="card-top">
-                                            <div class="card-badges">
-                                                <span class="badge badge--featured">★ Featured</span>
-                                                <span class="badge badge--type" style={`color: ${typeColors[type]};`}>{typeLabels[type] ?? type}</span>
-                                            </div>
-                                        </div>
-                                        <h3 class="card-title">{p.title}</h3>
-                                        {p.description && <p class="card-desc text-muted">{p.description}</p>}
-                                        {stack.length > 0 && (
-                                            <div class="card-stack">
-                                                {stack.slice(0, 6).map(t => (
-                                                    <span class="stack-tag font-mono">{t}</span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div class="card-links">
-                                            <a href={`/projects/${d?.slug}`} class="card-link card-link--primary font-mono">
-                                                View Details →
-                                            </a>
-                                            {liveLink && (
-                                                <a href={liveLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
-                                                    Live ↗
-                                                </a>
-                                            )}
-                                            {repoLink && (
-                                                <a href={repoLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
-                                                    Repo ↗
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
-                </section>
-            )}
+		<!-- Window Directory Container -->
+		<section class="v2-window v2-projects-window" data-v2-async-box data-fetch-ms={fetchMs} data-item-count={projects.length}>
+			<div class="v2-window-titlebar">
+				<span>endpoint // GET /projects</span>
+				<span class="v2-box-telemetry" data-box-status>
+					<span data-box-spinner>⠋</span>
+					<span data-box-label>SYNCING...</span>
+				</span>
+			</div>
 
-            {others.length > 0 && (
-                <section class="section-block reveal">
-                    <h2 class="section-title font-mono">{highlighted.length > 0 ? '// other projects' : '// all projects'}</h2>
-                    <div class="projects-grid projects-grid--compact">
-                        {others.map((p) => {
-                            const d = p.web_profile?.data;
-                            const accent = d?.accent ?? '#00ff88';
-                            const type = d?.project_type ?? 'side_project';
-                            const stack = d?.stack ?? [];
-                            const images = d?.images ?? [];
-                            const thumb = d?.cover_image ?? images[0] ?? null;
-                            const liveLink = d?.links?.find(l => l.label === 'live');
-                            const repoLink = d?.links?.find(l => ['github','gitlab','bitbucket'].includes(l.label));
-                            return (
-                                <article class="project-card reveal-stagger" style={`--accent: ${accent};`}>
-                                    <div class="card-accent-bar"></div>
-                                    {thumb && (
-                                        <div class="card-cover">
-                                            <img src={thumb} alt={p.title} loading="lazy" class="cover-img" />
-                                            {(liveLink || repoLink) && (
-                                                <div class="cover-overlay">
-                                                    {liveLink && (
-                                                        <a href={liveLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Live link">
-                                                            <ExternalLinkIcon />
-                                                        </a>
-                                                    )}
-                                                    {repoLink && (
-                                                        <a href={repoLink.url} target="_blank" rel="noopener" class="overlay-icon" aria-label="Repository link">
-                                                            <GithubIcon />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <div class="card-body">
-                                        <div class="card-top">
-                                            <div class="card-badges">
-                                                <span class="badge badge--type" style={`color: ${typeColors[type]};`}>{typeLabels[type] ?? type}</span>
-                                            </div>
-                                        </div>
-                                        <h3 class="card-title">{p.title}</h3>
-                                        {p.description && <p class="card-desc text-muted">{p.description}</p>}
-                                        {stack.length > 0 && (
-                                            <div class="card-stack">
-                                                {stack.slice(0, 5).map(t => (
-                                                    <span class="stack-tag font-mono">{t}</span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div class="card-links">
-                                            <a href={`/projects/${d?.slug}`} class="card-link card-link--primary font-mono">
-                                                View →
-                                            </a>
-                                            {liveLink && (
-                                                <a href={liveLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
-                                                    Live ↗
-                                                </a>
-                                            )}
-                                            {repoLink && (
-                                                <a href={repoLink.url} target="_blank" rel="noopener" class="card-link card-link--secondary font-mono">
-                                                    Repo ↗
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
-                </section>
-            )}
+			<!-- Skeleton state -->
+			<div class="v2-works-skeleton" data-box-skeleton>
+				{[1, 2, 3, 4, 5, 6].map((num) => (
+					<div class="v2-work-row v2-work-row-skeleton">
+						<div class="v2-work-row-left">
+							<span class="v2-skeleton-bar v2-thumb-skeleton"></span>
+							<div class="v2-work-info">
+								<span class="v2-skeleton-bar" style={`width: ${160 + (num % 3) * 40}px; height: 14px;`}></span>
+								<span class="v2-skeleton-bar" style={`width: ${240 + (num % 2) * 50}px; height: 10px; margin-top: 4px;`}></span>
+							</div>
+						</div>
+						<div class="v2-work-row-right">
+							<span class="v2-skeleton-bar" style="width: 52px; height: 18px;"></span>
+							<span class="v2-skeleton-bar" style="width: 58px; height: 18px;"></span>
+						</div>
+					</div>
+				))}
+			</div>
 
-            {projects.length === 0 && (
-                <div class="empty-page reveal">
-                    <p class="font-mono text-muted empty-comment">// no projects yet</p>
-                    <p class="empty-sub text-muted">Still building things worth showing — check back soon.</p>
-                    <a href="/" class="empty-link font-mono">← back to home</a>
-                </div>
-            )}
-        </div>
-    </main>
-</Layout>
+			<!-- Projects Directory Rows -->
+			<div class="v2-works-directory" id="v2ProjectsList" data-box-content hidden>
+				{projects.map((p) => {
+					const data = p.web_profile?.data;
+					const slug = data?.slug || p.id;
+					const pType = data?.project_type || "side_project";
+					const stack = (data?.stack ?? []).slice(0, 5);
+					const thumb = data?.cover_image ?? data?.images?.[0] ?? null;
+
+					return (
+						<a
+							href={`/projects/${slug}`}
+							class="v2-work-row"
+							data-project-item
+							data-type={pType}
+						>
+							<div class="v2-work-row-left">
+								{thumb ? (
+									<div class="v2-work-thumb-frame">
+										<img
+											src={thumb}
+											alt={p.title}
+											class="v2-work-thumb-img"
+											loading="lazy"
+											width="80"
+											height="50"
+										/>
+										<span class="v2-thumb-scanline" aria-hidden="true"></span>
+									</div>
+								) : (
+									<div class="v2-work-thumb-frame v2-work-thumb-fallback">
+										<span class="v2-thumb-pixel-icon">&gt;_</span>
+									</div>
+								)}
+								<div class="v2-work-info">
+									<div class="v2-work-title-wrap">
+										<span class="v2-work-name">{p.title}</span>
+										{p.web_profile?.is_highlighted && (
+											<span class="v2-tag v2-tag-highlight">★ FLAGSHIP</span>
+										)}
+									</div>
+									<span class="v2-work-summary">{p.description}</span>
+								</div>
+							</div>
+
+							<div class="v2-work-row-right">
+								<div class="v2-work-tags">
+									{stack.map((tech) => (
+										<span class="v2-tag">{tech}</span>
+									))}
+								</div>
+								<span class="v2-work-arrow">→</span>
+							</div>
+						</a>
+					);
+				})}
+				<div class="v2-empty-state" id="v2EmptyState" hidden>
+					<span>[no projects matching this filter]</span>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<!-- Retro Robot Agent & Spotlight Command Bar -->
+	<CommandBarV2 email={settings.profile_email} />
+
+	<!-- CV Modal -->
+	<CvModal />
+</LayoutV2>
 
 <style>
-    .projects-page {
-        padding: 4rem 0 6rem;
-    }
+	.v2-page-header {
+		margin-bottom: 2rem;
+		padding-top: 0.5rem;
+	}
 
-    .container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
-    }
+	.v2-page-header-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
 
-    .breadcrumb {
-        margin-bottom: 2.5rem;
-    }
+	.v2-back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-family: var(--v2-font-mono);
+		font-size: 0.78rem;
+		color: var(--v2-text-muted);
+		transition: color 0.12s ease;
+	}
 
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        text-decoration: none;
-        transition: color var(--duration) var(--ease);
-    }
+	.v2-back-link:hover {
+		color: var(--v2-green);
+	}
 
-    .back-link:hover {
-        color: var(--green);
-    }
+	.v2-page-tag {
+		font-family: var(--v2-font-mono);
+		font-size: 0.72rem;
+		color: var(--v2-text-dim);
+	}
 
-    .page-header {
-        margin-bottom: 3rem;
-    }
+	.v2-page-title {
+		font-family: var(--v2-font-sans);
+		font-size: clamp(1.75rem, 4vw, 2.5rem);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		line-height: 1.15;
+		color: var(--v2-text);
+		margin-bottom: 0.75rem;
+	}
 
-    .page-eyebrow {
-        font-size: 0.7rem;
-        letter-spacing: 0.12em;
-        margin-bottom: 0.5rem;
-    }
+	.v2-title-highlight {
+		color: var(--v2-green);
+	}
 
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: var(--text);
-        margin-bottom: 0.5rem;
-    }
+	.v2-page-desc {
+		font-size: 0.95rem;
+		line-height: 1.6;
+		color: var(--v2-text-muted);
+		max-width: 65ch;
+	}
 
-    .page-sub {
-        font-size: 0.95rem;
-    }
+	/* Filter Bar */
+	.v2-filter-bar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+	}
 
-    .section-block {
-        margin-bottom: 3rem;
-    }
+	.v2-filter-btn {
+		font-family: var(--v2-font-mono);
+		font-size: 0.75rem;
+		padding: 0.35rem 0.65rem;
+		background: var(--v2-bg-elevated);
+		border: 1px solid var(--v2-border);
+		color: var(--v2-text-muted);
+		cursor: pointer;
+		transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+	}
 
-    .section-title {
-        font-size: 0.75rem;
-        letter-spacing: 0.1em;
-        color: var(--text-muted);
-        margin-bottom: 1.25rem;
-        text-transform: lowercase;
-    }
+	.v2-filter-btn:hover {
+		border-color: var(--v2-border-strong);
+		color: var(--v2-text);
+	}
 
-    .projects-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.25rem;
-    }
+	.v2-filter-btn.is-active {
+		border-color: var(--v2-green);
+		color: var(--v2-green);
+		background: var(--v2-green-bg);
+		font-weight: 700;
+	}
 
-    .project-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-        transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
-        display: flex;
-        flex-direction: column;
-        min-height: 320px;
-    }
+	.v2-filter-count {
+		font-size: 0.68rem;
+		opacity: 0.75;
+	}
 
-    .project-card--featured {
-        min-height: 360px;
-    }
+	/* Projects Window */
+	.v2-projects-window {
+		margin-bottom: 3rem;
+	}
 
-    .project-card:hover {
-        border-color: var(--accent, var(--border-glow));
-        transform: translateY(-3px);
-        box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 20px rgba(var(--accent-rgb, 0,255,136), 0.08);
-    }
+	.v2-works-directory,
+	.v2-works-skeleton {
+		display: flex;
+		flex-direction: column;
+	}
 
-    .card-accent-bar {
-        height: 3px;
-        background: var(--accent, var(--green));
-    }
+	.v2-works-directory[hidden],
+	.v2-works-skeleton[hidden] {
+		display: none !important;
+	}
 
-    .card-cover {
-        position: relative;
-        height: 180px;
-        overflow: hidden;
-    }
+	.v2-work-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.25rem;
+		padding: 0.9rem 1.15rem;
+		border-bottom: 1px solid var(--v2-border);
+		transition: background 0.12s ease;
+		text-decoration: none;
+	}
 
-    .card-cover--featured {
-        height: 220px;
-    }
+	.v2-work-row:last-child {
+		border-bottom: none;
+	}
 
-    .cover-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: top;
-        transition: transform 0.35s var(--ease);
-    }
+	.v2-work-row:hover {
+		background: var(--v2-bg-elevated);
+	}
 
-    .project-card:hover .cover-img {
-        transform: scale(1.04);
-    }
+	.v2-work-row:hover .v2-work-name,
+	.v2-work-row:hover .v2-work-arrow {
+		color: var(--v2-green);
+	}
 
-    .cover-overlay {
-        position: absolute;
-        top: 0.6rem;
-        right: 0.6rem;
-        display: flex;
-        gap: 0.4rem;
-        z-index: 2;
-    }
+	.v2-work-row-left {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		min-width: 0;
+		flex: 1;
+	}
 
-    .overlay-icon {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        color: #fff;
-        transition: background 0.2s;
-    }
+	.v2-work-idx {
+		font-size: 0.72rem;
+		color: var(--v2-text-dim);
+		font-weight: 600;
+		flex-shrink: 0;
+	}
 
-    .overlay-icon:hover {
-        background: rgba(0, 0, 0, 0.7);
-    }
+	.v2-work-thumb-frame {
+		position: relative;
+		width: 76px;
+		height: 48px;
+		flex-shrink: 0;
+		border: 1px solid var(--v2-border-strong);
+		background: var(--v2-bg);
+		overflow: hidden;
+	}
 
-    .overlay-icon :global(svg) {
-        width: 16px;
-        height: 16px;
-    }
+	.v2-work-thumb-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+		filter: grayscale(85%) contrast(110%);
+		transition: filter 0.15s ease, transform 0.15s ease;
+	}
 
-    .card-body {
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        gap: 0.75rem;
-    }
+	.v2-work-row:hover .v2-work-thumb-img {
+		filter: grayscale(0%) contrast(100%);
+		transform: scale(1.05);
+	}
 
-    .card-top {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.5rem;
-    }
+	.v2-thumb-scanline {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			rgba(18, 16, 16, 0) 50%,
+			rgba(0, 0, 0, 0.25) 50%
+		);
+		background-size: 100% 2px;
+		pointer-events: none;
+		opacity: 0.6;
+	}
 
-    .card-badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-    }
+	.v2-work-thumb-fallback {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--v2-bg-elevated);
+	}
 
-    .badge {
-        font-family: var(--font-mono);
-        font-size: 0.6rem;
-        padding: 0.18rem 0.45rem;
-        border-radius: 4px;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        background: var(--badge-type-bg);
-        border: 1px solid var(--badge-type-border);
-    }
+	.v2-thumb-pixel-icon {
+		font-family: var(--v2-font-mono);
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--v2-text-dim);
+	}
 
-    .badge--featured {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-        border: 1px solid rgba(245, 158, 11, 0.25);
-    }
+	.v2-thumb-skeleton {
+		width: 76px;
+		height: 48px;
+		flex-shrink: 0;
+	}
 
-    :global([data-theme="light"]) .badge--featured {
-        background: rgba(217, 119, 6, 0.1);
-        color: #b45309;
-        border-color: rgba(217, 119, 6, 0.25);
-    }
+	.v2-work-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.18rem;
+		min-width: 0;
+	}
 
-    .badge--oss {
-        background: rgba(0, 255, 136, 0.08);
-        color: var(--green);
-        border: 1px solid rgba(0, 255, 136, 0.2);
-    }
+	.v2-work-title-wrap {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
 
-    :global([data-theme="light"]) .badge--oss {
-        background: rgba(0, 170, 85, 0.1);
-        color: var(--green);
-        border-color: rgba(0, 170, 85, 0.25);
-    }
+	.v2-work-name {
+		font-family: var(--v2-font-display);
+		font-size: 0.98rem;
+		font-weight: 700;
+		color: var(--v2-text);
+		transition: color 0.12s ease;
+	}
 
-    .badge--type {
-        background: var(--badge-type-bg);
-        border: 1px solid var(--badge-type-border);
-        font-size: 0.6rem;
-    }
+	.v2-tag-highlight {
+		color: var(--v2-green);
+		border-color: var(--v2-green);
+		font-size: 0.62rem;
+		padding: 0.05rem 0.35rem;
+	}
 
-    .card-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: var(--text);
-        line-height: 1.3;
-    }
+	.v2-work-summary {
+		font-size: 0.78rem;
+		line-height: 1.4;
+		color: var(--v2-text-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 58ch;
+	}
 
-    .card-desc {
-        font-size: 0.85rem;
-        line-height: 1.6;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+	.v2-work-row-right {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		flex-shrink: 0;
+	}
 
-    .card-stack {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-        margin-top: auto;
-    }
+	.v2-work-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
 
-    .stack-tag {
-        font-size: 0.6875rem;
-        padding: 0.2rem 0.55rem;
-        background: var(--badge-bg);
-        border: 1px solid var(--badge-border);
-        border-radius: 4px;
-        color: var(--badge-text);
-        transition: color var(--duration) var(--ease), border-color var(--duration) var(--ease), background var(--duration) var(--ease);
-    }
+	.v2-work-arrow {
+		font-size: 0.85rem;
+		color: var(--v2-text-muted);
+		transition: color 0.12s ease, transform 0.12s ease;
+	}
 
-    .project-card:hover .stack-tag {
-        color: var(--badge-text-hover);
-        background: var(--badge-bg-hover);
-        border-color: var(--badge-border-hover);
-    }
+	.v2-work-row:hover .v2-work-arrow {
+		transform: translateX(2px);
+	}
 
-    .card-links {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-        padding-top: 0.5rem;
-        border-top: 1px solid var(--border);
-        margin-top: auto;
-    }
+	.v2-empty-state {
+		padding: 3rem 1.5rem;
+		text-align: center;
+		font-family: var(--v2-font-mono);
+		font-size: 0.82rem;
+		color: var(--v2-text-dim);
+	}
 
-    .card-link {
-        font-size: 0.72rem;
-        letter-spacing: 0.04em;
-        text-decoration: none;
-        transition: opacity 0.15s;
-    }
+	@media (max-width: 680px) {
+		.v2-work-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.65rem;
+		}
 
-    .card-link--primary {
-        color: var(--accent, var(--green));
-    }
+		.v2-work-row-left {
+			width: 100%;
+			align-items: center;
+			gap: 0.65rem;
+		}
 
-    .card-link--secondary {
-        color: var(--text-muted);
-    }
+		.v2-work-thumb-frame,
+		.v2-thumb-skeleton {
+			width: 60px;
+			height: 38px;
+		}
 
-    .card-link:hover {
-        opacity: 0.7;
-    }
+		.v2-work-summary {
+			white-space: normal;
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+		}
 
-    .empty-page {
-        padding: 6rem 0;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    .empty-comment { font-size: 0.875rem; }
-    .empty-sub { font-size: 0.9rem; line-height: 1.6; max-width: 40ch; }
-    .empty-link {
-        font-size: 0.8rem;
-        color: var(--green);
-        text-decoration: none;
-        margin-top: 0.5rem;
-        transition: opacity var(--duration) var(--ease);
-    }
-    .empty-link:hover { opacity: 0.7; }
-
-    @media (max-width: 640px) {
-        .page-title {
-            font-size: 1.75rem;
-        }
-
-        .projects-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+		.v2-work-row-right {
+			width: 100%;
+			justify-content: space-between;
+			padding-left: calc(0.72rem + 60px + 0.65rem);
+		}
+	}
 </style>
 
+<script>
+	// Tab Category Filter
+	const filterBtns = Array.from(document.querySelectorAll<HTMLButtonElement>(".v2-filter-btn"));
+	const projectRows = Array.from(document.querySelectorAll<HTMLElement>("[data-project-item]"));
+	const emptyState = document.getElementById("v2EmptyState");
 
+	filterBtns.forEach((btn) => {
+		btn.addEventListener("click", () => {
+			filterBtns.forEach((b) => {
+				b.classList.remove("is-active");
+				b.setAttribute("aria-selected", "false");
+			});
+			btn.classList.add("is-active");
+			btn.setAttribute("aria-selected", "true");
+
+			const filter = btn.dataset.filter || "all";
+			let visibleCount = 0;
+
+			projectRows.forEach((row) => {
+				const rowType = row.dataset.type;
+				const matches = filter === "all" || rowType === filter;
+				row.style.display = matches ? "flex" : "none";
+				if (matches) visibleCount++;
+			});
+
+			if (emptyState) {
+				emptyState.hidden = visibleCount > 0;
+			}
+		});
+	});
+</script>

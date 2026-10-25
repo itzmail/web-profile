@@ -15,7 +15,6 @@ const fetchMs = Math.max(12, Date.now() - t0);
 <section class="v2-section" id="v2-works" data-v2-async-box data-fetch-ms={fetchMs} data-item-count={projects.length}>
 	<div class="v2-section-header">
 		<h2 class="v2-section-title">
-			<span class="v2-section-index">01 //</span>
 			<span>SELECTED WORKS</span>
 		</h2>
 		<a href="/projects" class="v2-section-link">[all projects →]</a>
@@ -35,7 +34,7 @@ const fetchMs = Math.max(12, Date.now() - t0);
 			{[1, 2, 3, 4].map((num) => (
 				<div class="v2-work-row v2-work-row-skeleton">
 					<div class="v2-work-row-left">
-						<span class="v2-work-idx">0{num}</span>
+						<span class="v2-skeleton-bar v2-thumb-skeleton"></span>
 						<div class="v2-work-info">
 							<span class="v2-skeleton-bar" style={`width: ${140 + (num % 2) * 50}px; height: 14px;`}></span>
 							<span class="v2-skeleton-bar" style={`width: ${220 + (num % 3) * 40}px; height: 10px; margin-top: 4px;`}></span>
@@ -51,15 +50,32 @@ const fetchMs = Math.max(12, Date.now() - t0);
 
 		<!-- Loaded Content -->
 		<div class="v2-works-directory" data-box-content hidden>
-			{projects.map((p, index) => {
+			{projects.map((p) => {
 				const data = p.web_profile?.data;
 				const slug = data?.slug || p.id;
 				const stack = (data?.stack ?? []).slice(0, 4);
+				const thumb = data?.cover_image ?? data?.images?.[0] ?? null;
 
 				return (
 					<a href={`/projects/${slug}`} class="v2-work-row">
 						<div class="v2-work-row-left">
-							<span class="v2-work-idx">{String(index + 1).padStart(2, "0")}</span>
+							{thumb ? (
+								<div class="v2-work-thumb-frame">
+									<img
+										src={thumb}
+										alt={p.title}
+										class="v2-work-thumb-img"
+										loading="lazy"
+										width="80"
+										height="50"
+									/>
+									<span class="v2-thumb-scanline" aria-hidden="true"></span>
+								</div>
+							) : (
+								<div class="v2-work-thumb-frame v2-work-thumb-fallback">
+									<span class="v2-thumb-pixel-icon">&gt;_</span>
+								</div>
+							)}
 							<div class="v2-work-info">
 								<span class="v2-work-name">{p.title}</span>
 								<span class="v2-work-summary">{p.description}</span>
@@ -118,7 +134,7 @@ const fetchMs = Math.max(12, Date.now() - t0);
 
 	.v2-work-row-left {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		gap: 0.85rem;
 		min-width: 0;
 		flex: 1;
@@ -128,6 +144,63 @@ const fetchMs = Math.max(12, Date.now() - t0);
 		font-size: 0.72rem;
 		color: var(--v2-text-dim);
 		font-weight: 600;
+		flex-shrink: 0;
+	}
+
+	/* Retro 1-bit Micro-Thumbnail (80x50) */
+	.v2-work-thumb-frame {
+		position: relative;
+		width: 76px;
+		height: 48px;
+		flex-shrink: 0;
+		border: 1px solid var(--v2-border-strong);
+		background: var(--v2-bg);
+		overflow: hidden;
+	}
+
+	.v2-work-thumb-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+		filter: grayscale(85%) contrast(110%);
+		transition: filter 0.15s ease, transform 0.15s ease;
+	}
+
+	.v2-work-row:hover .v2-work-thumb-img {
+		filter: grayscale(0%) contrast(100%);
+		transform: scale(1.05);
+	}
+
+	.v2-thumb-scanline {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			rgba(18, 16, 16, 0) 50%,
+			rgba(0, 0, 0, 0.25) 50%
+		);
+		background-size: 100% 2px;
+		pointer-events: none;
+		opacity: 0.6;
+	}
+
+	.v2-work-thumb-fallback {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--v2-bg-elevated);
+	}
+
+	.v2-thumb-pixel-icon {
+		font-family: var(--v2-font-mono);
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--v2-text-dim);
+	}
+
+	.v2-thumb-skeleton {
+		width: 76px;
+		height: 48px;
 		flex-shrink: 0;
 	}
 
@@ -181,7 +254,17 @@ const fetchMs = Math.max(12, Date.now() - t0);
 		.v2-work-row {
 			flex-direction: column;
 			align-items: flex-start;
-			gap: 0.5rem;
+			gap: 0.65rem;
+		}
+		.v2-work-row-left {
+			width: 100%;
+			align-items: center;
+			gap: 0.65rem;
+		}
+		.v2-work-thumb-frame,
+		.v2-thumb-skeleton {
+			width: 60px;
+			height: 38px;
 		}
 		.v2-work-summary {
 			white-space: normal;
@@ -192,7 +275,7 @@ const fetchMs = Math.max(12, Date.now() - t0);
 		.v2-work-row-right {
 			width: 100%;
 			justify-content: space-between;
-			padding-left: 1.65rem;
+			padding-left: calc(0.72rem + 60px + 0.65rem);
 		}
 	}
 </style>

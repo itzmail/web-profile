@@ -11,6 +11,11 @@ import FacebookIcon from "../../assets/icons/FacebookIcon.astro";
 
 const { slug } = Astro.params;
 
+// Legacy /blog/:slug is retired in favour of /notes/:slug (301, preserves SEO).
+if (slug) {
+	return Astro.redirect(`/notes/${slug}`, 301);
+}
+
 const post = await apiFetch<Post>(`/posts/${slug}`);
 
 if (!post) {
