@@ -1,0 +1,984 @@
+---
+interface Props {
+	email: string;
+}
+
+const { email } = Astro.props;
+---
+
+<!-- Bottom-Right Floating Retro Robot Launcher -->
+<button
+	type="button"
+	id="v2AgentPill"
+	class="v2-agent-pill"
+	aria-label="Open AI Assistant (Cmd+K or /)"
+	aria-expanded="false"
+	aria-controls="v2AgentWindow"
+>
+	<!-- 1-bit Pixel Robot Icon with Blinking Antennas/Eyes -->
+	<span class="v2-robot-icon-wrap" aria-hidden="true">
+		<svg class="v2-robot-svg" viewBox="0 0 16 16" fill="currentColor">
+			<!-- Antenna -->
+			<path d="M7 1h2v2H7V1zm-1 2h4v1H6V3z" />
+			<!-- Head Frame -->
+			<path d="M3 4h10v7H3V4zm1 1v5h8V5H4z" />
+			<!-- Eyes (Blinking Pixel LEDs) -->
+			<rect class="v2-robot-eye v2-robot-eye-left" x="5" y="6" width="2" height="2" />
+			<rect class="v2-robot-eye v2-robot-eye-right" x="9" y="6" width="2" height="2" />
+			<!-- Mouth / Grille -->
+			<path d="M5 9h6v1H5V9z" />
+			<!-- Ear bolts -->
+			<path d="M1 6h2v3H1V6zm12 0h2v3h-2V6z" />
+		</svg>
+		<span class="v2-robot-ping" aria-hidden="true"></span>
+	</span>
+	<span class="v2-agent-pill-kbd">⌘K</span>
+</button>
+
+<!-- Center-Stage Floating Draggable Retro OS Window (Mac Classic / Raycast Zoom Transition) -->
+<div id="v2AgentBackdrop" class="v2-agent-backdrop" hidden></div>
+<aside
+	id="v2AgentWindow"
+	class="v2-window v2-agent-window"
+	aria-label="Agent Window"
+	hidden
+>
+	<!-- Draggable Retro OS Titlebar -->
+	<div class="v2-window-titlebar v2-window-titlebar-invert v2-agent-titlebar" id="v2AgentDragHandle">
+		<div class="v2-agent-win-controls">
+			<button
+				type="button"
+				class="v2-win-ctrl-btn"
+				id="v2AgentMinimizeBtn"
+				title="Minimize to corner [—]"
+				aria-label="Minimize Agent window"
+			>
+				[—]
+			</button>
+			<button
+				type="button"
+				class="v2-win-ctrl-btn"
+				id="v2AgentCloseBtn"
+				title="Close [esc]"
+				aria-label="Close Agent window"
+			>
+				[×]
+			</button>
+		</div>
+
+		<div class="v2-agent-title-wrap">
+			<span class="v2-agent-grip" aria-hidden="true">═══</span>
+			<span class="v2-agent-title">Ismail Alam // AI Assistant</span>
+			<span class="v2-agent-grip" aria-hidden="true">═══</span>
+		</div>
+
+		<span class="v2-agent-kbd-hint">drag · esc</span>
+	</div>
+
+	<!-- Window Body -->
+	<div class="v2-agent-body">
+		<!-- Command / Prompt Input -->
+		<div class="v2-agent-input-row">
+			<span class="v2-agent-prompt">&gt;</span>
+			<input
+				type="text"
+				id="v2ModalCmdInput"
+				class="v2-agent-input"
+				aria-label="Ask Agent or type command"
+				placeholder='Ask anything or type command ("cv", "projects", "hire")...'
+				autocomplete="off"
+				spellcheck="false"
+				data-email={email}
+			/>
+			<button type="button" class="v2-btn v2-agent-run-btn" id="v2AgentRunBtn">
+				Run ↵
+			</button>
+		</div>
+
+		<!-- Retro Loading / Processing State -->
+		<div id="v2AgentLoadingBox" class="v2-agent-loading" role="status" aria-live="polite" hidden>
+			<span class="v2-spinner" id="v2AgentSpinner">⠋</span>
+			<span id="v2AgentLoadingText">Agent evaluating intent...</span>
+		</div>
+
+		<!-- Agent Response Output -->
+		<div id="v2AgentResultBox" class="v2-agent-result" aria-live="polite" hidden>
+			<div class="v2-agent-result-head">
+				<span id="v2AgentResultStatus" class="v2-agent-status">AGENT · READY</span>
+				<span id="v2AgentResultLatency" class="v2-agent-latency">18ms</span>
+			</div>
+			<p id="v2AgentResultText" class="v2-agent-result-text"></p>
+			<div id="v2AgentResultActions" class="v2-agent-result-actions"></div>
+		</div>
+
+		<!-- Quick Routes List -->
+		<div class="v2-agent-section-label">QUICK COMMANDS</div>
+		<div class="v2-agent-list" id="v2CmdList">
+			<button
+				type="button"
+				class="v2-agent-item"
+				data-cmd-action="cv"
+				data-keywords="cv resume pdf download recruiter experience work"
+			>
+				<span class="v2-agent-item-left">
+					<span class="v2-agent-tag">CV</span>
+					<span>Open Curriculum Vitae (PDF)</span>
+				</span>
+				<span class="v2-agent-key">c</span>
+			</button>
+			<a
+				href="#v2-works"
+				class="v2-agent-item"
+				data-cmd-action="nav"
+				data-keywords="projects works portfolio case study production client"
+			>
+				<span class="v2-agent-item-left">
+					<span class="v2-agent-tag">WORKS</span>
+					<span>Jump to Selected Works</span>
+				</span>
+				<span class="v2-agent-key">g w</span>
+			</a>
+			<a
+				href="/projects"
+				class="v2-agent-item"
+				data-keywords="all projects archive works"
+			>
+				<span class="v2-agent-item-left">
+					<span class="v2-agent-tag">DIR</span>
+					<span>Browse All Projects (/projects)</span>
+				</span>
+				<span class="v2-agent-key">g p</span>
+			</a>
+			<a
+				href="/blog"
+				class="v2-agent-item"
+				data-keywords="notes blog writings articles posts"
+			>
+				<span class="v2-agent-item-left">
+					<span class="v2-agent-tag">NOTES</span>
+					<span>Read Technical Notes (/blog)</span>
+				</span>
+				<span class="v2-agent-key">g n</span>
+			</a>
+			<a
+				href="/tools"
+				class="v2-agent-item"
+				data-keywords="tools json base64 uuid cron cidr regex diff hash"
+			>
+				<span class="v2-agent-item-left">
+					<span class="v2-agent-tag">TOOLS</span>
+					<span>Open Offline DevTools (/tools)</span>
+				</span>
+				<span class="v2-agent-key">g t</span>
+			</a>
+			<a
+				href={`mailto:${email}`}
+				class="v2-agent-item"
+				data-keywords="hire contact email client freelance consulting"
+			>
+				<span class="v2-agent-item-left">
+					<span class="v2-agent-tag">MAIL</span>
+					<span>Direct Email ({email})</span>
+				</span>
+				<span class="v2-agent-key">→</span>
+			</a>
+		</div>
+	</div>
+</aside>
+
+<style>
+	/* Floating Retro Robot Launcher Button */
+	.v2-agent-pill {
+		position: fixed;
+		right: 1.5rem;
+		bottom: 1.5rem;
+		z-index: 50;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.65rem;
+		background: var(--v2-bg-elevated);
+		border: 1px solid var(--v2-border-strong);
+		color: var(--v2-text);
+		font-family: var(--v2-font-mono);
+		font-size: 0.76rem;
+		cursor: pointer;
+		box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
+		transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	.v2-agent-pill:hover,
+	.v2-agent-pill:focus-visible {
+		border-color: var(--v2-green);
+		color: var(--v2-green);
+		transform: translate(-2px, -2px);
+		box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.7);
+		outline: none;
+	}
+
+	.v2-robot-icon-wrap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		color: var(--v2-green);
+	}
+
+	.v2-robot-svg {
+		width: 18px;
+		height: 18px;
+		shape-rendering: crispEdges;
+	}
+
+	/* Blinking robot eyes (heartbeat / alive signal) */
+	@keyframes v2-robot-blink {
+		0%, 90%, 100% { opacity: 1; }
+		93%, 97% { opacity: 0; }
+	}
+
+	.v2-robot-eye {
+		animation: v2-robot-blink 4s infinite;
+		fill: var(--v2-green);
+	}
+
+	/* Radar ping ripple around robot head */
+	@keyframes v2-robot-ping-anim {
+		0% {
+			transform: scale(0.7);
+			opacity: 0.8;
+		}
+		70% {
+			transform: scale(1.6);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(1.6);
+			opacity: 0;
+		}
+	}
+
+	.v2-robot-ping {
+		position: absolute;
+		inset: -2px;
+		border: 1px solid var(--v2-green);
+		border-radius: 2px;
+		pointer-events: none;
+		animation: v2-robot-ping-anim 2.4s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+	}
+
+	.v2-agent-pill-kbd {
+		font-size: 0.66rem;
+		color: var(--v2-text-muted);
+		padding: 0.1rem 0.35rem;
+		border: 1px solid var(--v2-border);
+		background: var(--v2-bg);
+		font-weight: 600;
+	}
+
+	/* Backdrop */
+	.v2-agent-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 54;
+		background: rgba(9, 10, 15, 0.65);
+		backdrop-filter: blur(2px);
+		opacity: 0;
+		transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+		pointer-events: auto;
+	}
+
+	.v2-agent-backdrop.is-active {
+		opacity: 1;
+	}
+
+	.v2-agent-backdrop[hidden] {
+		display: none !important;
+	}
+
+	/* Center-Stage Retro OS Window with Mac Classic Zoom Transition */
+	.v2-agent-window {
+		position: fixed;
+		top: 18vh;
+		left: 50%;
+		transform: translateX(-50%) scale(0.92);
+		width: min(540px, calc(100vw - 2rem));
+		z-index: 55;
+		box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.8);
+		border: 1px solid var(--v2-border-strong);
+		user-select: none;
+		opacity: 0;
+		transform-origin: bottom right; /* origin towards the robot button */
+		transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+			transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 0.2s ease;
+	}
+
+	.v2-agent-window.is-open {
+		opacity: 1;
+		transform: translateX(-50%) scale(1);
+	}
+
+	/* When dragged, transition is disabled for silky-smooth pointer tracking */
+	.v2-agent-window.is-dragging {
+		transition: none !important;
+	}
+
+	.v2-agent-window[hidden],
+	.v2-agent-loading[hidden],
+	.v2-agent-result[hidden] {
+		display: none !important;
+	}
+
+	.v2-agent-titlebar {
+		cursor: grab;
+		padding: 0.38rem 0.6rem;
+		gap: 0.5rem;
+	}
+
+	.v2-agent-titlebar:active {
+		cursor: grabbing;
+	}
+
+	.v2-agent-win-controls {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.v2-win-ctrl-btn {
+		background: transparent;
+		border: none;
+		color: inherit;
+		font-family: var(--v2-font-mono);
+		font-size: 0.72rem;
+		font-weight: 700;
+		padding: 0 0.15rem;
+		cursor: pointer;
+		opacity: 0.85;
+	}
+
+	.v2-win-ctrl-btn:hover {
+		opacity: 1;
+		text-decoration: underline;
+	}
+
+	.v2-agent-title-wrap {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.72rem;
+		font-weight: 700;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.v2-agent-grip {
+		opacity: 0.45;
+		letter-spacing: -1px;
+	}
+
+	.v2-agent-kbd-hint {
+		font-size: 0.62rem;
+		opacity: 0.7;
+	}
+
+	.v2-agent-body {
+		padding: 0.7rem;
+		background: var(--v2-bg-elevated);
+		user-select: text;
+	}
+
+	.v2-agent-input-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--v2-bg);
+		border: 1px solid var(--v2-border-strong);
+		padding: 0.35rem 0.5rem;
+	}
+
+	.v2-agent-input-row:focus-within {
+		border-color: var(--v2-green);
+	}
+
+	.v2-agent-prompt {
+		color: var(--v2-green);
+		font-weight: 700;
+		font-size: 0.85rem;
+	}
+
+	.v2-agent-input {
+		flex: 1;
+		background: transparent;
+		border: none;
+		outline: none;
+		color: var(--v2-text);
+		font-family: var(--v2-font-mono);
+		font-size: 0.78rem;
+		min-width: 0;
+	}
+
+	.v2-agent-input::placeholder {
+		color: var(--v2-text-dim);
+	}
+
+	.v2-agent-run-btn {
+		padding: 0.18rem 0.5rem;
+		font-size: 0.68rem;
+		flex-shrink: 0;
+	}
+
+	/* Loading state */
+	.v2-agent-loading {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-top: 0.55rem;
+		padding: 0.45rem 0.6rem;
+		border: 1px dashed var(--v2-green);
+		background: var(--v2-green-bg);
+		font-size: 0.74rem;
+		color: var(--v2-green);
+	}
+
+	/* Output box */
+	.v2-agent-result {
+		margin-top: 0.55rem;
+		padding: 0.55rem 0.65rem;
+		border: 1px solid var(--v2-green);
+		background: var(--v2-green-bg);
+	}
+
+	.v2-agent-result-head {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.66rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.v2-agent-status {
+		color: var(--v2-green);
+		font-weight: 700;
+	}
+
+	.v2-agent-latency {
+		color: var(--v2-text-muted);
+	}
+
+	.v2-agent-result-text {
+		font-size: 0.76rem;
+		color: var(--v2-text);
+		margin-bottom: 0.45rem;
+		line-height: 1.45;
+	}
+
+	.v2-agent-result-actions {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+
+	.v2-agent-note {
+		font-size: 0.68rem;
+		color: var(--v2-text-muted);
+		border-left: 2px solid var(--v2-border-strong);
+		padding-left: 0.4rem;
+	}
+
+	.v2-agent-section-label {
+		font-size: 0.62rem;
+		color: var(--v2-text-dim);
+		letter-spacing: 0.08em;
+		margin: 0.65rem 0 0.3rem;
+	}
+
+	.v2-agent-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		max-height: 210px;
+		overflow-y: auto;
+	}
+
+	.v2-agent-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		width: 100%;
+		text-align: left;
+		padding: 0.4rem 0.5rem;
+		border: 1px solid transparent;
+		background: var(--v2-bg);
+		color: var(--v2-text);
+		font-family: var(--v2-font-mono);
+		font-size: 0.74rem;
+		cursor: pointer;
+	}
+
+	.v2-agent-item:hover,
+	.v2-agent-item:focus {
+		border-color: var(--v2-green);
+		background: var(--v2-green-bg);
+		outline: none;
+	}
+
+	.v2-agent-item-left {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	.v2-agent-tag {
+		font-size: 0.62rem;
+		padding: 0.05rem 0.3rem;
+		border: 1px solid var(--v2-border-strong);
+		color: var(--v2-green);
+		flex-shrink: 0;
+	}
+
+	.v2-agent-key {
+		font-size: 0.66rem;
+		color: var(--v2-text-muted);
+		flex-shrink: 0;
+	}
+
+	@media (max-width: 640px) {
+		.v2-agent-window {
+			top: 12vh;
+			width: calc(100vw - 1.25rem);
+		}
+		.v2-agent-pill {
+			right: 1rem;
+			bottom: 1rem;
+			padding: 0.4rem 0.55rem;
+		}
+	}
+</style>
+
+<script>
+	const agentWin = document.getElementById("v2AgentWindow") as HTMLElement | null;
+	const agentPill = document.getElementById("v2AgentPill") as HTMLButtonElement | null;
+	const agentBackdrop = document.getElementById("v2AgentBackdrop") as HTMLElement | null;
+	const dragHandle = document.getElementById("v2AgentDragHandle") as HTMLElement | null;
+	const minBtn = document.getElementById("v2AgentMinimizeBtn");
+	const closeBtn = document.getElementById("v2AgentCloseBtn");
+	const headerCmdBtn = document.getElementById("v2OpenCmdBtn");
+
+	const inputEl = document.getElementById("v2ModalCmdInput") as HTMLInputElement | null;
+	const runBtn = document.getElementById("v2AgentRunBtn");
+	const loadingBox = document.getElementById("v2AgentLoadingBox");
+	const spinnerEl = document.getElementById("v2AgentSpinner");
+	const resultBox = document.getElementById("v2AgentResultBox");
+	const resultStatus = document.getElementById("v2AgentResultStatus");
+	const resultLatency = document.getElementById("v2AgentResultLatency");
+	const resultText = document.getElementById("v2AgentResultText");
+	const resultActions = document.getElementById("v2AgentResultActions");
+	const cmdItems = Array.from(document.querySelectorAll<HTMLElement>("#v2CmdList .v2-agent-item"));
+
+	let hasBeenDragged = false;
+
+	function resetToCenter() {
+		if (!agentWin) return;
+		agentWin.style.left = "50%";
+		agentWin.style.top = "18vh";
+		agentWin.style.right = "auto";
+		agentWin.style.bottom = "auto";
+		agentWin.style.transform = "translateX(-50%) scale(1)";
+		hasBeenDragged = false;
+	}
+
+	// Open / Minimize / Close Window with Mac Classic Zoom Transitions
+	function openAgentWindow() {
+		if (!agentWin) return;
+		agentWin.hidden = false;
+		if (agentBackdrop) agentBackdrop.hidden = false;
+		agentPill?.setAttribute("aria-expanded", "true");
+
+		if (!hasBeenDragged) {
+			resetToCenter();
+		}
+
+		// Double rAF triggers CSS transition smoothly from scale(0.92) to scale(1)
+		requestAnimationFrame(() => {
+			agentWin.classList.add("is-open");
+			agentBackdrop?.classList.add("is-active");
+		});
+
+		window.setTimeout(() => inputEl?.focus(), 80);
+	}
+
+	function minimizeAgentWindow() {
+		if (!agentWin) return;
+		agentWin.classList.remove("is-open");
+		agentBackdrop?.classList.remove("is-active");
+		agentPill?.setAttribute("aria-expanded", "false");
+		agentPill?.focus();
+
+		window.setTimeout(() => {
+			if (!agentWin.classList.contains("is-open")) {
+				agentWin.hidden = true;
+				if (agentBackdrop) agentBackdrop.hidden = true;
+			}
+		}, 200);
+	}
+
+	function closeAgentWindow() {
+		minimizeAgentWindow();
+		if (resultBox) resultBox.hidden = true;
+		if (inputEl) inputEl.value = "";
+		cmdItems.forEach((item) => (item.style.display = "flex"));
+		hasBeenDragged = false;
+	}
+
+	function toggleAgentWindow() {
+		if (!agentWin) return;
+		if (agentWin.hidden || !agentWin.classList.contains("is-open")) {
+			openAgentWindow();
+		} else {
+			minimizeAgentWindow();
+		}
+	}
+
+	// Expose global toggle so LayoutV2 shortcuts (Cmd+K, /, header icon) can call it
+	(window as unknown as Record<string, () => void>).__v2ToggleAgent = toggleAgentWindow;
+	(window as unknown as Record<string, () => void>).__v2OpenAgent = openAgentWindow;
+
+	agentPill?.addEventListener("click", toggleAgentWindow);
+	headerCmdBtn?.addEventListener("click", toggleAgentWindow);
+	agentBackdrop?.addEventListener("click", minimizeAgentWindow);
+	minBtn?.addEventListener("click", minimizeAgentWindow);
+	closeBtn?.addEventListener("click", closeAgentWindow);
+
+	window.addEventListener("keydown", (e) => {
+		if (e.key === "Escape" && agentWin && !agentWin.hidden) {
+			minimizeAgentWindow();
+		}
+	});
+
+	// Draggable Retro OS Window via Pointer Events
+	let isDragging = false;
+	let dragOffsetX = 0;
+	let dragOffsetY = 0;
+
+	dragHandle?.addEventListener("pointerdown", (e) => {
+		const target = e.target as HTMLElement;
+		if (target.closest("button")) return;
+		if (!agentWin || window.innerWidth <= 640) return;
+
+		isDragging = true;
+		hasBeenDragged = true;
+		agentWin.classList.add("is-dragging");
+
+		const rect = agentWin.getBoundingClientRect();
+		dragOffsetX = e.clientX - rect.left;
+		dragOffsetY = e.clientY - rect.top;
+
+		// Strip translateX so left/top become absolute canvas coordinates
+		agentWin.style.transform = "none";
+		agentWin.style.left = `${rect.left}px`;
+		agentWin.style.top = `${rect.top}px`;
+		agentWin.style.right = "auto";
+		agentWin.style.bottom = "auto";
+
+		dragHandle.setPointerCapture(e.pointerId);
+	});
+
+	dragHandle?.addEventListener("pointermove", (e) => {
+		if (!isDragging || !agentWin) return;
+		const maxX = window.innerWidth - agentWin.offsetWidth - 8;
+		const maxY = window.innerHeight - agentWin.offsetHeight - 8;
+		const nextX = Math.max(8, Math.min(maxX, e.clientX - dragOffsetX));
+		const nextY = Math.max(52, Math.min(maxY, e.clientY - dragOffsetY));
+		agentWin.style.left = `${nextX}px`;
+		agentWin.style.top = `${nextY}px`;
+	});
+
+	function endDrag(e: PointerEvent) {
+		if (!isDragging) return;
+		isDragging = false;
+		agentWin?.classList.remove("is-dragging");
+		if (dragHandle?.hasPointerCapture(e.pointerId)) {
+			dragHandle.releasePointerCapture(e.pointerId);
+		}
+	}
+
+	dragHandle?.addEventListener("pointerup", endDrag);
+	dragHandle?.addEventListener("pointercancel", endDrag);
+
+	// Braille Spinner + Intent Evaluation with Retro Loading Step
+	const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+	let spinTimer: number | undefined;
+
+	/**
+	 * Deep questions are escalated to the full LLM chat endpoint, which streams
+	 * plain text. We render it inside the same retro window so the visitor never
+	 * leaves the Agent context.
+	 */
+	async function streamLLMAnswer(question: string) {
+		if (!resultBox || !resultStatus || !resultText || !resultActions || !resultLatency) return;
+
+		resultBox.hidden = false;
+		resultStatus.textContent = "AGENT → STREAMING ANSWER";
+		resultLatency.textContent = "LLM";
+		resultText.textContent = "";
+		resultActions.innerHTML = "";
+
+		try {
+			const res = await fetch("/api/chat", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					messages: [{ role: "user", content: question }],
+				}),
+			});
+
+			if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = "";
+			let full = "";
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buffer += decoder.decode(value, { stream: true });
+				const parts = buffer.split("\n");
+				buffer = parts.pop() ?? "";
+				for (const part of parts) {
+					if (part.trim()) {
+						full += part;
+						resultText.textContent = full;
+					}
+				}
+			}
+
+			// Flush the trailing chunk that never hit a newline boundary.
+			if (buffer.trim()) {
+				full += buffer;
+				resultText.textContent = full;
+			}
+
+			if (!full.trim()) {
+				resultText.textContent = "No answer returned. Try the Notes or Selected Works section below.";
+			}
+		} catch {
+			resultStatus.textContent = "AGENT → ANSWER UNAVAILABLE";
+			resultText.textContent = "The assistant is unreachable right now. Browse Selected Works or Notes below instead.";
+		}
+	}
+
+	interface AgentDecision {
+		intent: string;
+		audience: string;
+		confidence: number;
+		probabilities: Record<string, number>;
+		needsLlm: boolean;
+		source: "clef" | "local";
+		model: string;
+		latencyMs: number;
+		lowConfidence: boolean;
+	}
+
+	const INTENT_META: Record<string, { label: string; text: string }> = {
+		view_cv: {
+			label: "VIEW_CV",
+			text: "Work history, education, and certifications are packaged in the PDF Curriculum Vitae.",
+		},
+		hire_contact: {
+			label: "HIRE_CONTACT",
+			text: "Routing to the direct contact channel — fastest way to reach Ismail.",
+		},
+		browse_projects: {
+			label: "BROWSE_PROJECTS",
+			text: "Jumping to Selected Works and the production case studies index.",
+		},
+		inspect_project: {
+			label: "INSPECT_PROJECT",
+			text: "Highlighting production systems and architecture specs.",
+		},
+		open_tools: {
+			label: "OPEN_TOOLS",
+			text: "Routing to the offline developer utilities.",
+		},
+		deep_question: {
+			label: "DEEP_QUESTION",
+			text: "This needs a written answer — handing off to the full assistant.",
+		},
+		smalltalk: {
+			label: "SMALLTALK",
+			text: "No request detected — try asking for the CV, a project, or the tools.",
+		},
+	};
+
+	function renderDecision(decision: AgentDecision) {
+		if (!resultBox || !resultStatus || !resultText || !resultActions || !resultLatency) return;
+
+		const meta = INTENT_META[decision.intent] ?? INTENT_META.deep_question;
+		resultBox.hidden = false;
+		resultStatus.textContent = `AGENT → ${meta.label} (${decision.confidence.toFixed(2)})`;
+		resultLatency.textContent = `${decision.latencyMs}ms · ${
+			decision.source === "clef" ? `CLEF ${decision.model}` : "LOCAL"
+		}`;
+		resultText.textContent = meta.text;
+		resultActions.innerHTML = "";
+
+		switch (decision.intent) {
+			case "view_cv":
+				resultActions.innerHTML = `<button type="button" class="v2-btn v2-btn-primary" id="v2DynamicCvBtn">Open CV (PDF) ↗</button> <a href="/api/cv/pdf?download=1" class="v2-btn">Download PDF</a>`;
+				document.getElementById("v2DynamicCvBtn")?.addEventListener("click", () => {
+					(document.getElementById("cvModal") as HTMLDialogElement | null)?.showModal();
+				});
+				break;
+			case "hire_contact": {
+				const mailBtn = document.createElement("a");
+				mailBtn.className = "v2-btn v2-btn-primary";
+				mailBtn.textContent = "Direct Email →";
+				const emailValue = inputEl?.dataset.email ?? "";
+				mailBtn.setAttribute("href", `mailto:${emailValue}`);
+				resultActions.appendChild(mailBtn);
+				break;
+			}
+			case "browse_projects":
+				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn v2-btn-primary">Selected Works ↓</a> <a href="/projects" class="v2-btn">All Projects ↗</a>`;
+				break;
+			case "inspect_project":
+				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn v2-btn-primary">Selected Works ↓</a> <a href="/projects" class="v2-btn">All Projects ↗</a>`;
+				break;
+			case "open_tools":
+				resultActions.innerHTML = `<a href="/tools" class="v2-btn v2-btn-primary">Open DevTools ↗</a>`;
+				break;
+			case "deep_question":
+				resultActions.innerHTML = `<button type="button" class="v2-btn v2-btn-primary" id="v2AskFullBtn">Ask the Assistant →</button> <a href="#v2-writings" class="v2-btn">Notes</a>`;
+				document.getElementById("v2AskFullBtn")?.addEventListener("click", () => {
+					const question = inputEl?.value.trim() ?? "";
+					void streamLLMAnswer(question);
+				});
+				break;
+			default:
+				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn">Selected Works</a> <a href="/blog" class="v2-btn">Notes</a>`;
+				break;
+		}
+
+		if (decision.needsLlm || decision.lowConfidence) {
+			const note = document.createElement("span");
+			note.className = "v2-agent-note";
+			note.textContent =
+				decision.needsLlm || decision.intent === "deep_question"
+					? "→ needs written answer"
+					: "→ low confidence, try rephrasing";
+			resultActions.appendChild(note);
+		}
+	}
+
+	async function runAgentQuery(rawQuery: string) {
+		const q = rawQuery.trim();
+		if (!q) return;
+
+		const t0 = performance.now();
+		if (resultBox) resultBox.hidden = true;
+		if (loadingBox) loadingBox.hidden = false;
+
+		let frameIdx = 0;
+		clearInterval(spinTimer);
+		spinTimer = window.setInterval(() => {
+			frameIdx = (frameIdx + 1) % frames.length;
+			if (spinnerEl) spinnerEl.textContent = frames[frameIdx];
+		}, 60);
+
+		try {
+			const res = await fetch("/api/agent-action", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+				},
+				body: JSON.stringify({ query: q }),
+			});
+
+			if (!res.ok) {
+				if (res.status === 429 || res.status === 503) {
+					if (resultBox && resultStatus && resultText && resultLatency) {
+						resultBox.hidden = false;
+						resultStatus.textContent = "AGENT · THROTTLED";
+						resultLatency.textContent = `${res.status}`;
+						resultText.textContent =
+							"Too many Agent requests right now. Try again in a few minutes.";
+					}
+					return;
+				}
+				throw new Error(`HTTP ${res.status}`);
+			}
+
+			const decision = (await res.json()) as AgentDecision;
+			clearInterval(spinTimer);
+			if (loadingBox) loadingBox.hidden = true;
+			renderDecision(decision);
+		} catch {
+			// Offline / endpoint unavailable → fall back to the local keyword router.
+			clearInterval(spinTimer);
+			if (loadingBox) loadingBox.hidden = true;
+
+			const lower = q.toLowerCase();
+			const localIntent = /(cv|resume|curriculum|biodata)/.test(lower)
+				? "view_cv"
+				: /(hire|contact|email|quote|budget|freelance|kolaborasi)/.test(lower)
+					? "hire_contact"
+					: /(tool|json|base64|uuid|cron|cidr)/.test(lower)
+						? "open_tools"
+						: /(project|portfolio|works)/.test(lower)
+							? "browse_projects"
+							: "deep_question";
+
+			renderDecision({
+				intent: localIntent,
+				audience: "engineer",
+				confidence: 0.5,
+				probabilities: {},
+				needsLlm: localIntent === "deep_question",
+				source: "local",
+				model: "keyword-fallback",
+				latencyMs: Math.round(performance.now() - t0),
+				lowConfidence: false,
+			});
+		}
+	}
+
+	runBtn?.addEventListener("click", () => {
+		if (inputEl?.value.trim()) {
+			runAgentQuery(inputEl.value);
+		}
+	});
+
+	inputEl?.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			runAgentQuery(inputEl.value);
+		}
+	});
+
+	inputEl?.addEventListener("input", () => {
+		const term = inputEl.value.trim().toLowerCase();
+		cmdItems.forEach((item) => {
+			const kw = (item.dataset.keywords || "") + " " + (item.textContent || "").toLowerCase();
+			item.style.display = !term || kw.includes(term) ? "flex" : "none";
+		});
+	});
+
+	cmdItems.forEach((item) => {
+		item.addEventListener("click", () => {
+			const action = item.dataset.cmdAction;
+			if (action === "cv") {
+				minimizeAgentWindow();
+				(document.getElementById("cvModal") as HTMLDialogElement | null)?.showModal();
+			} else if (action === "nav") {
+				minimizeAgentWindow();
+			}
+		});
+	});
+</script>

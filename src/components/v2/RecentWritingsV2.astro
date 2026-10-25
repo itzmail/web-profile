@@ -1,0 +1,161 @@
+---
+import { apiFetch } from "../../utils/api";
+import type { PaginatedResponse, PostListItem } from "../../types/index";
+
+interface Props {
+	posts?: PostListItem[];
+}
+
+const t0 = Date.now();
+let resolvedPosts: PostListItem[] = Astro.props.posts ?? [];
+if (!Astro.props.posts) {
+	const rawPosts = await apiFetch<PaginatedResponse<PostListItem> | PostListItem[]>("/posts");
+	resolvedPosts = Array.isArray(rawPosts) ? rawPosts : rawPosts?.data ?? [];
+}
+const fetchMs = Math.max(14, Date.now() - t0);
+const topPosts = resolvedPosts.slice(0, 5);
+---
+
+<section
+	class="v2-section"
+	id="v2-writings"
+	data-v2-async-box
+	data-fetch-ms={fetchMs}
+	data-item-count={topPosts.length}
+	data-stagger="160"
+>
+	<div class="v2-section-header">
+		<h2 class="v2-section-title">
+			<span class="v2-section-index">02 //</span>
+			<span>RECENT NOTES</span>
+		</h2>
+		<a href="/blog" class="v2-section-link">[all notes →]</a>
+	</div>
+
+	<div class="v2-window">
+		<div class="v2-window-titlebar">
+			<span>endpoint // GET /posts</span>
+			<span class="v2-box-telemetry" data-box-status>
+				<span data-box-spinner>⠋</span>
+				<span data-box-label>SYNCING...</span>
+			</span>
+		</div>
+
+		<!-- Retro Per-Box Dither Loading Skeleton -->
+		<div class="v2-writings-skeleton" data-box-skeleton>
+			{[1, 2, 3].map((num) => (
+				<div class="v2-writing-row">
+					<span class="v2-skeleton-bar" style="width: 76px; height: 11px;"></span>
+					<span class="v2-skeleton-bar" style={`width: ${190 + num * 45}px; height: 13px;`}></span>
+					<span class="v2-skeleton-bar" style="width: 44px; height: 11px; justify-self: end;"></span>
+				</div>
+			))}
+		</div>
+
+		<!-- Loaded Content -->
+		<div data-box-content hidden>
+			{topPosts.length > 0 ? (
+				<ul class="v2-writings-list">
+					{topPosts.map((post) => {
+						const parsed = post.published_at ? new Date(post.published_at) : null;
+						const validDate = parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+						const dateStr = validDate ? validDate.toISOString().slice(0, 10) : "2026";
+						return (
+							<li>
+								<a href={`/blog/${post.slug}`} class="v2-writing-row">
+									<time class="v2-writing-date" datetime={dateStr}>
+										{dateStr}
+									</time>
+									<span class="v2-writing-title">{post.title}</span>
+									<span class="v2-writing-meta">
+										{post.reading_time ? `${post.reading_time}m read` : "note"} →
+									</span>
+								</a>
+							</li>
+						);
+					})}
+				</ul>
+			) : (
+				<div class="v2-window-body v2-writing-empty">
+					<span>No published notes returned from API — check /blog archive.</span>
+					<a href="/blog" class="v2-btn">[Open Blog Archive →]</a>
+				</div>
+			)}
+		</div>
+	</div>
+</section>
+
+<style>
+	.v2-writings-list,
+	.v2-writings-skeleton {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+	}
+
+	[data-box-content][hidden],
+	[data-box-skeleton][hidden] {
+		display: none;
+	}
+
+	.v2-writing-row {
+		display: grid;
+		grid-template-columns: 95px 1fr auto;
+		align-items: baseline;
+		gap: 1rem;
+		padding: 0.75rem 1rem;
+		border-bottom: 1px solid var(--v2-border);
+		font-size: 0.82rem;
+		transition: background 0.12s ease;
+	}
+
+	.v2-writings-list li:last-child .v2-writing-row,
+	.v2-writings-skeleton .v2-writing-row:last-child {
+		border-bottom: none;
+	}
+
+	.v2-writing-row:hover {
+		background: var(--v2-bg-elevated);
+	}
+
+	.v2-writing-row:hover .v2-writing-title {
+		color: var(--v2-green);
+		text-decoration: underline;
+		text-underline-offset: 4px;
+	}
+
+	.v2-writing-date {
+		font-size: 0.74rem;
+		color: var(--v2-text-dim);
+	}
+
+	.v2-writing-title {
+		color: var(--v2-text);
+		font-weight: 600;
+	}
+
+	.v2-writing-meta {
+		font-size: 0.72rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-writing-empty {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
+		font-size: 0.78rem;
+		color: var(--v2-text-muted);
+	}
+
+	@media (max-width: 640px) {
+		.v2-writing-row {
+			grid-template-columns: 1fr;
+			gap: 0.2rem;
+		}
+		.v2-writing-meta {
+			display: none;
+		}
+	}
+</style>

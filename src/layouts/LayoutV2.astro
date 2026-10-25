@@ -1,0 +1,449 @@
+---
+import "../styles/v2.css";
+
+interface Props {
+	title?: string;
+	description?: string;
+	canonicalURL?: string;
+	jsonLd?: Record<string, unknown>;
+}
+
+const {
+	title = "Ismail Alam — Systems & Fullstack Engineer",
+	description = "Fullstack & AI Systems Engineer building high-throughput backend services, edge decision loops, and resilient web systems.",
+	canonicalURL = new URL(Astro.url.pathname, "https://itsmail.dev").toString(),
+	jsonLd,
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script is:inline>
+			(function () {
+				var t = localStorage.getItem("theme");
+				if (t === "light" || t === "dark") {
+					document.documentElement.setAttribute("data-theme", t);
+				}
+			})();
+		</script>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="author" content="Ismail Alam" />
+		<link rel="canonical" href={canonicalURL} />
+		{jsonLd && (
+			<script
+				type="application/ld+json"
+				set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")}
+			/>
+		)}
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&family=Inter:wght@500;600;700;800&display=swap"
+		/>
+		<noscript>
+			<style>
+				[data-box-skeleton] { display: none !important; }
+				[data-box-content][hidden] { display: block !important; }
+			</style>
+		</noscript>
+	</head>
+	<body class="v2-body">
+		<!-- Minimalist Top Navigation Bar -->
+		<header class="v2-header">
+			<div class="v2-container v2-header-inner">
+				<nav class="v2-nav" aria-label="Primary navigation">
+					<a href="/v2" class="v2-brand">[itsmail.dev]</a>
+					<a href="/v2" class="v2-nav-link active">home</a>
+					<a href="/projects" class="v2-nav-link">projects</a>
+					<a href="/blog" class="v2-nav-link">notes</a>
+				</nav>
+
+				<div class="v2-header-controls">
+					<!-- Retro 1-bit Terminal / Agent Window Icon -->
+					<button
+						type="button"
+						class="v2-icon-btn"
+						id="v2OpenCmdBtn"
+						data-tooltip="Agent Window (⌘K or /)"
+						aria-label="Toggle Agent Window (Cmd+K or /)"
+					>
+						<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+							<!-- 1-bit pixel prompt >_ inside frame -->
+							<path d="M2 3h2v2H2V3zm2 2h2v2H4V5zm2 2h2v2H6V7zM4 9h2v2H4V9zm-2 2h2v2H2v-2zm6 0h6v2H8v-2z" />
+						</svg>
+					</button>
+
+					<!-- Retro 1-bit Theme Toggle Icon (Pixel Crescent / Pixel Sun) -->
+					<button
+						type="button"
+						class="v2-icon-btn"
+						id="v2ThemeToggle"
+						data-tooltip="Switch Theme (Dark / Light)"
+						aria-label="Toggle color theme"
+					>
+						<!-- Dark mode icon: 1-bit pixel crescent moon -->
+						<svg class="v2-icon-dark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+							<path d="M6 2h4v2H8v2H6v4h2v2h4v2H6v-2H4v-2H2V6h2V4h2V2zm6 2h2v2h-2V4z" />
+						</svg>
+						<!-- Light mode icon: 1-bit pixel sun -->
+						<svg class="v2-icon-light" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+							<path d="M7 1h2v2H7V1zm0 12h2v2H7v-2zM1 7h2v2H1V7zm12 0h2v2h-2V7zM3 3h2v2H3V3zm8 0h2v2h-2V3zM3 11h2v2H3v-2zm8 0h2v2h-2v-2zM5 5h6v6H5V5z" />
+						</svg>
+					</button>
+				</div>
+			</div>
+		</header>
+
+		<div class="v2-main-wrap">
+			<slot />
+		</div>
+
+		<!-- Minimalist Footer -->
+		<footer class="v2-footer">
+			<div class="v2-container v2-footer-inner">
+				<div class="v2-footer-left">
+					<span>© {new Date().getFullYear()} Ismail Nur Alam</span>
+					<span class="v2-footer-sep">·</span>
+					<span class="v2-footer-sub">v2.0</span>
+				</div>
+
+				<div class="v2-footer-right">
+					<a href="/tools" class="v2-footer-link">[tools]</a>
+					<a href="/" class="v2-footer-link">[v1.0]</a>
+					<button
+						type="button"
+						class="v2-help-btn"
+						id="v2ShowShortcutsBtn"
+						aria-label="Show keyboard shortcuts (?)"
+						title="Keyboard shortcuts (?)"
+					>
+						[?]
+					</button>
+				</div>
+			</div>
+		</footer>
+
+		<!-- Keyboard Shortcuts Dialog -->
+		<dialog id="v2ShortcutsDialog" class="v2-shortcuts-dialog" aria-labelledby="v2ShortcutsTitle">
+			<div class="v2-window">
+				<div class="v2-window-titlebar v2-window-titlebar-invert">
+					<span id="v2ShortcutsTitle">keyboard shortcuts // vim mode</span>
+					<button type="button" class="v2-modal-close" id="v2CloseShortcutsBtn">[esc]</button>
+				</div>
+				<div class="v2-window-body">
+					<p class="v2-shortcuts-note">Desktop keyboard navigation. Press key outside input fields.</p>
+					<dl class="v2-shortcuts-dl">
+						<dt>⌘K / /</dt><dd>toggle Agent window</dd>
+						<dt>j / k</dt><dd>scroll down / up</dd>
+						<dt>gg / G</dt><dd>scroll to top / bottom</dd>
+						<dt>c</dt><dd>open Curriculum Vitae (PDF)</dd>
+						<dt>g h</dt><dd>go home (/v2)</dd>
+						<dt>g w</dt><dd>jump to selected works</dd>
+						<dt>g p</dt><dd>go to projects</dd>
+						<dt>g n</dt><dd>go to notes / blog</dd>
+						<dt>g t</dt><dd>go to offline tools</dd>
+						<dt>?</dt><dd>toggle this help dialog</dd>
+					</dl>
+				</div>
+			</div>
+		</dialog>
+
+		<script>
+			// Theme Toggle with Retro Icon + Dynamic Tooltip
+			const themeBtn = document.getElementById("v2ThemeToggle");
+			function syncThemeState() {
+				const current = document.documentElement.getAttribute("data-theme") || "dark";
+				if (themeBtn) {
+					themeBtn.setAttribute(
+						"data-tooltip",
+						current === "light"
+							? "Light Mode — Switch to Dark"
+							: "Dark Mode — Switch to Light"
+					);
+				}
+			}
+			syncThemeState();
+
+			themeBtn?.addEventListener("click", () => {
+				const current = document.documentElement.getAttribute("data-theme") || "dark";
+				const next = current === "light" ? "dark" : "light";
+				document.documentElement.setAttribute("data-theme", next);
+				localStorage.setItem("theme", next);
+				syncThemeState();
+			});
+
+			// Shortcuts Modal & Agent Window hooks
+			const shortcutsDialog = document.getElementById("v2ShortcutsDialog") as HTMLDialogElement | null;
+			const openShortcutsBtn = document.getElementById("v2ShowShortcutsBtn");
+			const closeShortcutsBtn = document.getElementById("v2CloseShortcutsBtn");
+
+			openShortcutsBtn?.addEventListener("click", () => shortcutsDialog?.showModal());
+			closeShortcutsBtn?.addEventListener("click", () => shortcutsDialog?.close());
+			shortcutsDialog?.addEventListener("click", (e) => {
+				const r = shortcutsDialog.getBoundingClientRect();
+				if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+					shortcutsDialog.close();
+				}
+			});
+
+			// Vim Keyboard Navigation
+			let gPressed = false;
+			let gTimeout: number | undefined;
+
+			window.addEventListener("keydown", (e) => {
+				const target = e.target as HTMLElement | null;
+				const isInput =
+					target &&
+					(target.tagName === "INPUT" ||
+						target.tagName === "TEXTAREA" ||
+						target.isContentEditable);
+
+				const w = window as unknown as Record<string, (() => void) | undefined>;
+
+				// Cmd+K or Ctrl+K
+				if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+					e.preventDefault();
+					w.__v2ToggleAgent?.();
+					return;
+				}
+
+				if (e.metaKey || e.ctrlKey || e.altKey) return;
+				if (isInput) return;
+
+				if (e.key === "/") {
+					e.preventDefault();
+					w.__v2OpenAgent?.();
+					return;
+				}
+
+				if (e.key === "?") {
+					e.preventDefault();
+					if (shortcutsDialog?.open) {
+						shortcutsDialog.close();
+					} else {
+						shortcutsDialog?.showModal();
+					}
+					return;
+				}
+
+				if (e.key === "j") {
+					window.scrollBy({ top: 140, behavior: "smooth" });
+					return;
+				}
+				if (e.key === "k") {
+					window.scrollBy({ top: -140, behavior: "smooth" });
+					return;
+				}
+				if (e.key === "G") {
+					window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+					return;
+				}
+				if (e.key === "c") {
+					(document.getElementById("cvModal") as HTMLDialogElement | null)?.showModal();
+					return;
+				}
+
+				if (e.key === "g") {
+					if (gPressed) {
+						gPressed = false;
+						window.scrollTo({ top: 0, behavior: "smooth" });
+					} else {
+						gPressed = true;
+						clearTimeout(gTimeout);
+						gTimeout = window.setTimeout(() => {
+							gPressed = false;
+						}, 650);
+					}
+					return;
+				}
+
+				if (gPressed) {
+					gPressed = false;
+					if (e.key === "h") window.location.href = "/v2";
+					if (e.key === "w") window.location.hash = "#v2-works";
+					if (e.key === "p") window.location.href = "/projects";
+					if (e.key === "t") window.location.href = "/tools";
+					if (e.key === "n" || e.key === "b") window.location.href = "/blog";
+				}
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	.v2-header {
+		position: sticky;
+		top: 0;
+		z-index: 40;
+		background: var(--v2-bg);
+		border-bottom: 1px solid var(--v2-border);
+	}
+
+	.v2-header-inner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		min-height: 48px;
+		padding-top: 0.4rem;
+		padding-bottom: 0.4rem;
+	}
+
+	.v2-nav {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 1.25rem;
+		font-size: 0.82rem;
+	}
+
+	.v2-brand {
+		font-weight: 700;
+		color: var(--v2-green);
+	}
+
+	.v2-nav-link {
+		color: var(--v2-text-muted);
+		transition: color 0.12s ease;
+	}
+
+	.v2-nav-link:hover,
+	.v2-nav-link.active {
+		color: var(--v2-text);
+		text-decoration: underline;
+		text-underline-offset: 4px;
+		text-decoration-color: var(--v2-green);
+	}
+
+	.v2-header-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	/* Show moon icon in dark mode, sun icon in light mode */
+	.v2-icon-light {
+		display: none;
+	}
+	:global([data-theme="light"]) .v2-icon-dark {
+		display: none;
+	}
+	:global([data-theme="light"]) .v2-icon-light {
+		display: block;
+	}
+
+	.v2-main-wrap {
+		flex: 1;
+		padding: 2.25rem 0 3rem;
+	}
+
+	/* Footer */
+	.v2-footer {
+		border-top: 1px solid var(--v2-border);
+		padding: 1.35rem 0 2rem;
+		background: var(--v2-bg);
+	}
+
+	.v2-footer-inner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 1rem;
+		font-size: 0.74rem;
+		color: var(--v2-text-muted);
+	}
+
+	.v2-footer-left {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	.v2-footer-sep,
+	.v2-footer-sub {
+		color: var(--v2-text-dim);
+	}
+
+	.v2-footer-right {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+	}
+
+	.v2-footer-link {
+		color: var(--v2-text-muted);
+	}
+
+	.v2-footer-link:hover {
+		color: var(--v2-green);
+	}
+
+	.v2-help-btn {
+		background: var(--v2-bg-elevated);
+		border: 1px solid var(--v2-border-strong);
+		color: var(--v2-text-muted);
+		font-family: var(--v2-font-mono);
+		font-size: 0.72rem;
+		padding: 0.15rem 0.45rem;
+		cursor: pointer;
+	}
+
+	.v2-help-btn:hover {
+		border-color: var(--v2-green);
+		color: var(--v2-green);
+	}
+
+	/* Shortcuts Dialog */
+	.v2-shortcuts-dialog {
+		margin: auto;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--v2-text);
+		width: min(440px, 92vw);
+	}
+
+	.v2-shortcuts-dialog::backdrop {
+		background: rgba(9, 10, 15, 0.75);
+	}
+
+	.v2-modal-close {
+		background: transparent;
+		border: none;
+		color: inherit;
+		font-family: var(--v2-font-mono);
+		font-size: 0.72rem;
+		cursor: pointer;
+	}
+
+	.v2-shortcuts-note {
+		font-size: 0.72rem;
+		color: var(--v2-text-muted);
+		margin-bottom: 0.85rem;
+	}
+
+	.v2-shortcuts-dl {
+		display: grid;
+		grid-template-columns: 110px 1fr;
+		row-gap: 0.45rem;
+		column-gap: 0.75rem;
+		font-size: 0.76rem;
+	}
+
+	.v2-shortcuts-dl dt {
+		color: var(--v2-green);
+		font-weight: 600;
+	}
+
+	.v2-shortcuts-dl dd {
+		color: var(--v2-text);
+	}
+</style>
