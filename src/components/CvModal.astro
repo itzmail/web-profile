@@ -1,5 +1,7 @@
 ---
 import CloseIcon from "../assets/icons/CloseIcon.astro";
+
+const { src = "/api/cv/file" } = Astro.props;
 ---
 
 <dialog id="cvModal" class="cv-modal" aria-modal="true" aria-labelledby="cvModalTitle">
@@ -17,7 +19,7 @@ import CloseIcon from "../assets/icons/CloseIcon.astro";
             </div>
             <div class="cv-modal-actions">
                 <a
-                    href="/api/cv/pdf?download=1"
+                    href={`${src}?download=1`}
                     download="Ismail_Nur_Alam_CV.pdf"
                     class="btn btn-sm btn-primary"
                 >
@@ -29,7 +31,7 @@ import CloseIcon from "../assets/icons/CloseIcon.astro";
                     Download
                 </a>
                 <a
-                    href="/api/cv/pdf"
+                    href={src}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="btn btn-sm btn-ghost"
@@ -56,7 +58,7 @@ import CloseIcon from "../assets/icons/CloseIcon.astro";
         <div class="cv-modal-body">
             <div class="cv-viewer">
                 <iframe
-                    src="/api/cv/pdf"
+                    src={src}
                     title="Ismail Nur Alam CV Preview"
                     class="cv-iframe"
                     loading="lazy"
@@ -64,8 +66,8 @@ import CloseIcon from "../assets/icons/CloseIcon.astro";
             </div>
             <p class="cv-fallback font-mono">
                 Preview not rendering?
-                <a href="/api/cv/pdf?download=1" download="Ismail_Nur_Alam_CV.pdf">Download the CV directly</a>
-                or <a href="/api/cv/pdf" target="_blank" rel="noopener noreferrer">open it in a new tab</a>.
+                <a href={`${src}?download=1`} download="Ismail_Nur_Alam_CV.pdf">Download the CV directly</a>
+                or <a href={src} target="_blank" rel="noopener noreferrer">open it in a new tab</a>.
             </p>
         </div>
     </div>

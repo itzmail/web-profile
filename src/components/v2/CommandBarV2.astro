@@ -830,7 +830,7 @@ const { email } = Astro.props;
 
 		switch (decision.intent) {
 			case "view_cv":
-				resultActions.innerHTML = `<button type="button" class="v2-btn v2-btn-primary" id="v2DynamicCvBtn">Open CV (PDF) ↗</button> <a href="/api/cv/pdf?download=1" class="v2-btn">Download PDF</a>`;
+				resultActions.innerHTML = `<button type="button" class="v2-btn v2-btn-primary" id="v2DynamicCvBtn">Open CV (PDF) ↗</button> <a href="/api/cv/file?download=1" class="v2-btn">Download PDF</a>`;
 				document.getElementById("v2DynamicCvBtn")?.addEventListener("click", () => {
 					(document.getElementById("cvModal") as HTMLDialogElement | null)?.showModal();
 				});
