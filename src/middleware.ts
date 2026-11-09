@@ -1,6 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 
 const BLOG_HOST = "blog.itsmail.dev";
+const MAIN_HOST = "itsmail.dev";
 const NOTES_HOST = "notes.itsmail.dev";
 
 /**
@@ -22,11 +23,13 @@ function applySecurityHeaders(response: Response): Response {
 export const onRequest = defineMiddleware(async (context, next) => {
 	const { url } = context;
 
-	// 1. Subdomain redirect: blog.itsmail.dev -> notes.itsmail.dev / itsmail.dev/notes (301 Permanent)
+	// 1. Subdomain redirect: blog.itsmail.dev -> https://itsmail.dev/notes (301 Permanent)
+	// notes.itsmail.dev does not have a public DNS record, so route directly to itsmail.dev/notes
 	if (url.hostname === BLOG_HOST) {
 		const target = new URL(url);
-		target.hostname = NOTES_HOST;
-		target.pathname = target.pathname.replace(/^\/blog(\/|$)/, "$1") || "/";
+		target.hostname = MAIN_HOST;
+		const cleanPath = target.pathname.replace(/^\/blog(\/|$)/, "$1").replace(/^\//, "");
+		target.pathname = cleanPath ? `/notes/${cleanPath}` : "/notes";
 		return applySecurityHeaders(context.redirect(target.toString(), 301));
 	}
 
