@@ -2,6 +2,7 @@
 import { marked } from "marked";
 import { apiFetch } from "../../utils/api";
 import { embedVideoLinks } from "../../utils/videoEmbed";
+import { addImageDimensions, getImageSize } from "../../utils/imageSize";
 import LayoutV2 from "../../layouts/LayoutV2.astro";
 import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
 import CvModal from "../../components/CvModal.astro";
@@ -20,7 +21,10 @@ if (!post) {
 	return Astro.redirect("/404");
 }
 
-const htmlContent = post.body ? marked(embedVideoLinks(post.body)) : "";
+const [htmlContent, coverSize] = await Promise.all([
+	post.body ? addImageDimensions(await marked(embedVideoLinks(post.body))) : Promise.resolve(""),
+	post.cover_image ? getImageSize(post.cover_image) : Promise.resolve(null),
+]);
 
 function formatDate(iso: string) {
 	try {
@@ -98,7 +102,15 @@ const jsonLd = {
 
 			{post.cover_image && (
 				<div class="v2-note-cover">
-					<img src={post.cover_image} alt={post.title} class="v2-note-cover-img" />
+					<img
+						src={post.cover_image}
+						alt={post.title}
+						class="v2-note-cover-img"
+						width={coverSize?.width}
+						height={coverSize?.height}
+						fetchpriority="high"
+						decoding="async"
+					/>
 					<span class="v2-gallery-scanline" aria-hidden="true"></span>
 				</div>
 			)}

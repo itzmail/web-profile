@@ -1,6 +1,7 @@
 ---
 import { marked } from "marked";
 import { apiFetch } from "../../utils/api";
+import { addImageDimensions, getImageSize } from "../../utils/imageSize";
 import LayoutV2 from "../../layouts/LayoutV2.astro";
 import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
 import DemoCredentialsModal from "../../components/DemoCredentialsModal.astro";
@@ -35,7 +36,10 @@ const allImages = [
 ];
 const links = Array.isArray(data?.links) ? data.links : [];
 const rawContent = data?.content ?? "";
-const htmlContent = rawContent ? marked(rawContent) : "";
+const [htmlContent, mainSize] = await Promise.all([
+	rawContent ? addImageDimensions(await marked(rawContent)) : Promise.resolve(""),
+	allImages[0] ? getImageSize(allImages[0]) : Promise.resolve(null),
+]);
 const pType = data?.project_type ?? "side_project";
 const demoAccess: DemoAccess | undefined = data?.demo_access;
 const showDemoAccess = Boolean(
@@ -139,19 +143,23 @@ const jsonLd = {
 							alt={`${project.title} preview`}
 							id="v2MainPreviewImg"
 							class="v2-gallery-main-img"
+							width={mainSize?.width}
+							height={mainSize?.height}
 							loading="eager"
+							fetchpriority="high"
+							decoding="async"
 						/>
 						<span class="v2-gallery-scanline" aria-hidden="true"></span>
 					</div>
 
 					{allImages.length > 1 && (
-						<div class="v2-gallery-thumbs" role="tablist" aria-label="Screenshots thumbnail list">
+						<div class="v2-gallery-thumbs" role="group" aria-label="Screenshots thumbnail list">
 							{allImages.map((imgUrl, idx) => (
 								<button
 									type="button"
 									class={`v2-thumb-item ${idx === 0 ? "is-active" : ""}`}
 									data-img-src={imgUrl}
-									aria-label={`View image ${idx + 1}`}
+									aria-label={`0${idx + 1} view image ${idx + 1}`}
 								>
 									<img src={imgUrl} alt={`Thumbnail ${idx + 1}`} loading="lazy" />
 									<span class="v2-thumb-idx">0{idx + 1}</span>
