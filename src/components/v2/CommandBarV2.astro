@@ -243,6 +243,18 @@ const { email } = Astro.props;
 		fill: var(--v2-green);
 	}
 
+	/* Pill robot mirrors the Agent state: fast LEDs while it is thinking */
+	.v2-agent-pill[data-state="thinking"] .v2-robot-eye {
+		animation-duration: 0.5s;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v2-robot-eye,
+		.v2-robot-ping {
+			animation: none;
+		}
+	}
+
 	/* Radar ping ripple around robot head */
 	@keyframes v2-robot-ping-anim {
 		0% {
@@ -582,6 +594,14 @@ const { email } = Astro.props;
 
 	let hasBeenDragged = false;
 
+	type AgentState = "open" | "close" | "thinking" | "done" | "empty";
+
+	// Broadcast the Agent lifecycle so the robot mascots can react to it.
+	function emitAgent(state: AgentState) {
+		if (agentPill) agentPill.dataset.state = state;
+		document.dispatchEvent(new CustomEvent("v2:agent", { detail: { state } }));
+	}
+
 	function resetToCenter() {
 		if (!agentWin) return;
 		agentWin.style.left = "50%";
@@ -598,6 +618,7 @@ const { email } = Astro.props;
 		agentWin.hidden = false;
 		if (agentBackdrop) agentBackdrop.hidden = false;
 		agentPill?.setAttribute("aria-expanded", "true");
+		emitAgent("open");
 
 		if (!hasBeenDragged) {
 			resetToCenter();
@@ -618,6 +639,7 @@ const { email } = Astro.props;
 		agentBackdrop?.classList.remove("is-active");
 		agentPill?.setAttribute("aria-expanded", "false");
 		agentPill?.focus();
+		emitAgent("close");
 
 		window.setTimeout(() => {
 			if (!agentWin.classList.contains("is-open")) {
@@ -727,6 +749,7 @@ const { email } = Astro.props;
 		resultLatency.textContent = "LLM";
 		resultText.textContent = "";
 		resultActions.innerHTML = "";
+		emitAgent("thinking");
 
 		try {
 			const res = await fetch("/api/chat", {
@@ -766,8 +789,12 @@ const { email } = Astro.props;
 
 			if (!full.trim()) {
 				resultText.textContent = "No answer returned. Try the Notes or Selected Works section below.";
+				emitAgent("empty");
+			} else {
+				emitAgent("done");
 			}
 		} catch {
+			emitAgent("empty");
 			resultStatus.textContent = "AGENT → ANSWER UNAVAILABLE";
 			resultText.textContent = "The assistant is unreachable right now. Browse Selected Works or Notes below instead.";
 		}
@@ -827,6 +854,7 @@ const { email } = Astro.props;
 		}`;
 		resultText.textContent = meta.text;
 		resultActions.innerHTML = "";
+		emitAgent(decision.intent === "smalltalk" ? "empty" : "done");
 
 		switch (decision.intent) {
 			case "view_cv":
@@ -883,6 +911,7 @@ const { email } = Astro.props;
 		const t0 = performance.now();
 		if (resultBox) resultBox.hidden = true;
 		if (loadingBox) loadingBox.hidden = false;
+		emitAgent("thinking");
 
 		let frameIdx = 0;
 		clearInterval(spinTimer);
@@ -910,6 +939,7 @@ const { email } = Astro.props;
 						resultText.textContent =
 							"Too many Agent requests right now. Try again in a few minutes.";
 					}
+					emitAgent("empty");
 					return;
 				}
 				throw new Error(`HTTP ${res.status}`);

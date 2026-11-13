@@ -1,6 +1,7 @@
 ---
 import LayoutV2 from "../../layouts/LayoutV2.astro";
 import CommandBarV2 from "../../components/v2/CommandBarV2.astro";
+import PixelAvatar from "../../components/v2/PixelAvatar.astro";
 import SelectedWorksV2 from "../../components/v2/SelectedWorksV2.astro";
 import RecentWritingsV2 from "../../components/v2/RecentWritingsV2.astro";
 import CvModal from "../../components/CvModal.astro";
@@ -88,16 +89,23 @@ const jsonLd = {
 				</button>
 			</div>
 
-			<h1 class="v2-hero-headline">
-				Ismail Alam.
-				<span class="v2-hero-subheadline">
-					Systems &amp; Fullstack Engineer.
-				</span>
-			</h1>
+			<div class="v2-hero-main">
+				<div class="v2-hero-copy">
+					<h1 class="v2-hero-headline">
+						Ismail Alam.
+						<span class="v2-hero-subheadline">
+							Systems &amp; Fullstack Engineer.
+						</span>
+					</h1>
 
-			<p class="v2-hero-bio">
-				{bioText}
-			</p>
+					<p class="v2-hero-bio">
+						{bioText}
+					</p>
+				</div>
+
+				<!-- Pixel avatar + robot sidekick (follows the cursor, opens the Agent) -->
+				<PixelAvatar />
+			</div>
 
 			<!-- Clean Action Row -->
 			<div class="v2-hero-links">
@@ -233,6 +241,17 @@ const jsonLd = {
 		background: var(--v2-green);
 	}
 
+	.v2-hero-main {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1.75rem;
+	}
+
+	.v2-hero-copy {
+		min-width: 0;
+	}
+
 	.v2-hero-headline {
 		font-family: var(--v2-font-sans);
 		font-size: clamp(2rem, 5vw, 3.25rem);
@@ -277,6 +296,11 @@ const jsonLd = {
 			flex-direction: column;
 			align-items: flex-start;
 			gap: 0.5rem;
+		}
+
+		.v2-hero-main {
+			flex-direction: column-reverse;
+			gap: 1rem;
 		}
 
 		.v2-hero-links {

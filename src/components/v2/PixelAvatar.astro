@@ -1,0 +1,586 @@
+---
+// Pixel avatar (hoodie dev) + sysadmin robot sidekick on the shoulder.
+// Sprites are 32x32 character maps compiled to one <path> per colour at
+// render time, so the whole thing ships as a few KB of inline SVG.
+
+type Sprite = { rows: string[]; x?: number; y?: number };
+
+const HEAD: Sprite = {
+	y: 1,
+	rows: [
+		"..........HHHHHHHHHH............",
+		".........HHHHHHHHHHHH...........",
+		"........HHHhhhhHHHHHHH..........",
+		"........HHHHHHHHHHHHHH..........",
+		"........HHHHSSSSSSSHHH..........",
+		"........HHSSSSSSSSSSHH..........",
+		"........HSSSSSSSSSSSSH..........",
+		"........HGGGGGSSGGGGGH..........",
+		"........GGWWWGGGGWWWGG..........",
+		"........sGWWWGSSGWWWGs..........",
+		"........sGWWWGSSGWWWGs..........",
+		".........GGGGGSsGGGGG...........",
+		".........SSSSSSsSSSSS...........",
+		".........SSSMSSSSMSSS...........",
+		"..........SSSMMMMSSS............",
+		"...........SSSSSSSS.............",
+	],
+};
+
+const BODY: Sprite = {
+	y: 14,
+	rows: [
+		".......jj............jj.........",
+		"......jjjj..........jjjj........",
+		"......jjjjj........jjjjj........",
+		".....JJJJJJJssssssJJJJJJJ.......",
+		"....JJJJJJJJJssssJJJJJJJJJ......",
+		"..JJJJJJJJJJJJKKJJJJJJJJJJJJ....",
+		".JJJJJJJJJJJJTJJTJJJJJJJJJJJJ...",
+		"JJJJJJJJJJJJJTJJTJJJJJJJJJJJJJ..",
+		"JJJJJJJJJJJJJTJJTJJJJJJJJJJJJJ..",
+		"JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ..",
+		"JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ..",
+		"JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ..",
+		"JJJJJJJllllllllllllllllJJJJJJJ..",
+		"JJJJJJJlLLLLLLLLLLLLLLlJJJJJJJ..",
+		"JJJJJJJlLLLLLLTTLLLLLLlJJJJJJJ..",
+		"JJJJJJJlLLLLLLTTLLLLLLlJJJJJJJ..",
+		"JJJJJJJlLLLLLLLLLLLLLLlJJJJJJJ..",
+		"JJJJJJJlLLLLLLLLLLLLLLlJJJJJJJ..",
+	],
+};
+
+// Raised hand, only visible while waving.
+const HAND: Sprite = {
+	x: 1,
+	y: 9,
+	rows: [".SS.", "SSSS", "SSSS", "SSSS", "TTTT", "JJJJ", "JJJJ", "JJJJ", "JJJJ", "JJJJ"],
+};
+
+// Eyes and mouth are separate rects so they can change expression.
+const ROBOT: Sprite = {
+	x: 22,
+	y: 10,
+	rows: [
+		"...TT...",
+		"...TT...",
+		".TTTTTT.",
+		".TTTTTT.",
+		"TTTTTTTT",
+		"TTTTTTTT",
+		".TTTTTT.",
+		".TTTTTT.",
+		"..T..T..",
+	],
+};
+
+function toPaths({ rows, x = 0, y = 0 }: Sprite): { c: string; d: string }[] {
+	const byColor = new Map<string, string>();
+	rows.forEach((row, r) => {
+		let i = 0;
+		while (i < row.length) {
+			const ch = row[i];
+			let j = i;
+			while (j < row.length && row[j] === ch) j++;
+			if (ch !== ".") {
+				byColor.set(ch, `${byColor.get(ch) ?? ""}M${x + i} ${y + r}h${j - i}v1h-${j - i}z`);
+			}
+			i = j;
+		}
+	});
+	return [...byColor].map(([c, d]) => ({ c, d }));
+}
+
+const head = toPaths(HEAD);
+const body = toPaths(BODY);
+const hand = toPaths(HAND);
+const robot = toPaths(ROBOT);
+---
+
+<div class="v2-avatar-wrap">
+	<button
+		type="button"
+		class="v2-avatar"
+		id="v2Avatar"
+		data-robot="idle"
+		aria-label="Open the AI assistant"
+		title="Ask the robot (⌘K)"
+	>
+		<svg viewBox="-1 0 32 32" width="128" height="128" aria-hidden="true" focusable="false">
+			<g class="av-body">
+				{body.map((p) => <path class={`c-${p.c}`} d={p.d} />)}
+				<g class="av-keys">
+					<rect class="c-T" x="9" y="24" width="1" height="1" />
+					<rect class="c-T" x="14" y="24" width="2" height="1" />
+					<rect class="c-T" x="20" y="24" width="1" height="1" />
+				</g>
+			</g>
+
+			<g class="av-hand">
+				{hand.map((p) => <path class={`c-${p.c}`} d={p.d} />)}
+			</g>
+
+			<g class="av-bob">
+				<g class="av-head" data-av-head>
+					{head.map((p) => <path class={`c-${p.c}`} d={p.d} />)}
+					<g class="av-pupils" data-av-pupils>
+						<rect class="c-G" x="10.5" y="9.5" width="2" height="2" />
+						<rect class="c-G" x="17.5" y="9.5" width="2" height="2" />
+					</g>
+					<g class="av-lids">
+						<rect class="c-S" x="10" y="9" width="3" height="3" />
+						<rect class="c-S" x="17" y="9" width="3" height="3" />
+					</g>
+				</g>
+			</g>
+
+			<g class="av-robot">
+				{robot.map((p) => <path class={`c-${p.c}`} d={p.d} />)}
+				<g class="av-robot-eyes" data-av-robot-eyes>
+					<rect class="c-G av-robot-eye av-robot-eye-l" x="24" y="14" width="1" height="1" />
+					<rect class="c-G av-robot-eye av-robot-eye-r" x="27" y="14" width="1" height="1" />
+				</g>
+				<rect class="c-G av-robot-mouth" x="25" y="16" width="2" height="1" />
+			</g>
+		</svg>
+	</button>
+
+	<!-- Decorative one-liners from the robot; hidden from assistive tech on purpose. -->
+	<span class="v2-avatar-bubble" id="v2AvatarBubble" aria-hidden="true"></span>
+</div>
+
+<style>
+	.v2-avatar-wrap {
+		position: relative;
+		flex: none;
+		width: 128px;
+		height: 128px;
+	}
+
+	.v2-avatar {
+		--av-hair: #2f3650;
+		--av-hair-hi: #4a5478;
+		--av-skin: #e9bc91;
+		--av-skin-shade: #cf9668;
+		--av-ink: #0b0d14;
+		--av-hoodie: #2a3147;
+		--av-hood: #3b425c;
+		--av-lid: #1a1e2e;
+		--av-lid-edge: #7a8aa3;
+
+		display: block;
+		width: 100%;
+		height: 100%;
+		padding: 0;
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+	}
+
+	:global([data-theme="light"]) .v2-avatar {
+		--av-hair: #1a1d29;
+		--av-hair-hi: #3b425c;
+		--av-hoodie: #1f2536;
+		--av-hood: #343b52;
+		--av-lid: #cbd5e1;
+		--av-lid-edge: #475569;
+	}
+
+	.v2-avatar:focus-visible {
+		outline: 1px solid var(--v2-green);
+		outline-offset: 4px;
+	}
+
+	.v2-avatar svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+		shape-rendering: crispEdges;
+	}
+
+	.c-H { fill: var(--av-hair); }
+	.c-h { fill: var(--av-hair-hi); }
+	.c-S { fill: var(--av-skin); }
+	.c-s { fill: var(--av-skin-shade); }
+	.c-G { fill: var(--av-ink); }
+	.c-W { fill: #f8fafc; }
+	.c-M { fill: #9a5a3c; }
+	.c-J { fill: var(--av-hoodie); }
+	.c-j { fill: var(--av-hood); }
+	.c-K { fill: var(--av-ink); }
+	.c-T { fill: var(--v2-green); }
+	.c-L { fill: var(--av-lid); }
+	.c-l { fill: var(--av-lid-edge); }
+
+	/* Transforms inside the SVG are in sprite pixels (1px = 1 cell). */
+	.av-head,
+	.av-pupils,
+	.av-robot-eyes {
+		transition: transform 0.12s steps(2);
+	}
+
+	@keyframes av-bob {
+		0%, 49% { transform: translateY(0); }
+		50%, 100% { transform: translateY(0.5px); }
+	}
+
+	.av-bob {
+		animation: av-bob 3.2s infinite;
+	}
+
+	@keyframes av-blink {
+		0%, 94%, 100% { opacity: 0; }
+		95%, 98% { opacity: 1; }
+	}
+
+	.av-lids {
+		opacity: 0;
+		animation: av-blink 5s infinite;
+	}
+
+	/* Typing: faster bob + keystroke sparks above the laptop lid */
+	.av-keys rect {
+		opacity: 0;
+	}
+
+	@keyframes av-key {
+		0%, 49% { opacity: 1; }
+		50%, 100% { opacity: 0; }
+	}
+
+	.v2-avatar.is-typing .av-bob {
+		animation-duration: 0.5s;
+	}
+
+	.v2-avatar.is-typing .av-keys rect {
+		animation: av-key 0.36s infinite;
+	}
+
+	.v2-avatar.is-typing .av-keys rect:nth-child(2) { animation-delay: 0.12s; }
+	.v2-avatar.is-typing .av-keys rect:nth-child(3) { animation-delay: 0.24s; }
+
+	/* Wave */
+	.av-hand {
+		opacity: 0;
+	}
+
+	@keyframes av-wave {
+		0%, 49% { transform: translateX(0); }
+		50%, 100% { transform: translateX(1px); }
+	}
+
+	.v2-avatar.is-waving .av-hand {
+		opacity: 1;
+		animation: av-wave 0.4s infinite;
+	}
+
+	/* Robot expressions */
+	@keyframes av-robot-idle {
+		0%, 59% { transform: translateY(0); }
+		60%, 100% { transform: translateY(-0.5px); }
+	}
+
+	.av-robot {
+		animation: av-robot-idle 4.1s infinite;
+	}
+
+	@keyframes av-led {
+		0%, 49% { opacity: 1; }
+		50%, 100% { opacity: 0.15; }
+	}
+
+	.v2-avatar[data-robot="thinking"] .av-robot-eye {
+		animation: av-led 0.4s infinite;
+	}
+
+	.v2-avatar[data-robot="thinking"] .av-robot-eye-r {
+		animation-delay: 0.2s;
+	}
+
+	@keyframes av-hop {
+		0%, 49% { transform: translateY(-2px); }
+		50%, 100% { transform: translateY(0); }
+	}
+
+	.v2-avatar[data-robot="happy"] .av-robot {
+		animation: av-hop 0.3s 4;
+	}
+
+	.v2-avatar[data-robot="happy"] .av-robot-mouth {
+		transform: translate(-1px, 0) scaleX(2);
+		transform-box: fill-box;
+		transform-origin: left;
+	}
+
+	.v2-avatar[data-robot="confused"] .av-robot-eye-l {
+		transform: translateY(-1px);
+	}
+
+	.v2-avatar[data-robot="confused"] .av-robot-mouth {
+		transform: translateX(1px);
+	}
+
+	.v2-avatar.is-paused * {
+		animation-play-state: paused !important;
+	}
+
+	/* Speech bubble: absolutely positioned so it never shifts layout */
+	.v2-avatar-bubble {
+		position: absolute;
+		top: calc(100% + 0.6rem);
+		right: 0;
+		z-index: 2;
+		width: 100%;
+		padding: 0.35rem 0.55rem;
+		background: var(--v2-bg-elevated);
+		border: 1px solid var(--v2-green);
+		color: var(--v2-text);
+		font-family: var(--v2-font-mono);
+		font-size: 0.68rem;
+		line-height: 1.45;
+		box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: opacity 0.15s ease, visibility 0.15s;
+	}
+
+	.v2-avatar-bubble.is-on {
+		opacity: 1;
+		visibility: visible;
+	}
+
+	.v2-avatar-bubble::before {
+		content: "> ";
+		color: var(--v2-green);
+	}
+
+	@media (max-width: 640px) {
+		.v2-avatar-wrap {
+			width: 96px;
+			height: 96px;
+		}
+
+		.v2-avatar-bubble {
+			top: 0.25rem;
+			right: auto;
+			left: calc(100% + 0.6rem);
+			width: max-content;
+			max-width: min(200px, calc(100vw - 96px - 3.5rem));
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.v2-avatar *,
+		.v2-avatar-bubble {
+			animation: none !important;
+			transition: none !important;
+		}
+	}
+</style>
+
+<script>
+	const avatar = document.getElementById("v2Avatar");
+	const bubble = document.getElementById("v2AvatarBubble");
+	const head = avatar?.querySelector<SVGGElement>("[data-av-head]");
+	const pupils = avatar?.querySelector<SVGGElement>("[data-av-pupils]");
+	const robotEyes = avatar?.querySelector<SVGGElement>("[data-av-robot-eyes]");
+
+	type RobotMood = "idle" | "thinking" | "happy" | "confused";
+
+	function initAvatar(root: HTMLElement, headEl: SVGGElement, pupilEl: SVGGElement) {
+		const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+		const IDLE_BEFORE_TYPING_MS = 20_000;
+		const LOOK_RANGE_PX = 240;
+
+		let pointerX = 0;
+		let pointerY = 0;
+		let lastMove = performance.now();
+		let frame = 0;
+		let onScreen = true;
+		let agentOpen = false;
+		let agentThinking = false;
+		let idleTyping = false;
+		let moodTimer: number | undefined;
+		let bubbleTimer: number | undefined;
+
+		// dx/dy in -1..1; snapped so the sprite moves in whole/half pixels.
+		function look(dx: number, dy: number) {
+			const headX = Math.abs(dx) > 0.7 ? Math.sign(dx) : 0;
+			const headY = dy > 0.7 ? 0.5 : 0;
+			headEl.style.transform = `translate(${headX}px, ${headY}px)`;
+			pupilEl.style.transform = `translate(${Math.round(dx) * 0.5}px, ${Math.round(dy) * 0.5}px)`;
+			if (robotEyes) robotEyes.style.transform = `translateX(${Math.round(dx)}px)`;
+		}
+
+		function render() {
+			frame = 0;
+			const typing = agentThinking || idleTyping;
+			root.classList.toggle("is-typing", typing);
+
+			if (typing) return look(0, 1); // eyes on the laptop
+			if (agentOpen) return look(1, 0); // glance at the robot
+			if (!finePointer) return look(0, 0);
+
+			const rect = root.getBoundingClientRect();
+			const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+			look(
+				clamp((pointerX - (rect.left + rect.width / 2)) / LOOK_RANGE_PX),
+				clamp((pointerY - (rect.top + rect.height / 2)) / LOOK_RANGE_PX),
+			);
+		}
+
+		function schedule() {
+			if (!frame && onScreen && !document.hidden) frame = requestAnimationFrame(render);
+		}
+
+		function setMood(mood: RobotMood, revertAfterMs?: number) {
+			clearTimeout(moodTimer);
+			root.dataset.robot = mood;
+			if (revertAfterMs) moodTimer = window.setTimeout(() => setMood("idle"), revertAfterMs);
+		}
+
+		function seen(key: string): boolean {
+			try {
+				if (sessionStorage.getItem(`v2av:${key}`)) return true;
+				sessionStorage.setItem(`v2av:${key}`, "1");
+			} catch {
+				// Storage blocked: fall through and just show the line.
+			}
+			return false;
+		}
+
+		/** Show a robot one-liner. With `onceKey` it appears once per session. */
+		function say(text: string, onceKey?: string) {
+			if (!bubble || (onceKey && seen(onceKey))) return;
+			bubble.textContent = text;
+			bubble.classList.add("is-on");
+			clearTimeout(bubbleTimer);
+			bubbleTimer = window.setTimeout(() => bubble.classList.remove("is-on"), 4500);
+		}
+
+		function wave() {
+			if (calm) return;
+			root.classList.add("is-waving");
+			window.setTimeout(() => root.classList.remove("is-waving"), 1800);
+		}
+
+		root.addEventListener("click", () => {
+			(window as unknown as Record<string, (() => void) | undefined>).__v2OpenAgent?.();
+		});
+
+		if (finePointer && !calm) {
+			window.addEventListener(
+				"pointermove",
+				(e) => {
+					pointerX = e.clientX;
+					pointerY = e.clientY;
+					lastMove = performance.now();
+					idleTyping = false;
+					schedule();
+				},
+				{ passive: true },
+			);
+		}
+
+		// Nobody moving the mouse → get back to work on the laptop.
+		if (!calm) {
+			window.setInterval(() => {
+				if (!onScreen || document.hidden || idleTyping) return;
+				if (performance.now() - lastMove > IDLE_BEFORE_TYPING_MS) {
+					idleTyping = true;
+					schedule();
+					say("still here? good. it's being logged.", "idle");
+				}
+			}, 5000);
+		}
+
+		new IntersectionObserver(([entry]) => {
+			onScreen = entry.isIntersecting;
+			root.classList.toggle("is-paused", !onScreen);
+		}).observe(root);
+
+		let hiddenAt = 0;
+		document.addEventListener("visibilitychange", () => {
+			root.classList.toggle("is-paused", document.hidden || !onScreen);
+			if (document.hidden) {
+				hiddenAt = performance.now();
+			} else if (hiddenAt && performance.now() - hiddenAt > 8000 && onScreen) {
+				wave();
+				say("oh, you're back. session resumed.", "back");
+			}
+		});
+
+		// Smart-search lifecycle, emitted by CommandBarV2.
+		document.addEventListener("v2:agent", (e) => {
+			const state = (e as CustomEvent<{ state: string }>).detail?.state;
+			if (state === "open") {
+				agentOpen = true;
+				say("sudo ask me anything.", "open");
+			} else if (state === "close") {
+				agentOpen = false;
+				agentThinking = false;
+				setMood("idle");
+			} else if (state === "thinking") {
+				agentThinking = true;
+				setMood("thinking");
+			} else if (state === "done") {
+				agentThinking = false;
+				setMood("happy", 1600);
+			} else if (state === "empty") {
+				agentThinking = false;
+				setMood("confused", 3000);
+				say("404: answer not found. try sudo.");
+			}
+			schedule();
+		});
+
+		// Section commentary, once per session each.
+		const lines: Record<string, string> = {
+			"v2-works": 'not "works on my machine". it actually runs.',
+			"v2-writings": "docs. someone here actually wrote them.",
+		};
+		const sectionObserver = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) continue;
+					sectionObserver.unobserve(entry.target);
+					if (onScreen) say(lines[entry.target.id], entry.target.id);
+				}
+			},
+			{ threshold: 0.4 },
+		);
+		for (const id of Object.keys(lines)) {
+			const section = document.getElementById(id);
+			if (section) sectionObserver.observe(section);
+		}
+
+		// Konami code → high-five.
+		const KONAMI = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+		let konamiIdx = 0;
+		window.addEventListener("keydown", (e) => {
+			konamiIdx = e.key === KONAMI[konamiIdx] ? konamiIdx + 1 : e.key === KONAMI[0] ? 1 : 0;
+			if (konamiIdx === KONAMI.length) {
+				konamiIdx = 0;
+				wave();
+				setMood("happy", 1600);
+				say("rm -rf boredom/ — done.");
+			}
+		});
+
+		window.setTimeout(() => say("uptime 99.9%. the rest was coffee.", "hello"), 2500);
+	}
+
+	if (avatar && head && pupils) {
+		const start = () => initAvatar(avatar, head, pupils);
+		if ("requestIdleCallback" in window) {
+			window.requestIdleCallback(start, { timeout: 2000 });
+		} else {
+			setTimeout(start, 300);
+		}
+	}
+</script>
