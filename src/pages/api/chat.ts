@@ -239,6 +239,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 model,
                 stream: true,
                 max_tokens: MAX_OUTPUT_TOKENS,
+                // Short factual answers need no reasoning pass; left on, reasoning tokens
+                // consume the whole max_tokens budget and the visible answer comes back empty.
+                reasoning: { enabled: false },
                 messages: [
                     { role: "system", content: systemPrompt },
                     ...messages,

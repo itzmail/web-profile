@@ -1,9 +1,24 @@
 ---
-interface Props {
-	email: string;
+interface SearchEntry {
+	title: string;
+	href: string;
+	keywords?: string;
 }
 
-const { email } = Astro.props;
+interface Props {
+	email: string;
+	/** Optional searchable entries, surfaced in the list only while typing. */
+	projects?: SearchEntry[];
+	posts?: SearchEntry[];
+}
+
+const { email, projects = [], posts = [] } = Astro.props;
+
+const SUGGESTED_QUESTIONS = [
+	"What's your tech stack?",
+	"Which project are you proudest of?",
+	"Are you available for freelance work?",
+];
 ---
 
 <!-- Bottom-Right Floating Retro Robot Launcher -->
@@ -95,6 +110,15 @@ const { email } = Astro.props;
 			</button>
 		</div>
 
+		<!-- Suggested questions: one click asks the assistant directly -->
+		<div class="v2-agent-chips" id="v2AgentChips">
+			{SUGGESTED_QUESTIONS.map((question) => (
+				<button type="button" class="v2-agent-chip" data-ask={question}>
+					{question}
+				</button>
+			))}
+		</div>
+
 		<!-- Retro Loading / Processing State -->
 		<div id="v2AgentLoadingBox" class="v2-agent-loading" role="status" aria-live="polite" hidden>
 			<span class="v2-spinner" id="v2AgentSpinner">⠋</span>
@@ -182,6 +206,36 @@ const { email } = Astro.props;
 				</span>
 				<span class="v2-agent-key">→</span>
 			</a>
+			{projects.map((entry) => (
+				<a
+					href={entry.href}
+					class="v2-agent-item"
+					data-search-only="project"
+					data-title={entry.title.toLowerCase()}
+					data-keywords={(entry.keywords ?? "").toLowerCase()}
+				>
+					<span class="v2-agent-item-left">
+						<span class="v2-agent-tag">PROJ</span>
+						<span>{entry.title}</span>
+					</span>
+					<span class="v2-agent-key">↗</span>
+				</a>
+			))}
+			{posts.map((entry) => (
+				<a
+					href={entry.href}
+					class="v2-agent-item"
+					data-search-only="post"
+					data-title={entry.title.toLowerCase()}
+					data-keywords={(entry.keywords ?? "").toLowerCase()}
+				>
+					<span class="v2-agent-item-left">
+						<span class="v2-agent-tag">NOTE</span>
+						<span>{entry.title}</span>
+					</span>
+					<span class="v2-agent-key">↗</span>
+				</a>
+			))}
 		</div>
 	</div>
 </aside>
@@ -484,6 +538,36 @@ const { email } = Astro.props;
 		color: var(--v2-text);
 		margin-bottom: 0.45rem;
 		line-height: 1.45;
+		white-space: pre-wrap;
+	}
+
+	.v2-agent-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-top: 0.5rem;
+	}
+
+	.v2-agent-chip {
+		padding: 0.2rem 0.45rem;
+		border: 1px dashed var(--v2-border-strong);
+		background: transparent;
+		color: var(--v2-text-muted);
+		font-family: var(--v2-font-mono);
+		font-size: 0.68rem;
+		cursor: pointer;
+	}
+
+	.v2-agent-chip:hover,
+	.v2-agent-chip:focus-visible {
+		border-color: var(--v2-green);
+		color: var(--v2-green);
+		outline: none;
+	}
+
+	/* Project / note entries stay hidden until the visitor types a matching term. */
+	.v2-agent-item[data-search-only] {
+		display: none;
 	}
 
 	.v2-agent-result-actions {
@@ -491,13 +575,6 @@ const { email } = Astro.props;
 		gap: 0.4rem;
 		flex-wrap: wrap;
 		align-items: center;
-	}
-
-	.v2-agent-note {
-		font-size: 0.68rem;
-		color: var(--v2-text-muted);
-		border-left: 2px solid var(--v2-border-strong);
-		padding-left: 0.4rem;
 	}
 
 	.v2-agent-section-label {
@@ -653,7 +730,7 @@ const { email } = Astro.props;
 		minimizeAgentWindow();
 		if (resultBox) resultBox.hidden = true;
 		if (inputEl) inputEl.value = "";
-		cmdItems.forEach((item) => (item.style.display = "flex"));
+		filterItems("");
 		hasBeenDragged = false;
 	}
 
@@ -679,6 +756,38 @@ const { email } = Astro.props;
 	window.addEventListener("keydown", (e) => {
 		if (e.key === "Escape" && agentWin && !agentWin.hidden) {
 			minimizeAgentWindow();
+		}
+	});
+
+	const isVisible = (el: HTMLElement) => el.offsetParent !== null;
+
+	// Palette keyboard model: ↑/↓ walk the visible list, Tab stays inside the window.
+	agentWin?.addEventListener("keydown", (e) => {
+		if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+			const visible = cmdItems.filter(isVisible);
+			if (visible.length === 0) return;
+			e.preventDefault();
+			const index = visible.indexOf(document.activeElement as HTMLElement);
+			const next = e.key === "ArrowDown" ? index + 1 : index - 1;
+			if (next < 0) inputEl?.focus();
+			else visible[Math.min(next, visible.length - 1)].focus();
+			return;
+		}
+
+		if (e.key === "Tab") {
+			const focusable = Array.from(
+				agentWin.querySelectorAll<HTMLElement>("button, a[href], input")
+			).filter(isVisible);
+			if (focusable.length === 0) return;
+			const first = focusable[0];
+			const last = focusable[focusable.length - 1];
+			if (e.shiftKey && document.activeElement === first) {
+				e.preventDefault();
+				last.focus();
+			} else if (!e.shiftKey && document.activeElement === last) {
+				e.preventDefault();
+				first.focus();
+			}
 		}
 	});
 
@@ -741,6 +850,32 @@ const { email } = Astro.props;
 	 * plain text. We render it inside the same retro window so the visitor never
 	 * leaves the Agent context.
 	 */
+	// In-memory only: follow-up questions keep context, nothing is persisted in the browser.
+	const MAX_HISTORY_TURNS = 6;
+	const chatHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+
+	function appendEmailAction() {
+		const mailBtn = document.createElement("a");
+		mailBtn.className = "v2-btn v2-btn-primary";
+		mailBtn.textContent = "Direct Email →";
+		mailBtn.setAttribute("href", `mailto:${inputEl?.dataset.email ?? ""}`);
+		resultActions?.appendChild(mailBtn);
+	}
+
+	// Links to projects named in the question, built from the server-rendered entries.
+	function appendProjectMatches(question: string) {
+		const lower = question.toLowerCase();
+		for (const item of cmdItems) {
+			const title = item.dataset.title ?? "";
+			if (item.dataset.searchOnly !== "project" || !title || !lower.includes(title)) continue;
+			const link = document.createElement("a");
+			link.className = "v2-btn";
+			link.textContent = `${item.querySelector(".v2-agent-item-left span:last-child")?.textContent ?? title} ↗`;
+			link.setAttribute("href", item.getAttribute("href") ?? "/projects");
+			resultActions?.appendChild(link);
+		}
+	}
+
 	async function streamLLMAnswer(question: string) {
 		if (!resultBox || !resultStatus || !resultText || !resultActions || !resultLatency) return;
 
@@ -751,48 +886,57 @@ const { email } = Astro.props;
 		resultActions.innerHTML = "";
 		emitAgent("thinking");
 
+		const messages = [...chatHistory, { role: "user" as const, content: question }].slice(
+			-MAX_HISTORY_TURNS
+		);
+
 		try {
 			const res = await fetch("/api/chat", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					messages: [{ role: "user", content: question }],
-				}),
+				body: JSON.stringify({ messages }),
 			});
+
+			if (res.status === 429) {
+				resultStatus.textContent = "AGENT · THROTTLED";
+				resultLatency.textContent = "429";
+				resultText.textContent = "Question limit reached. Try again in a minute.";
+				emitAgent("empty");
+				return;
+			}
 
 			if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
+			// Recruiter / business questions are routed to a human instead of the LLM.
+			if (res.headers.get("X-Chat-Action") === "collect-contact") {
+				resultStatus.textContent = "AGENT → HIRE_CONTACT";
+				resultText.textContent = "That one is best answered by Ismail directly.";
+				appendEmailAction();
+				emitAgent("done");
+				return;
+			}
+
 			const reader = res.body.getReader();
 			const decoder = new TextDecoder();
-			let buffer = "";
 			let full = "";
 
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
-				buffer += decoder.decode(value, { stream: true });
-				const parts = buffer.split("\n");
-				buffer = parts.pop() ?? "";
-				for (const part of parts) {
-					if (part.trim()) {
-						full += part;
-						resultText.textContent = full;
-					}
-				}
-			}
-
-			// Flush the trailing chunk that never hit a newline boundary.
-			if (buffer.trim()) {
-				full += buffer;
+				full += decoder.decode(value, { stream: true });
 				resultText.textContent = full;
 			}
 
 			if (!full.trim()) {
 				resultText.textContent = "No answer returned. Try the Notes or Selected Works section below.";
 				emitAgent("empty");
-			} else {
-				emitAgent("done");
+				return;
 			}
+
+			chatHistory.push({ role: "user", content: question }, { role: "assistant", content: full });
+			resultStatus.textContent = "AGENT → ANSWER";
+			appendProjectMatches(question);
+			emitAgent("done");
 		} catch {
 			emitAgent("empty");
 			resultStatus.textContent = "AGENT → ANSWER UNAVAILABLE";
@@ -843,8 +987,18 @@ const { email } = Astro.props;
 		},
 	};
 
-	function renderDecision(decision: AgentDecision) {
+	function renderDecision(decision: AgentDecision, question: string) {
 		if (!resultBox || !resultStatus || !resultText || !resultActions || !resultLatency) return;
+
+		// Anything that needs a written answer goes straight to the assistant.
+		if (
+			decision.intent === "deep_question" ||
+			decision.intent === "inspect_project" ||
+			decision.lowConfidence
+		) {
+			void streamLLMAnswer(question);
+			return;
+		}
 
 		const meta = INTENT_META[decision.intent] ?? INTENT_META.deep_question;
 		resultBox.hidden = false;
@@ -863,45 +1017,20 @@ const { email } = Astro.props;
 					(document.getElementById("cvModal") as HTMLDialogElement | null)?.showModal();
 				});
 				break;
-			case "hire_contact": {
-				const mailBtn = document.createElement("a");
-				mailBtn.className = "v2-btn v2-btn-primary";
-				mailBtn.textContent = "Direct Email →";
-				const emailValue = inputEl?.dataset.email ?? "";
-				mailBtn.setAttribute("href", `mailto:${emailValue}`);
-				resultActions.appendChild(mailBtn);
+			case "hire_contact":
+				appendEmailAction();
 				break;
-			}
 			case "browse_projects":
-				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn v2-btn-primary">Selected Works ↓</a> <a href="/projects" class="v2-btn">All Projects ↗</a>`;
-				break;
-			case "inspect_project":
 				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn v2-btn-primary">Selected Works ↓</a> <a href="/projects" class="v2-btn">All Projects ↗</a>`;
 				break;
 			case "open_tools":
 				resultActions.innerHTML = `<a href="/tools" class="v2-btn v2-btn-primary">Open DevTools ↗</a>`;
-				break;
-			case "deep_question":
-				resultActions.innerHTML = `<button type="button" class="v2-btn v2-btn-primary" id="v2AskFullBtn">Ask the Assistant →</button> <a href="#v2-writings" class="v2-btn">Notes</a>`;
-				document.getElementById("v2AskFullBtn")?.addEventListener("click", () => {
-					const question = inputEl?.value.trim() ?? "";
-					void streamLLMAnswer(question);
-				});
 				break;
 			default:
 				resultActions.innerHTML = `<a href="#v2-works" class="v2-btn">Selected Works</a> <a href="/notes" class="v2-btn">Notes</a>`;
 				break;
 		}
 
-		if (decision.needsLlm || decision.lowConfidence) {
-			const note = document.createElement("span");
-			note.className = "v2-agent-note";
-			note.textContent =
-				decision.needsLlm || decision.intent === "deep_question"
-					? "→ needs written answer"
-					: "→ low confidence, try rephrasing";
-			resultActions.appendChild(note);
-		}
 	}
 
 	async function runAgentQuery(rawQuery: string) {
@@ -948,7 +1077,7 @@ const { email } = Astro.props;
 			const decision = (await res.json()) as AgentDecision;
 			clearInterval(spinTimer);
 			if (loadingBox) loadingBox.hidden = true;
-			renderDecision(decision);
+			renderDecision(decision, q);
 		} catch {
 			// Offline / endpoint unavailable → fall back to the local keyword router.
 			clearInterval(spinTimer);
@@ -965,18 +1094,43 @@ const { email } = Astro.props;
 							? "browse_projects"
 							: "deep_question";
 
-			renderDecision({
-				intent: localIntent,
-				audience: "engineer",
-				confidence: 0.5,
-				probabilities: {},
-				needsLlm: localIntent === "deep_question",
-				source: "local",
-				model: "keyword-fallback",
-				latencyMs: Math.round(performance.now() - t0),
-				lowConfidence: false,
-			});
+			renderDecision(
+				{
+					intent: localIntent,
+					audience: "engineer",
+					confidence: 0.5,
+					probabilities: {},
+					needsLlm: localIntent === "deep_question",
+					source: "local",
+					model: "keyword-fallback",
+					latencyMs: Math.round(performance.now() - t0),
+					lowConfidence: false,
+				},
+				q
+			);
 		}
+	}
+
+	// Suggested questions are known to need a written answer, so skip the intent router.
+	document.querySelectorAll<HTMLElement>("#v2AgentChips .v2-agent-chip").forEach((chip) => {
+		chip.addEventListener("click", () => {
+			const question = chip.dataset.ask ?? "";
+			if (inputEl) inputEl.value = question;
+			void streamLLMAnswer(question);
+		});
+	});
+
+	function filterItems(rawTerm: string) {
+		const term = rawTerm.trim().toLowerCase();
+		cmdItems.forEach((item) => {
+			const haystack = `${item.dataset.keywords ?? ""} ${(item.textContent ?? "").toLowerCase()}`;
+			const matches = haystack.includes(term);
+			if (item.dataset.searchOnly) {
+				item.style.display = term.length >= 2 && matches ? "flex" : "none";
+			} else {
+				item.style.display = !term || matches ? "" : "none";
+			}
+		});
 	}
 
 	runBtn?.addEventListener("click", () => {
@@ -992,13 +1146,7 @@ const { email } = Astro.props;
 		}
 	});
 
-	inputEl?.addEventListener("input", () => {
-		const term = inputEl.value.trim().toLowerCase();
-		cmdItems.forEach((item) => {
-			const kw = (item.dataset.keywords || "") + " " + (item.textContent || "").toLowerCase();
-			item.style.display = !term || kw.includes(term) ? "flex" : "none";
-		});
-	});
+	inputEl?.addEventListener("input", () => filterItems(inputEl.value));
 
 	cmdItems.forEach((item) => {
 		item.addEventListener("click", () => {

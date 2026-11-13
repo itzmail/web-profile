@@ -166,7 +166,19 @@ const jsonLd = {
 	</main>
 
 	<!-- Retro Robot Agent & Spotlight Command Bar -->
-	<CommandBarV2 email={settings.profile_email} />
+	<CommandBarV2
+		email={settings.profile_email}
+		projects={projects.map((p) => ({
+			title: p.title,
+			href: `/projects/${p.web_profile.data.slug}`,
+			keywords: (p.web_profile.data.stack ?? []).join(" "),
+		}))}
+		posts={posts.slice(0, 8).map((p) => ({
+			title: p.title,
+			href: `/notes/${p.slug}`,
+			keywords: (p.tags ?? []).join(" "),
+		}))}
+	/>
 
 	<!-- Fullscreen PDF Viewer Modal -->
 	<CvModal />
