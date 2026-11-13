@@ -45,7 +45,7 @@
                             <th class="col-name" data-i18n="protobufLab.fieldNameHeader">Field Name</th>
                             <th class="col-type" data-i18n="protobufLab.fieldTypeHeader">Type</th>
                             <th class="col-val" data-i18n="protobufLab.fieldValueHeader">Value</th>
-                            <th class="col-del"></th>
+                            <th class="col-del" aria-label="Actions"></th>
                         </tr>
                     </thead>
                     <tbody id="schemaTableBody">
@@ -152,7 +152,7 @@
                     <span class="calc-title" data-i18n="protobufLab.trafficVolumeLabel">Simulated Monthly Traffic Scale:</span>
                     <span class="calc-scale-value" id="calcScaleLabel">10 Million Requests/mo</span>
                 </div>
-                <input type="range" min="1" max="4" step="1" value="2" class="scale-slider" id="scaleSlider" />
+                <input type="range" min="1" max="4" step="1" value="2" class="scale-slider" id="scaleSlider" aria-label="Traffic scale" />
 
                 <div class="calc-results-grid">
                     <div class="calc-res-item">
@@ -380,6 +380,8 @@
         color: var(--text-muted, #8b949e);
         cursor: pointer;
         padding: 0.2rem 0.4rem;
+        min-width: 24px;
+        min-height: 24px;
         border-radius: 4px;
         font-size: 0.85rem;
         transition: color 0.15s;
@@ -781,13 +783,13 @@
 
             tr.innerHTML = `
                 <td>
-                    <input type="number" min="1" max="536870911" class="tbl-input input-tag" data-idx="${idx}" value="${f.tag}" />
+                    <input type="number" min="1" max="536870911" class="tbl-input input-tag" aria-label="Field tag" data-idx="${idx}" value="${f.tag}" />
                 </td>
                 <td>
-                    <input type="text" class="tbl-input input-name" data-idx="${idx}" value="${f.name}" />
+                    <input type="text" class="tbl-input input-name" aria-label="Field name" data-idx="${idx}" value="${f.name}" />
                 </td>
                 <td>
-                    <select class="tbl-select input-type" data-idx="${idx}">
+                    <select class="tbl-select input-type" aria-label="Field type" data-idx="${idx}">
                         <option value="int32" ${f.type === "int32" ? "selected" : ""}>int32</option>
                         <option value="sint32" ${f.type === "sint32" ? "selected" : ""}>sint32 (ZigZag)</option>
                         <option value="uint32" ${f.type === "uint32" ? "selected" : ""}>uint32</option>
@@ -800,10 +802,10 @@
                     </select>
                 </td>
                 <td>
-                    <input type="text" class="tbl-input input-val" data-idx="${idx}" value="${f.value}" />
+                    <input type="text" class="tbl-input input-val" aria-label="Field value" data-idx="${idx}" value="${f.value}" />
                 </td>
                 <td>
-                    <button type="button" class="btn-del-row" data-idx="${idx}" title="Delete field">✕</button>
+                    <button type="button" class="btn-del-row" data-idx="${idx}" title="Delete field" aria-label="Delete field">✕</button>
                 </td>
             `;
 

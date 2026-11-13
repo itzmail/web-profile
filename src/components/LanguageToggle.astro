@@ -7,7 +7,7 @@
         type="button"
         class="nav-action-btn lang-trigger"
         id="langTrigger"
-        aria-label="Change language"
+        aria-label="EN - Change language"
         aria-haspopup="true"
         aria-expanded="false"
         title="Change Language / Ganti Bahasa"
@@ -179,6 +179,7 @@
         const currentCodeEl = document.getElementById("langCurrentCode");
         if (currentCodeEl) {
             currentCodeEl.textContent = lang.toUpperCase();
+            document.getElementById("langTrigger")?.setAttribute("aria-label", `${lang.toUpperCase()} - Change language`);
         }
 
         // Update active class in dropdown
