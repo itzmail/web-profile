@@ -38,13 +38,7 @@ const socials: ApiSocial[] = apiSocials ?? [];
 const isAvailable =
 	settings.available_for_work === "true" || settings.available_for_work === "1";
 
-const defaultBio =
-	"I build high-throughput backend services (Go, Rust, TypeScript), scalable web architectures, and edge-native AI systems. Previously engineered enterprise school ERP, toll-road HCIS mobile systems, and multi-tenant EdTech platforms.";
-
-const bioText =
-	settings.profile_bio && settings.profile_bio.length > 40
-		? settings.profile_bio
-		: defaultBio;
+const bioText = settings.profile_bio;
 
 const jsonLd = {
 	"@context": "https://schema.org",
