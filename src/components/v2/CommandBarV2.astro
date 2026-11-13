@@ -671,7 +671,7 @@ const SUGGESTED_QUESTIONS = [
 
 	let hasBeenDragged = false;
 
-	type AgentState = "open" | "close" | "thinking" | "done" | "empty";
+	type AgentState = "open" | "close" | "listening" | "thinking" | "done" | "empty";
 
 	// Broadcast the Agent lifecycle so the robot mascots can react to it.
 	function emitAgent(state: AgentState) {
@@ -1146,7 +1146,13 @@ const SUGGESTED_QUESTIONS = [
 		}
 	});
 
-	inputEl?.addEventListener("input", () => filterItems(inputEl.value));
+	inputEl?.addEventListener("input", () => {
+		filterItems(inputEl.value);
+		const state = agentPill?.dataset.state;
+		if (inputEl.value.trim() && state !== "listening" && state !== "thinking") {
+			emitAgent("listening");
+		}
+	});
 
 	cmdItems.forEach((item) => {
 		item.addEventListener("click", () => {

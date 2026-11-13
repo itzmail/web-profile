@@ -12,13 +12,13 @@ const HEAD: Sprite = {
 		".........HHHHHHHHHHHH...........",
 		"........HHHhhhhHHHHHHH..........",
 		"........HHHHHHHHHHHHHH..........",
-		"........HHHHSSSSSSSHHH..........",
-		"........HHSSSSSSSSSSHH..........",
+		"........HHHHHHSSSSSHHH..........",
+		"........HHHSSSSSSSSSHH..........",
 		"........HSSSSSSSSSSSSH..........",
 		"........HGGGGGSSGGGGGH..........",
-		"........GGWWWGGGGWWWGG..........",
-		"........sGWWWGSSGWWWGs..........",
-		"........sGWWWGSSGWWWGs..........",
+		"........GGSSSGGGGSSSGG..........",
+		"........sGSSSGSSGSSSGs..........",
+		"........sGSSSGSSGSSSGs..........",
 		".........GGGGGSsGGGGG...........",
 		".........SSSSSSsSSSSS...........",
 		".........SSSMSSSSMSSS...........",
@@ -51,11 +51,11 @@ const BODY: Sprite = {
 	],
 };
 
-// Raised hand, only visible while waving.
+// Raised hand (with smartwatch), only visible while waving.
 const HAND: Sprite = {
 	x: 1,
 	y: 9,
-	rows: [".SS.", "SSSS", "SSSS", "SSSS", "TTTT", "JJJJ", "JJJJ", "JJJJ", "JJJJ", "JJJJ"],
+	rows: [".SS.", "SSSS", "SSSS", "SSSS", "KTTK", "JJJJ", "JJJJ", "JJJJ", "JJJJ", "JJJJ"],
 };
 
 // Eyes and mouth are separate rects so they can change expression.
@@ -164,8 +164,8 @@ const robot = toPaths(ROBOT);
 		--av-skin: #e9bc91;
 		--av-skin-shade: #cf9668;
 		--av-ink: #0b0d14;
-		--av-hoodie: #2a3147;
-		--av-hood: #3b425c;
+		--av-hoodie: #24345f;
+		--av-hood: #34477a;
 		--av-lid: #1a1e2e;
 		--av-lid-edge: #7a8aa3;
 
@@ -181,8 +181,8 @@ const robot = toPaths(ROBOT);
 	:global([data-theme="light"]) .v2-avatar {
 		--av-hair: #1a1d29;
 		--av-hair-hi: #3b425c;
-		--av-hoodie: #1f2536;
-		--av-hood: #343b52;
+		--av-hoodie: #1c2b55;
+		--av-hood: #2d3f72;
 		--av-lid: #cbd5e1;
 		--av-lid-edge: #475569;
 	}
@@ -314,6 +314,13 @@ const robot = toPaths(ROBOT);
 		transform-origin: left;
 	}
 
+	/* Listening: mouth narrows to a dot while the visitor types */
+	.v2-avatar[data-robot="listening"] .av-robot-mouth {
+		transform: scaleX(0.5);
+		transform-box: fill-box;
+		transform-origin: center;
+	}
+
 	.v2-avatar[data-robot="confused"] .av-robot-eye-l {
 		transform: translateY(-1px);
 	}
@@ -388,7 +395,32 @@ const robot = toPaths(ROBOT);
 	const pupils = avatar?.querySelector<SVGGElement>("[data-av-pupils]");
 	const robotEyes = avatar?.querySelector<SVGGElement>("[data-av-robot-eyes]");
 
-	type RobotMood = "idle" | "thinking" | "happy" | "confused";
+	type RobotMood = "idle" | "listening" | "thinking" | "happy" | "confused";
+
+	// Robot one-liners follow the visitor's browser language.
+	const LINES = {
+		en: {
+			hello: "uptime 99.9%. the rest was coffee.",
+			open: "sudo ask me anything.",
+			empty: "404: answer not found. try sudo.",
+			konami: "rm -rf boredom/ — done.",
+			idle: "still here? good. it's being logged.",
+			back: "oh, you're back. session resumed.",
+			works: 'not "works on my machine". it actually runs.',
+			writings: "docs. someone here actually wrote them.",
+		},
+		id: {
+			hello: "uptime 99,9%. sisanya ngopi.",
+			open: "sudo tanya apa aja.",
+			empty: "404: jawaban tidak ditemukan. coba pakai sudo.",
+			konami: "rm -rf bosan/ — beres.",
+			idle: "masih di sini? bagus. semua masuk log.",
+			back: "oh, balik lagi. sesi dilanjutkan.",
+			works: 'bukan "jalan di laptop saya". ini beneran jalan.',
+			writings: "dokumentasi. ternyata ada yang nulis.",
+		},
+	};
+	const t = navigator.language.toLowerCase().startsWith("id") ? LINES.id : LINES.en;
 
 	function initAvatar(root: HTMLElement, headEl: SVGGElement, pupilEl: SVGGElement) {
 		const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -494,7 +526,7 @@ const robot = toPaths(ROBOT);
 				if (performance.now() - lastMove > IDLE_BEFORE_TYPING_MS) {
 					idleTyping = true;
 					schedule();
-					say("still here? good. it's being logged.", "idle");
+					say(t.idle, "idle");
 				}
 			}, 5000);
 		}
@@ -511,7 +543,7 @@ const robot = toPaths(ROBOT);
 				hiddenAt = performance.now();
 			} else if (hiddenAt && performance.now() - hiddenAt > 8000 && onScreen) {
 				wave();
-				say("oh, you're back. session resumed.", "back");
+				say(t.back, "back");
 			}
 		});
 
@@ -520,11 +552,13 @@ const robot = toPaths(ROBOT);
 			const state = (e as CustomEvent<{ state: string }>).detail?.state;
 			if (state === "open") {
 				agentOpen = true;
-				say("sudo ask me anything.", "open");
+				say(t.open, "open");
 			} else if (state === "close") {
 				agentOpen = false;
 				agentThinking = false;
 				setMood("idle");
+			} else if (state === "listening") {
+				setMood("listening");
 			} else if (state === "thinking") {
 				agentThinking = true;
 				setMood("thinking");
@@ -534,15 +568,15 @@ const robot = toPaths(ROBOT);
 			} else if (state === "empty") {
 				agentThinking = false;
 				setMood("confused", 3000);
-				say("404: answer not found. try sudo.");
+				say(t.empty);
 			}
 			schedule();
 		});
 
 		// Section commentary, once per session each.
 		const lines: Record<string, string> = {
-			"v2-works": 'not "works on my machine". it actually runs.',
-			"v2-writings": "docs. someone here actually wrote them.",
+			"v2-works": t.works,
+			"v2-writings": t.writings,
 		};
 		const sectionObserver = new IntersectionObserver(
 			(entries) => {
@@ -568,11 +602,11 @@ const robot = toPaths(ROBOT);
 				konamiIdx = 0;
 				wave();
 				setMood("happy", 1600);
-				say("rm -rf boredom/ — done.");
+				say(t.konami);
 			}
 		});
 
-		window.setTimeout(() => say("uptime 99.9%. the rest was coffee.", "hello"), 2500);
+		window.setTimeout(() => say(t.hello, "hello"), 2500);
 	}
 
 	if (avatar && head && pupils) {

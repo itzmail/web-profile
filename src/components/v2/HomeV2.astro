@@ -380,15 +380,19 @@ const jsonLd = {
 
 	renderGrid();
 	gliderBtn?.addEventListener("click", step);
-	let simInterval = window.setInterval(step, 1400);
 
-	gliderBtn?.addEventListener("mouseenter", () => {
-		clearInterval(simInterval);
-		simInterval = window.setInterval(step, 400);
-	});
+	// With "reduce motion" on, the glider only advances when clicked.
+	if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		let simInterval = window.setInterval(step, 1400);
 
-	gliderBtn?.addEventListener("mouseleave", () => {
-		clearInterval(simInterval);
-		simInterval = window.setInterval(step, 1400);
-	});
+		gliderBtn?.addEventListener("mouseenter", () => {
+			clearInterval(simInterval);
+			simInterval = window.setInterval(step, 400);
+		});
+
+		gliderBtn?.addEventListener("mouseleave", () => {
+			clearInterval(simInterval);
+			simInterval = window.setInterval(step, 1400);
+		});
+	}
 </script>
