@@ -16,3 +16,29 @@ id = "d96c770cd5a8428b9298846c9cec1e84"
 [ai]
 binding = "AI"
 remote = true
+
+# Per-IP rate limits (Workers Rate Limiting binding). Counted per Cloudflare
+# location without KV writes, so they do not eat the 1,000 writes/day KV quota.
+[[ratelimits]]
+name = "CHAT_RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 6
+  period = 60
+
+[[ratelimits]]
+name = "AGENT_RATE_LIMITER"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[[ratelimits]]
+name = "CONTACT_RATE_LIMITER"
+namespace_id = "1003"
+
+  [ratelimits.simple]
+  limit = 3
+  period = 60

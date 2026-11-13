@@ -10,8 +10,6 @@ interface ContactRequestBody {
     pageContext?: { type: "project" | "blog"; title: string };
 }
 
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_SECONDS = 600; // 10 minutes
 const NOTIFY_DAILY_MAX = 10;
 const NOTIFY_DAILY_WINDOW_SECONDS = 86400; // 24 hours
 const MAX_NAME_LENGTH = 100;
@@ -64,25 +62,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const kv = env.SESSION;
-    if (!kv) {
+    const limiter = env.CONTACT_RATE_LIMITER;
+    if (!kv || !limiter) {
         return new Response(JSON.stringify({ error: "Rate limiter unavailable" }), {
             status: 503,
             headers: { "Content-Type": "application/json" },
         });
     }
 
-    const rateLimitKey = `ratelimit:contact:${clientAddress ?? "unknown"}`;
-    const current = await kv.get(rateLimitKey);
-    const count = current ? parseInt(current, 10) : 0;
-
-    if (count >= RATE_LIMIT_MAX) {
+    const { success } = await limiter.limit({ key: clientAddress ?? "unknown" });
+    if (!success) {
         return new Response(
             JSON.stringify({ error: "Terlalu banyak percobaan, coba lagi sebentar lagi." }),
             { status: 429, headers: { "Content-Type": "application/json" } }
         );
     }
-
-    await kv.put(rateLimitKey, String(count + 1), { expirationTtl: RATE_LIMIT_WINDOW_SECONDS });
 
     const botToken = env.TELEGRAM_BOT_TOKEN;
     const chatId = env.TELEGRAM_CHAT_ID;

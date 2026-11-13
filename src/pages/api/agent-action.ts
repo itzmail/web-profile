@@ -59,9 +59,8 @@ const AUDIENCE_CRITERIA: Record<AgentAudience, string> = {
 	engineer: "A fellow engineer curious about technical details",
 };
 
-const RATE_LIMIT_MAX = 20;
-const RATE_LIMIT_WINDOW_SECONDS = 600; // 10 minutes
-const GLOBAL_DAILY_MAX = 500;
+// Sized so chat + agent KV writes stay under the free plan's 1,000 writes/day.
+const GLOBAL_DAILY_MAX = 350;
 const GLOBAL_DAILY_WINDOW_SECONDS = 86400; // 24 hours
 const MAX_QUERY_LENGTH = 400;
 const CLEF_TIMEOUT_MS = 8000;
@@ -336,7 +335,8 @@ export const POST: APIRoute = async ({ request }) => {
 	// Rate limit — reuse the SESSION KV namespace (same pattern as /api/chat).
 	// Fail closed: without KV we cannot enforce a budget on billable AI calls.
 	const kv = env.SESSION;
-	if (!kv) {
+	const limiter = env.AGENT_RATE_LIMITER;
+	if (!kv || !limiter) {
 		return new Response(JSON.stringify({ error: "Rate limiter unavailable" }), {
 			status: 503,
 			headers: { "Content-Type": "application/json" },
@@ -344,11 +344,9 @@ export const POST: APIRoute = async ({ request }) => {
 	}
 
 	const clientAddress = request.headers.get("CF-Connecting-IP") ?? "unknown";
-	const rateLimitKey = `agent-ratelimit:${clientAddress}`;
-	const current = await kv.get(rateLimitKey);
-	const count = current ? parseInt(current, 10) : 0;
+	const { success } = await limiter.limit({ key: clientAddress });
 
-	if (count >= RATE_LIMIT_MAX) {
+	if (!success) {
 		return new Response(
 			JSON.stringify({ error: "Too many Agent requests, slow down." }),
 			{ status: 429, headers: { "Content-Type": "application/json" } }
@@ -368,9 +366,6 @@ export const POST: APIRoute = async ({ request }) => {
 		);
 	}
 
-	await kv.put(rateLimitKey, String(count + 1), {
-		expirationTtl: RATE_LIMIT_WINDOW_SECONDS,
-	});
 	await kv.put(globalKey, String(globalCount + 1), {
 		expirationTtl: GLOBAL_DAILY_WINDOW_SECONDS,
 	});

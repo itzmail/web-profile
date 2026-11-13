@@ -21,7 +21,27 @@ function applySecurityHeaders(response: Response): Response {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-	const { url } = context;
+	const { url, request } = context;
+
+	// Reject cross-site POSTs to the API. Not authentication (non-browser clients
+	// send no Origin) — it stops other sites from spending the AI budget via visitors.
+	const origin = request.headers.get("Origin");
+	if (origin && request.method === "POST" && url.pathname.startsWith("/api/")) {
+		let originHost = "";
+		try {
+			originHost = new URL(origin).host;
+		} catch {
+			// Malformed Origin header: treated as a mismatch below.
+		}
+		if (originHost !== url.host) {
+			return applySecurityHeaders(
+				new Response(JSON.stringify({ error: "Forbidden" }), {
+					status: 403,
+					headers: { "Content-Type": "application/json" },
+				})
+			);
+		}
+	}
 
 	// 1. Subdomain redirect: blog.itsmail.dev -> https://itsmail.dev/notes (301 Permanent)
 	// notes.itsmail.dev does not have a public DNS record, so route directly to itsmail.dev/notes
